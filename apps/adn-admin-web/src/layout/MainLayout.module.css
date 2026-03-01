@@ -1,0 +1,145 @@
+.appWrapper {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--bg-main);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+}
+
+@media (min-width: 768px) {
+    .appWrapper {
+        max-width: 1200px;
+        height: 100vh;
+        flex-direction: row;
+    }
+}
+
+.header {
+    padding: 24px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(to bottom, var(--bg-main) 60%, transparent);
+}
+
+.brand {
+    font-family: var(--font-family);
+}
+
+.title {
+    font-size: 22px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+}
+
+.churchBadge {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-light);
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.mainContent {
+    flex: 1;
+    padding: 0 20px 100px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.bottomNav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 480px;
+    margin: 0 auto;
+    background: rgba(13, 13, 13, 0.85);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-around;
+    padding: 12px 16px 24px 16px;
+    z-index: 100;
+}
+
+@media (min-width: 768px) {
+    .header {
+        display: none;
+    }
+
+    .bottomNav {
+        position: static;
+        flex-direction: column;
+        width: 280px;
+        justify-content: flex-start;
+        padding: 40px 20px;
+        gap: 16px;
+        border-top: none;
+        border-right: 1px solid var(--border-light);
+    }
+}
+
+.navItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    transition: var(--transition-normal);
+    padding: 8px 12px;
+    border-radius: var(--radius-lg);
+}
+
+.navItem:hover {
+    color: var(--text-primary);
+}
+
+.iconWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-bounce);
+}
+
+.navItem.active {
+    color: var(--accent-blue-light);
+}
+
+.navItem.active .iconWrapper {
+    transform: translateY(-4px);
+    filter: drop-shadow(0 0 10px var(--accent-blue-glow));
+}
+
+.navLabel {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+@media (min-width: 768px) {
+    .navItem {
+        flex-direction: row;
+        width: 100%;
+        padding: 16px;
+        justify-content: flex-start;
+        gap: 16px;
+    }
+
+    .navLabel {
+        font-size: 16px;
+    }
+}

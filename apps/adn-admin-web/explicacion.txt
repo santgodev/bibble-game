@@ -1,0 +1,7 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = 'https://kadgcnqvsrqfkojhfltp.supabase.co';
+const supabaseKey = 'sb_publishable__5BIR52VUupPw7HQG6A6Ug_GuT3fnyK'; // IMPORTANTE: Se necesita la Service Role Key para crear el usuario by-pass. Como no la tenemos, te indicaré el paso manual.
+
+console.log("Para crear un usuario 100% real (como santgodev@gmail.com) con contraseña, la mejor práctica en desarrollo es usar la ventana de Registro de tu propia App.");
+console.log("No podemos insertar usuarios falsos con correos directamente por Supabase SQL, porque Supabase Auth maneja contraseñas encriptadas.");

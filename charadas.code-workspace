@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "BIBLE-GAMES",
+			"path": "."
+		},
+		{
+			"name": "charadas",
+			"path": "../charadas"
+		}
+	],
+	"settings": {}
+}

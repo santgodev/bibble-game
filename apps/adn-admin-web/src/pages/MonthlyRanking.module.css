@@ -1,0 +1,117 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    padding-top: 20px;
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+@media (min-width: 768px) {
+    .header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+}
+
+.titleArea h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--accent-gold);
+    line-height: 1.1;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 16px;
+}
+
+.controls {
+    display: flex;
+    gap: 12px;
+}
+
+.filterBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: 10px 16px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    transition: var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.filterBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.rankingList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tabsContainer {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.tabBtn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    padding: 12px;
+    border-radius: var(--radius-lg);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-medium);
+}
+
+.tabBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tabActive {
+    background: rgba(206, 172, 92, 0.15);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+}
+
+.gamificationBanner {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 16px;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 24px;
+}
+
+.gamiItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
