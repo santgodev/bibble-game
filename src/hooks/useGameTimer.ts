@@ -10,12 +10,6 @@ export const useGameTimer = (initialTime: number = 60, onTimeEnd?: () => void) =
         onTimeEndRef.current = onTimeEnd;
     }, [onTimeEnd]);
 
-    const startTimer = useCallback(() => {
-        if (!isRunning && timeLeft > 0) {
-            setIsRunning(true);
-        }
-    }, [isRunning, timeLeft]);
-
     const stopTimer = useCallback(() => {
         setIsRunning(false);
         if (intervalRef.current) {
@@ -28,6 +22,11 @@ export const useGameTimer = (initialTime: number = 60, onTimeEnd?: () => void) =
         stopTimer();
         setTimeLeft(initialTime);
     }, [initialTime, stopTimer]);
+
+    // FIX: allow start even after timeLeft hit 0 (after a reset)
+    const startTimer = useCallback(() => {
+        setIsRunning(true);
+    }, []);
 
     useEffect(() => {
         if (isRunning && timeLeft > 0) {

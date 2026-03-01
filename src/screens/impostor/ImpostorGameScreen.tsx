@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Container, AppText, Button } from '../../components';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { Container, AppText } from '../../components';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -14,37 +14,58 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
     const [starterPlayer, setStarterPlayer] = useState('');
     const { pauseMusic, resumeMusic } = useSound();
 
-    useFocusEffect(
-        React.useCallback(() => {
-            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-            pauseMusic();
-            return () => resumeMusic();
-        }, [])
-    );
+    // Animate pulse ring on timer when low
+    const pulseAnim = new Animated.Value(1);
+    const startPulse = () => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, { toValue: 1.08, duration: 500, useNativeDriver: true }),
+                Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+            ])
+        ).start();
+    };
 
     const onTimeEnd = () => {
         setIsFinished(true);
+        startPulse();
     };
 
-    const { timeLeft, startTimer, stopTimer } = useGameTimer(duration, onTimeEnd);
+    // ── FIX: pass unique key via initialSeconds so timer freshly mounts each game
+    const { timeLeft, startTimer, stopTimer, resetTimer } = useGameTimer(duration, onTimeEnd);
 
-    useEffect(() => {
-        startTimer();
-        // Elegir jugador aleatorio para empezar
-        if (playerDetails && playerDetails.length > 0) {
-            const rIndex = Math.floor(Math.random() * playerDetails.length);
-            setStarterPlayer(playerDetails[rIndex].username);
-        } else {
-            setStarterPlayer(`Jugador ${Math.floor(Math.random() * players) + 1}`);
-        }
-        return () => stopTimer();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+            pauseMusic();
+
+            // Reset state each time we come back to this screen
+            setIsFinished(false);
+            resetTimer();
+
+            // Pick starter player
+            if (playerDetails && playerDetails.length > 0) {
+                const rIndex = Math.floor(Math.random() * playerDetails.length);
+                setStarterPlayer(playerDetails[rIndex].username);
+            } else {
+                setStarterPlayer(`Jugador ${Math.floor(Math.random() * players) + 1}`);
+            }
+
+            startTimer();
+
+            return () => {
+                stopTimer();
+                resumeMusic();
+            };
+        }, [duration, playerDetails, players])
+    );
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
         return `${m}:${s < 10 ? '0' : ''}${s}`;
     };
+
+    const isLow = timeLeft <= 15;
 
     const handleVote = () => {
         stopTimer();
@@ -70,7 +91,7 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
 
             <Container centered style={{ backgroundColor: 'transparent', flex: 1, paddingHorizontal: 20 }}>
                 <View style={styles.chatIconWrapper}>
-                    <Ionicons name="chatbubble-ellipses" size={45} color="#000" />
+                    <Ionicons name="chatbubble-ellipses" size={45} color="#fff" />
                 </View>
 
                 <AppText style={styles.title}>Debate</AppText>
@@ -84,15 +105,21 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
                 </AppText>
 
                 <View style={styles.timerWrapper}>
-                    <View style={styles.timerCircle}>
-                        <AppText variant="display" style={[styles.timer, timeLeft <= 10 && { color: '#ff4d4d' }]}>
+                    <Animated.View style={[
+                        styles.timerCircle,
+                        isLow && styles.timerCircleLow,
+                        { transform: [{ scale: isLow ? pulseAnim : 1 }] }
+                    ]}>
+                        <AppText variant="display" style={[styles.timer, isLow && { color: '#ff4d4d' }]}>
                             {formatTime(timeLeft)}
                         </AppText>
-                    </View>
+                    </Animated.View>
                 </View>
 
                 <AppText style={styles.bottomInstruction}>
-                    {isFinished ? "¡El tiempo se acabó! Votación obligatoria." : "Para el cronómetro cuando estén listos para votar."}
+                    {isFinished
+                        ? '¡El tiempo se acabó! Votación obligatoria.'
+                        : 'Para el cronómetro cuando estén listos para votar.'}
                 </AppText>
             </Container>
 
@@ -101,9 +128,8 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
                     style={[styles.voteBtn, isFinished && { backgroundColor: '#e74c3c', borderColor: '#c0392b' }]}
                     onPress={handleVote}
                 >
-                    <AppText style={styles.voteBtnText}>
-                        Votar
-                    </AppText>
+                    <Ionicons name="hand-right" size={20} color="#fff" style={{ marginRight: 10 }} />
+                    <AppText style={styles.voteBtnText}>Votar</AppText>
                 </TouchableOpacity>
             </View>
         </View>
@@ -125,22 +151,19 @@ const styles = StyleSheet.create({
     },
     iconBtn: {
         padding: 5,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: 20
     },
     chatIconWrapper: {
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#f1f2f6',
+        backgroundColor: 'rgba(78,22,181,0.5)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.15)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 15,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 8
     },
     title: {
         fontSize: 32,
@@ -151,18 +174,18 @@ const styles = StyleSheet.create({
         includeFontPadding: false
     },
     instruction: {
-        fontSize: 18,
-        color: '#fff',
+        fontSize: 17,
+        color: 'rgba(255,255,255,0.7)',
         textAlign: 'center',
         paddingHorizontal: 10,
         marginBottom: 10,
-        lineHeight: 28,
+        lineHeight: 26,
         fontWeight: '500',
         includeFontPadding: false
     },
     starterText: {
         fontSize: 22,
-        color: '#FFD700', // Amarillo fuerte
+        color: '#FFD700',
         fontWeight: 'bold',
         marginBottom: 40,
         textAlign: 'center',
@@ -178,27 +201,31 @@ const styles = StyleSheet.create({
         width: 250,
         height: 250,
         borderRadius: 125,
-        borderWidth: 8,
+        borderWidth: 6,
         borderColor: 'rgba(255,255,255,0.1)',
-        backgroundColor: 'rgba(0,0,0,0.1)',
+        backgroundColor: 'rgba(255,255,255,0.04)',
         justifyContent: 'center',
         alignItems: 'center'
     },
+    timerCircleLow: {
+        borderColor: 'rgba(231,76,60,0.5)',
+        backgroundColor: 'rgba(231,76,60,0.06)',
+    },
     timer: {
-        fontSize: 75,
+        fontSize: 72,
         color: '#fff',
         fontWeight: '900',
         lineHeight: 85,
         includeFontPadding: false
     },
     bottomInstruction: {
-        fontSize: 16,
-        color: '#fff',
+        fontSize: 15,
+        color: 'rgba(255,255,255,0.6)',
         textAlign: 'center',
         paddingHorizontal: 30,
-        fontWeight: 'bold',
+        fontWeight: '600',
         marginBottom: 10,
-        lineHeight: 24,
+        lineHeight: 22,
         includeFontPadding: false
     },
     footerArea: {
@@ -209,13 +236,13 @@ const styles = StyleSheet.create({
     voteBtn: {
         flexDirection: 'row',
         justifyContent: 'center',
-        backgroundColor: '#2ecc71',
+        alignItems: 'center',
+        backgroundColor: '#5e16b5',
         paddingVertical: 18,
         borderRadius: 20,
         width: '100%',
-        alignItems: 'center',
-        borderBottomWidth: 5,
-        borderColor: '#27ae60'
+        borderBottomWidth: 4,
+        borderColor: '#4a0e95'
     },
     voteBtnText: {
         color: '#fff',
