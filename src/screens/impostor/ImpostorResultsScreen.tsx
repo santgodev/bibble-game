@@ -76,7 +76,7 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
                     user_id: reward.userId,
                     event_type: reward.won ? 'IMPOSTOR_WIN' : 'IMPOSTOR_PLAY',
                     description: reward.won ? 'Victoria en El Impostor' : 'Partida de El Impostor',
-                    points_awarded: reward.xp,
+                    xp_awarded: reward.xp,
                 });
 
                 // Update user XP and trophies
