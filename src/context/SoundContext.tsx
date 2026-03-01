@@ -12,15 +12,7 @@ export interface Track {
 }
 
 const BACKGROUND_TRACKS: Track[] = [
-    { id: 'cali_coins', name: 'Cali Coins', source: require('../../assets/sounds/Cali Coins.mp3') },
-    { id: 'caribe_loop', name: 'Caribe Loop Fiesta', source: require('../../assets/sounds/Caribe Loop Fiesta.mp3') },
-    { id: 'fiesta_tap', name: 'Fiesta Tap Loop', source: require('../../assets/sounds/Fiesta Tap Loop.mp3') },
-    { id: 'fiesta_bolsillo', name: 'Fiesta en el Bolsillo', source: require('../../assets/sounds/Fiesta en el Bolsillo.mp3') },
-    { id: 'llanero', name: 'Llanero Party Loop', source: require('../../assets/sounds/Llanero Party Loop.mp3') },
-    { id: 'llanos', name: 'Llanos Party Loop', source: require('../../assets/sounds/Llanos Party Loop.mp3') },
-    { id: 'palmeras', name: 'Palmeras En Juego', source: require('../../assets/sounds/Palmeras En Juego.mp3') },
-    { id: 'rolos', name: 'Rolos Rooftop Loop', source: require('../../assets/sounds/Rolos Rooftop Loop.mp3') },
-    { id: 'santander', name: 'Santander Sprint', source: require('../../assets/sounds/Santander Sprint.mp3') },
+    { id: 'main_screan', name: 'Main Screen', source: require('../../assets/sounds/main-screan.mp3') },
 ];
 
 interface SoundContextType {

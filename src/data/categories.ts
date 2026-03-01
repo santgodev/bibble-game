@@ -78,7 +78,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
         words: [
             { word: 'Cero Estrés 😴', onShowSound: 'wrong', description: '¿Realmente quieres esto?' },
             { word: 'Dormir Siempre 🛌💤', onShowSound: 'wrong', description: '¡Despierta!' },
-            { word: 'Más Nivel 🚀🔥', bgMusic: 'Santander Sprint.mp3', onShowSound: 'correct', description: '¡Vamos con toda!' }
+            { word: 'Más Nivel 🚀🔥', bgMusic: 'main-screan.mp3', onShowSound: 'correct', description: '¡Vamos con toda!' }
         ]
     },
     {
