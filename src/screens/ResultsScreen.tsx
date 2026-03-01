@@ -138,7 +138,7 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                 event_type: 'CHARADAS',
                 session_id: gameSessionId,
                 description: `Charadas: ${category || 'Clásico'} — ${score}/${total}`,
-                points_awarded: rewards.xp,
+                xp: rewards.xp,
                 trophies_awarded: rewards.trophies,
             }));
 

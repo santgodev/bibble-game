@@ -193,7 +193,7 @@ export const submitGameResult = async (supabase: any, result: GameResult): Promi
             event_type: result.gameType,
             session_id: result.sessionId,
             description: getDescription(),
-            points_awarded: r.xp,
+            xp: r.xp,
             trophies_awarded: r.trophies,
         }));
 
