@@ -50,7 +50,8 @@ export const TROPHIES = {
 
     // El Impostor
     IMPOSTOR_WIN: 3,
-    IMPOSTOR_IDENTIFY: 1,
+    IMPOSTOR_WIN_AS_IMPOSTOR: 6, // Es más difícil ganar siendo el impostor
+    IMPOSTOR_IDENTIFY: 2,
 
     // Devocionales
     DEVOTIONAL_READING: 4,
@@ -116,8 +117,11 @@ export const calculateCharadasRewards = (
     const rawXp = Math.round((baseXp + completionBonus + accuracyBonus) * timeMultiplier);
 
     let trophies = 0;
-    if (canEarnTrophies && total >= 5) {
-        trophies += TROPHIES.CHARADAS_COMPLETION;
+    if (canEarnTrophies && total >= 3) { // A partir de 3 palabras ya puedes ganar copas
+        // 1 copa por cada 4 palabras adivinadas correctamente recompensa el esfuerzo/tiempo extra
+        trophies += Math.floor(correctWords / 4);
+
+        // Bonus extra por alta precisión
         if (accuracy >= 0.8) {
             trophies += TROPHIES.CHARADAS_PERFECT_ACCURACY;
         }
@@ -159,7 +163,7 @@ export const calculateImpostorRewards = (
 
             if (won) {
                 xp += isImpostor ? XP.IMPOSTOR_WIN_AS_IMPOSTOR : XP.IMPOSTOR_WIN;
-                trophies += TROPHIES.IMPOSTOR_WIN;
+                trophies += isImpostor ? TROPHIES.IMPOSTOR_WIN_AS_IMPOSTOR : TROPHIES.IMPOSTOR_WIN;
             }
 
             if (citizensWon && !isImpostor) {

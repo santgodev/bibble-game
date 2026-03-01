@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Modal, Animated } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Modal, Animated, Alert } from 'react-native';
 import { AppText } from '../../components';
 import { Confetti } from '../../components/Confetti';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +23,8 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
 
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState({ index: -1, name: '' });
+    const [caughtImpostors, setCaughtImpostors] = useState<number[]>([]);
+    const [eliminatedInnocents, setEliminatedInnocents] = useState<number[]>([]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -31,6 +33,7 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
     );
 
     const handlePlayerVote = (playerIndex: number, playerName: string) => {
+        if (caughtImpostors.includes(playerIndex) || eliminatedInnocents.includes(playerIndex)) return;
         setSelectedPlayer({ index: playerIndex, name: playerName });
         setModalVisible(true);
     };
@@ -38,23 +41,42 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
     const confirmVote = () => {
         setModalVisible(false);
         const accusedIndex = selectedPlayer.index;
-        const caughtImpostor = impostorList.includes(accusedIndex);
-        setCitizensWon(caughtImpostor);
-        setRevealed(true);
+        const isImpostor = impostorList.includes(accusedIndex);
 
-        // Celebrate if citizens won
-        if (caughtImpostor) {
-            setTimeout(() => {
-                playSound('win');
+        if (isImpostor) {
+            const newCaught = [...caughtImpostors, accusedIndex];
+            setCaughtImpostors(newCaught);
+            if (newCaught.length === impostorList.length) {
+                // Todos los impostores atrapados
+                setCitizensWon(true);
+                setRevealed(true);
+                setTimeout(() => {
+                    playSound('win');
+                    playHaptic('victory');
+                    setShowConfetti(true);
+                    setTimeout(() => setShowConfetti(false), 3000);
+                }, 400);
+            } else {
                 playHaptic('victory');
-                setShowConfetti(true);
-                setTimeout(() => setShowConfetti(false), 3000);
-            }, 400);
+                Alert.alert("¡Acierto! 🕵️‍♂️", `¡${selectedPlayer.name} ERA un impostor! Pero aún queda(n) ${impostorList.length - newCaught.length}... ¡sigan votando!`);
+            }
         } else {
-            // Impostor wins — subtle impact
-            setTimeout(() => {
+            const newEliminated = [...eliminatedInnocents, accusedIndex];
+            setEliminatedInnocents(newEliminated);
+
+            const totalInnocents = players - impostorList.length;
+            const remainingInnocents = totalInnocents - newEliminated.length;
+            const remainingImpostors = impostorList.length - caughtImpostors.length;
+
+            if (remainingInnocents <= remainingImpostors) {
+                // Los impostores ganan porque ya no hay suficientes ciudadanos
+                setCitizensWon(false);
+                setRevealed(true);
+                setTimeout(() => playHaptic('impact'), 300);
+            } else {
                 playHaptic('impact');
-            }, 300);
+                Alert.alert("¡Grave Error! ❌", `¡${selectedPlayer.name} NO era el impostor! Queda eliminado(a). Sigan jugando y voten de nuevo.`);
+            }
         }
     };
 
@@ -163,7 +185,11 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
                                 return (
                                     <TouchableOpacity
                                         key={index}
-                                        style={styles.playerCard}
+                                        style={[
+                                            styles.playerCard,
+                                            caughtImpostors.includes(index) && { backgroundColor: '#2ecc71', opacity: 0.6 },
+                                            eliminatedInnocents.includes(index) && { backgroundColor: '#e74c3c', opacity: 0.6 }
+                                        ]}
                                         onPress={() => handlePlayerVote(index, player.username)}
                                     >
                                         <View style={styles.avatarPlaceholder}>

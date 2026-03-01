@@ -150,7 +150,11 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
 
     const handleConfirm = () => {
         const selectedObj = categories.filter(c => selectedIds.includes(c.id));
-        navigation.navigate('ImpostorConfig', { selectedCategories: selectedObj });
+        navigation.navigate({
+            name: 'ImpostorConfig',
+            params: { selectedCategories: selectedObj },
+            merge: true
+        });
     };
 
     const renderItem = ({ item }: { item: Category }) => {
