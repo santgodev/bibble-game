@@ -151,7 +151,8 @@ export interface ImpostorPlayerReward {
 export const calculateImpostorRewards = (
     playerDetails: any[],
     impostorList: number[],
-    citizensWon: boolean
+    citizensWon: boolean,
+    canEarnTrophies: boolean = true,   // ← false para categorías básicas
 ): ImpostorPlayerReward[] => {
     return playerDetails
         .filter(p => p?.isRegistered && p?.id)
@@ -164,12 +165,16 @@ export const calculateImpostorRewards = (
 
             if (won) {
                 xp += isImpostor ? XP.IMPOSTOR_WIN_AS_IMPOSTOR : XP.IMPOSTOR_WIN;
-                trophies += isImpostor ? TROPHIES.IMPOSTOR_WIN_AS_IMPOSTOR : TROPHIES.IMPOSTOR_WIN;
+                if (canEarnTrophies) {
+                    trophies += isImpostor ? TROPHIES.IMPOSTOR_WIN_AS_IMPOSTOR : TROPHIES.IMPOSTOR_WIN;
+                }
             }
 
             if (citizensWon && !isImpostor) {
                 xp += XP.IMPOSTOR_IDENTIFY;
-                trophies += TROPHIES.IMPOSTOR_IDENTIFY;
+                if (canEarnTrophies) {
+                    trophies += TROPHIES.IMPOSTOR_IDENTIFY;
+                }
             }
 
             return {

@@ -177,7 +177,16 @@ const am = StyleSheet.create({
 
 // ─── Main Screen ──────────────────────────────────────────
 export const ImpostorResultsScreen = ({ navigation, route }: any) => {
-    const { impostorList, secretWord, secretCategory, players, playerDetails } = route.params;
+    const {
+        impostorList, secretWord, secretCategory, players, playerDetails,
+        sessionId: incomingSessionId,
+        canEarnTrophies = true,
+    } = route.params;
+
+    // Clave de idempotencia para esta sesión de juego
+    const sessionId = incomingSessionId || `IMPOSTOR_${secretWord}_${Date.now()}`;
+    // Previene doble submit aunque el usuario pulse el botón varias veces
+    const hasRewarded = React.useRef(false);
 
     const [revealed, setRevealed] = useState(false);
     const [xpRewarded, setXPRewarded] = useState(false);
@@ -274,9 +283,35 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
 
     const handleGiveRewards = async () => {
         if (!playerDetails) return;
+        // ── Anti-farming: bloquea doble submit ──────────────────────
+        if (hasRewarded.current) return;
+        hasRewarded.current = true;
         setXPRewarded(true);
 
-        const rewards = calculateImpostorRewards(playerDetails, impostorList, citizensWon);
+        // ── Anti-farming: verificar idempotencia en DB ───────────────
+        const { data: existing } = await supabase
+            .from('events')
+            .select('id')
+            .eq('session_id', sessionId)
+            .limit(1);
+
+        if (existing && existing.length > 0) {
+            console.warn('[Impostor] Sesión ya recompensada:', sessionId);
+            // Aún construir el summary visual sin re-insertar
+            const rewards = calculateImpostorRewards(playerDetails, impostorList, citizensWon, canEarnTrophies);
+            const summary = rewards
+                .map(r => {
+                    const player = playerDetails.find((p: any) => p.id === r.userId);
+                    return player ? { name: player.username, xp: r.xp, trophies: r.trophies, won: r.won } : null;
+                })
+                .filter(Boolean) as { name: string; xp: number; trophies: number; won: boolean }[];
+            setRewardSummary(summary);
+            Animated.spring(rewardBadgeScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
+            return;
+        }
+
+        // ── Calcular recompensas ─────────────────────────────────────
+        const rewards = calculateImpostorRewards(playerDetails, impostorList, citizensWon, canEarnTrophies);
         const summary: { name: string; xp: number; trophies: number; won: boolean }[] = [];
 
         for (const reward of rewards) {
@@ -285,24 +320,36 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
             summary.push({ name: player.username, xp: reward.xp, trophies: reward.trophies, won: reward.won });
 
             try {
+                // Audit log con session_id para idempotencia futura
                 await supabase.from('events').insert({
                     user_id: reward.userId,
+                    session_id: sessionId,
                     event_type: reward.won ? 'IMPOSTOR_WIN' : 'IMPOSTOR_PLAY',
-                    description: reward.won ? 'Victoria en El Impostor' : 'Partida de El Impostor',
+                    description: `Impostor: ${secretWord} — ${reward.won ? 'victoria' : 'participación'}`,
                     xp: reward.xp,
+                    trophies_awarded: reward.trophies,
                 });
 
-                const { data: userData } = await supabase
-                    .from('users').select('total_xp, total_trophies').eq('id', reward.userId).single();
+                // Actualización atómica via RPC
+                const { error: rpcErr } = await supabase.rpc('increment_user_rewards', {
+                    p_user_id: reward.userId,
+                    p_xp: reward.xp,
+                    p_trophies: reward.trophies,
+                });
 
-                if (userData) {
-                    await supabase.from('users').update({
-                        total_xp: (userData.total_xp || 0) + reward.xp,
-                        total_trophies: (userData.total_trophies || 0) + reward.trophies,
-                    }).eq('id', reward.userId);
+                // Fallback manual si la RPC no existe
+                if (rpcErr) {
+                    const { data: userData } = await supabase
+                        .from('users').select('total_xp, total_trophies').eq('id', reward.userId).single();
+                    if (userData) {
+                        await supabase.from('users').update({
+                            total_xp: (userData.total_xp || 0) + reward.xp,
+                            total_trophies: (userData.total_trophies || 0) + reward.trophies,
+                        }).eq('id', reward.userId);
+                    }
                 }
             } catch (err) {
-                console.error('Error awarding points to', reward.userId, err);
+                console.error('[Impostor] Error awarding points to', reward.userId, err);
             }
         }
 

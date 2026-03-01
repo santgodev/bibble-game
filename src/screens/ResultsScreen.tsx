@@ -119,7 +119,24 @@ export const ResultsScreen = ({ navigation, route }: any) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // ✅ FIX BUG #3: Validar que los IDs de playingMembers existan en la DB
+            // ── Generar session ID determinista para esta partida ────────
+            const gameSessionId = sessionId || `CHARADAS_${user.id}_${Date.now()}`;
+
+            // ── Anti-farming: verificar idempotencia ─────────────────────
+            const { data: existing } = await supabase
+                .from('events')
+                .select('id')
+                .eq('session_id', gameSessionId)
+                .limit(1);
+
+            if (existing && existing.length > 0) {
+                console.warn('[Charadas] Sesión ya recompensada:', gameSessionId);
+                return;
+            }
+
+            // ── Determinar a quién premiar ────────────────────────────────
+            // Si se seleccionaron jugadores en el menú → premiar a esos.
+            // Si no → premiar solo al usuario logueado.
             const candidateIds: string[] = playingMembers.length > 0 ? playingMembers : [user.id];
 
             const { data: validUsers } = await supabase
@@ -127,12 +144,14 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                 .select('id')
                 .in('id', candidateIds);
 
-            const usersToAward: string[] = validUsers?.map((u: { id: string }) => u.id) ?? [user.id];
+            // Garantizar que el usuario logueado siempre esté si es jugador
+            const validSet = new Set<string>(validUsers?.map((u: { id: string }) => u.id) ?? []);
+            if (playingMembers.length === 0) validSet.add(user.id);
+
+            const usersToAward = Array.from(validSet);
             if (usersToAward.length === 0) return;
 
-            // ✅ Log del evento (audit trail)
-            const gameSessionId = sessionId || `charadas_${user.id}_${Date.now()}`;
-
+            // ── Insertar eventos (audit log) ──────────────────────────────
             const eventPayloads = usersToAward.map((uid: string) => ({
                 user_id: uid,
                 event_type: 'CHARADAS',
@@ -144,8 +163,7 @@ export const ResultsScreen = ({ navigation, route }: any) => {
 
             await supabase.from('events').insert(eventPayloads);
 
-            // ✅ FIX BUG #2: Usar RPC atómica para evitar race conditions
-            // Si la RPC no existe en tu Supabase aún, cae al fallback con Read-Write
+            // ── Actualizar totales (RPC atómica con fallback manual) ──────
             for (const uid of usersToAward) {
                 const { error: rpcError } = await supabase.rpc('increment_user_rewards', {
                     p_user_id: uid,
@@ -153,7 +171,6 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                     p_trophies: rewards.trophies,
                 });
 
-                // Fallback si la RPC no está creada aún
                 if (rpcError) {
                     const { data: targetUser } = await supabase
                         .from('users')
@@ -169,7 +186,7 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                 }
             }
         } catch (err) {
-            console.log('Ranking submission skipped:', err);
+            console.log('[Charadas] Ranking submission error:', err);
         }
     };
 

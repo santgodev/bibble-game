@@ -78,12 +78,18 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
 
     const handleVote = () => {
         stopTimer();
+        // Genera session única por partida para anti-farming
+        const sessionId = `IMPOSTOR_${secretWord}_${Date.now()}`;
+        // Categorías básicas no dan trofeos — solo XP
+        const canEarnTrophies = secretCategory !== 'biblia_basica';
         navigation.navigate('ImpostorResults', {
             impostorList,
             secretWord,
             secretCategory,
             players,
-            playerDetails
+            playerDetails,
+            sessionId,
+            canEarnTrophies,
         });
     };
 
