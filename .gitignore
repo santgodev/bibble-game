@@ -1,0 +1,51 @@
+# Dependencias
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Producción
+build/
+dist/
+out/
+
+# Monorepo (Turborepo)
+.turbo/
+
+# Misceláneos
+.DS_Store
+*.pem
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# Variables de entorno
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Expo / React Native
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Android / iOS nativo
+android/
+ios/
+
+# TypeScript
+*.tsbuildinfo
