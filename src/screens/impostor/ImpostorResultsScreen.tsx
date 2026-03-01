@@ -521,7 +521,16 @@ const styles = StyleSheet.create({
         borderRadius: 24, justifyContent: 'center', alignItems: 'center',
         borderWidth: 1, borderColor: 'rgba(94,22,181,0.3)',
     },
-    title: { fontSize: 28, color: '#fff', fontWeight: '900', marginBottom: 8, textAlign: 'center' },
+    title: {
+        fontSize: 28,
+        color: '#fff',
+        fontWeight: '900',
+        marginBottom: 8,
+        textAlign: 'center',
+        lineHeight: 38,
+        includeFontPadding: false,
+        paddingTop: 4,
+    },
     subtitle: { fontSize: 15, color: '#888', textAlign: 'center', paddingHorizontal: 30, marginBottom: 20, lineHeight: 22 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14, paddingHorizontal: 16, paddingBottom: 20 },
     playerCard: {

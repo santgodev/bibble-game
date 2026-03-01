@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Container, AppText } from '../../components';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,8 +14,12 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
     const [starterPlayer, setStarterPlayer] = useState('');
     const { pauseMusic, resumeMusic } = useSound();
 
+    // Track whether the game has already been started
+    // so that coming back from the vote screen does NOT reset the timer
+    const alreadyStartedRef = useRef(false);
+
     // Animate pulse ring on timer when low
-    const pulseAnim = new Animated.Value(1);
+    const pulseAnim = useRef(new Animated.Value(1)).current;
     const startPulse = () => {
         Animated.loop(
             Animated.sequence([
@@ -30,7 +34,6 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
         startPulse();
     };
 
-    // ── FIX: pass unique key via initialSeconds so timer freshly mounts each game
     const { timeLeft, startTimer, stopTimer, resetTimer } = useGameTimer(duration, onTimeEnd);
 
     useFocusEffect(
@@ -38,25 +41,31 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
             ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
             pauseMusic();
 
-            // Reset state each time we come back to this screen
-            setIsFinished(false);
-            resetTimer();
+            if (!alreadyStartedRef.current) {
+                // ── First focus: full fresh start ──
+                alreadyStartedRef.current = true;
+                setIsFinished(false);
+                resetTimer();
 
-            // Pick starter player
-            if (playerDetails && playerDetails.length > 0) {
-                const rIndex = Math.floor(Math.random() * playerDetails.length);
-                setStarterPlayer(playerDetails[rIndex].username);
+                if (playerDetails && playerDetails.length > 0) {
+                    const rIndex = Math.floor(Math.random() * playerDetails.length);
+                    setStarterPlayer(playerDetails[rIndex].username);
+                } else {
+                    setStarterPlayer(`Jugador ${Math.floor(Math.random() * players) + 1}`);
+                }
+
+                startTimer();
             } else {
-                setStarterPlayer(`Jugador ${Math.floor(Math.random() * players) + 1}`);
+                // ── Returning from vote screen: just resume where we left off ──
+                if (!isFinished) startTimer();
             }
 
-            startTimer();
-
             return () => {
+                // Pause (not reset) when losing focus so the counter freezes
                 stopTimer();
                 resumeMusic();
             };
-        }, [duration, playerDetails, players])
+        }, [duration, playerDetails, players, isFinished])
     );
 
     const formatTime = (seconds: number) => {
