@@ -201,28 +201,19 @@ export const submitGameResult = async (supabase: any, result: GameResult): Promi
         if (eventError) throw new Error(`Event insert failed: ${eventError.message}`);
 
         // ─────────────────────────────────────────────────────
-        // 5. ACTUALIZAR TOTALES (Bypass RPC temporal por error de schema)
+        // 5. ACTUALIZAR TOTALES CON RPC ATÓMICA
+        // Evita race conditions (Read-Modify-Write)
         // ─────────────────────────────────────────────────────
         for (const r of rewards) {
-            try {
-                const { data: userData, error: fetchError } = await supabase
-                    .from('users')
-                    .select('total_xp, total_trophies')
-                    .eq('id', r.userId)
-                    .single();
+            const { error: rpcError } = await supabase.rpc('increment_user_rewards', {
+                p_user_id: r.userId,
+                p_xp: r.xp,
+                p_trophies: r.trophies
+            });
 
-                if (!fetchError && userData) {
-                    const { error: updateError } = await supabase.from('users').update({
-                        total_xp: (userData.total_xp || 0) + r.xp,
-                        total_trophies: (userData.total_trophies || 0) + r.trophies,
-                    }).eq('id', r.userId);
-
-                    if (updateError) {
-                        console.error(`[RewardService] Update failed for user ${r.userId}:`, updateError.message);
-                    }
-                }
-            } catch (rpcError) {
-                console.error(`[RewardService] Process failed for user ${r.userId}:`, rpcError);
+            if (rpcError) {
+                console.error(`[RewardService] RPC failed for user ${r.userId}:`, rpcError);
+                // No lanza error global — otros usuarios siguen recibiendo sus puntos
             }
         }
 
