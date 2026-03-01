@@ -1,9 +1,57 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
+    TextInput, ActivityIndicator, Alert, Image
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-import { theme } from '../theme';
+
+// ─── Design tokens ────────────────────────────────────────
+const GOLD = '#D4AF37';
+const BG = '#06060E';
+const SURFACE = '#0E0E1C';
+const BORDER = 'rgba(255,255,255,0.07)';
+
+const getLevel = (xp: number) => Math.floor(Math.sqrt(xp / 50)) + 1;
+const getLevelProgress = (xp: number) => {
+    const level = getLevel(xp);
+    const xpForL = (level - 1) ** 2 * 50;
+    const xpForN = level ** 2 * 50;
+    return ((xp - xpForL) / (xpForN - xpForL)) * 100;
+};
+
+// ─── Labelled Input ───────────────────────────────────────
+const LabelInput = ({ label, icon, value, onChangeText, placeholder, keyboard }: any) => (
+    <View style={inp.wrapper}>
+        <Text style={inp.label}>{label}</Text>
+        <View style={inp.row}>
+            <Ionicons name={icon} size={16} color="#555" style={{ marginRight: 10 }} />
+            <TextInput
+                style={inp.field}
+                value={value}
+                onChangeText={onChangeText}
+                placeholder={placeholder}
+                placeholderTextColor="#444"
+                keyboardType={keyboard || 'default'}
+                autoCapitalize="words"
+            />
+        </View>
+    </View>
+);
+
+const inp = StyleSheet.create({
+    wrapper: { marginBottom: 14 },
+    label: { color: '#555', fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 6 },
+    row: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderWidth: 1, borderColor: BORDER,
+        borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
+    },
+    field: { flex: 1, color: '#fff', fontSize: 15 },
+});
 
 export const ProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -11,7 +59,6 @@ export const ProfileScreen = ({ navigation }: any) => {
     const [userStats, setUserStats] = useState<any>(null);
     const [church, setChurch] = useState<any>(null);
 
-    // Forms
     const [churchName, setChurchName] = useState('');
     const [churchCity, setChurchCity] = useState('');
     const [churchAddress, setChurchAddress] = useState('');
@@ -19,395 +66,378 @@ export const ProfileScreen = ({ navigation }: any) => {
     const [inviteUsername, setInviteUsername] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
 
-    useEffect(() => {
-        loadProfile();
-    }, []);
+    useEffect(() => { loadProfile(); }, []);
 
     const loadProfile = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                navigation.replace('Auth');
-                return;
-            }
+            if (!user) { navigation.replace('Auth'); return; }
 
-            const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
+            const { data: userData } = await supabase.from('users').select('*').eq('id', user.id).single();
             if (userData) {
                 setUserStats(userData);
-
                 if (userData.church_id) {
-                    const { data: churchData } = await supabase
-                        .from('churches')
-                        .select('*')
-                        .eq('id', userData.church_id)
-                        .single();
+                    const { data: churchData } = await supabase.from('churches').select('*').eq('id', userData.church_id).single();
                     if (churchData) setChurch(churchData);
                 }
             }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
     };
 
     const handleCreateChurch = async () => {
-        if (!churchName) {
-            Alert.alert('Error', 'Ingresa el nombre de la iglesia');
-            return;
-        }
+        if (!churchName) { Alert.alert('Error', 'Ingresa el nombre de la iglesia'); return; }
         setActionLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('Usuario no autenticado');
 
-            // 1. Create church
             const { data: newChurch, error: createError } = await supabase
-                .from('churches')
-                .insert([{
-                    name: churchName,
-                    city: churchCity || null,
-                    address: churchAddress || null,
-                    phone: churchPhone || null,
-                }])
-                .select()
-                .single();
-
+                .from('churches').insert([{ name: churchName, city: churchCity || null, address: churchAddress || null, phone: churchPhone || null }])
+                .select().single();
             if (createError) throw createError;
 
-            // 2. Update or Create user
             if (userStats?.id) {
-                const { error: updateError } = await supabase
-                    .from('users')
-                    .update({ church_id: newChurch.id })
-                    .eq('id', userStats.id);
+                const { error: updateError } = await supabase.from('users').update({ church_id: newChurch.id }).eq('id', userStats.id);
                 if (updateError) throw updateError;
             } else {
-                // Rescue: User registered but has no public.users row
                 const { error: insertError } = await supabase.from('users').insert({
-                    id: user.id,
-                    email: user.email,
+                    id: user.id, email: user.email,
                     username: user.user_metadata?.username || user.email?.split('@')[0],
                     full_name: user.user_metadata?.full_name || 'Gamer',
-                    church_id: newChurch.id,
-                    role: 'USER',
-                    total_xp: 0,
-                    total_trophies: 0,
-                    level: 1
+                    church_id: newChurch.id, role: 'USER', total_xp: 0, total_trophies: 0, level: 1
                 });
                 if (insertError) throw insertError;
             }
 
-            Alert.alert('¡Iglesia Creadada!', 'Ya tienes tu propia iglesia.');
+            Alert.alert('¡Iglesia Creada!', `"${newChurch.name}" ya está en el sistema.`);
             setChurch(newChurch);
             setUserStats({ ...userStats, church_id: newChurch.id, id: user.id });
-
         } catch (err: any) {
             Alert.alert('Error', err.message || 'No se pudo crear la iglesia');
-        } finally {
-            setActionLoading(false);
-        }
+        } finally { setActionLoading(false); }
     };
 
     const handleInviteUser = async () => {
-        if (!inviteUsername) {
-            Alert.alert('Error', 'Ingresa el nombre de usuario');
-            return;
-        }
+        if (!inviteUsername) { Alert.alert('Error', 'Ingresa el nombre de usuario'); return; }
         setActionLoading(true);
         try {
-            // Clean the username: remove leading '@' and trim spaces
             const cleanUsername = inviteUsername.replace(/^@/, '').trim();
-
-            // Find user securely
-            const { data: targetUsers, error: findError } = await supabase
-                .from('users')
-                .select('*')
-                .ilike('username', `%${cleanUsername}%`)
-                .limit(1);
-
-            if (findError) {
-                console.log('Error finding user:', findError);
-                throw new Error('Hubo un problema buscando al usuario.');
-            }
-
-            if (!targetUsers || targetUsers.length === 0) {
-                throw new Error('Usuario no encontrado. Asegúrate de escribirlo exactamente igual.');
-            }
+            const { data: targetUsers, error: findError } = await supabase.from('users')
+                .select('*').ilike('username', `%${cleanUsername}%`).limit(1);
+            if (findError) throw new Error('Hubo un problema buscando al usuario.');
+            if (!targetUsers || targetUsers.length === 0) throw new Error('Usuario no encontrado.');
 
             const targetUser = targetUsers[0];
-
             if (targetUser.church_id === church.id) {
                 Alert.alert('Info', 'Este usuario ya está en tu iglesia');
-                setActionLoading(false);
-                return;
+                setActionLoading(false); return;
             }
 
-            // Update user
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({ church_id: church.id })
-                .eq('id', targetUser.id);
-
+            const { error: updateError } = await supabase.from('users').update({ church_id: church.id }).eq('id', targetUser.id);
             if (updateError) throw updateError;
 
-            Alert.alert('¡Invitación Exitosa!', `@${inviteUsername} ha sido unido a la iglesia ${church.name}.`);
+            Alert.alert('¡Éxito!', `@${targetUser.username} se ha unido a ${church.name}.`);
             setInviteUsername('');
-
         } catch (err: any) {
             Alert.alert('Error', err.message || 'No se pudo invitar al usuario');
-        } finally {
-            setActionLoading(false);
-        }
+        } finally { setActionLoading(false); }
     };
 
     if (loading) {
         return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
+            <View style={[s.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={GOLD} />
             </View>
         );
     }
 
+    const level = getLevel(userStats?.total_xp || 0);
+    const progress = getLevelProgress(userStats?.total_xp || 0);
+    const avatarSeed = userStats?.username || 'default';
+    const avatarUri = `https://api.dicebear.com/7.x/bottts/png?seed=${avatarSeed}`;
+
     return (
-        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + 20, paddingTop: insets.top + 20 }}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Mi Perfil</Text>
-                <View style={{ width: 40 }} />
-            </View>
+        <View style={s.container}>
+            <ScrollView
+                contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* ── Header gradient ─────────────────── */}
+                <LinearGradient colors={['#0d0d24', BG]} style={[s.header, { paddingTop: insets.top + 10 }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
+                        <Ionicons name="arrow-back" size={22} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={s.headerTitle}>MI PERFIL</Text>
+                    <View style={{ width: 40 }} />
+                </LinearGradient>
 
-            {/* Profile Brief */}
-            {userStats && (
-                <View style={styles.profileHeader}>
-                    <View style={styles.avatarGlow}>
-                        <Ionicons name="person" size={40} color={theme.colors.textSecondary} />
-                    </View>
-                    <Text style={styles.username}>@{userStats.username}</Text>
-                    <View style={styles.xpBadge}>
-                        <Ionicons name="star" size={14} color={theme.colors.primary} />
-                        <Text style={styles.xpText}>{userStats.total_xp} XP Total</Text>
-                    </View>
-                </View>
-            )}
+                {/* ── Profile Identity Card ───────────── */}
+                {userStats && (
+                    <View style={s.identityCard}>
+                        {/* Avatar */}
+                        <LinearGradient colors={[GOLD, '#B8860B']} style={s.avatarBorder}>
+                            <View style={s.avatarInner}>
+                                <Image source={{ uri: avatarUri }} style={s.avatar} />
+                            </View>
+                        </LinearGradient>
 
-            {/* Church Section */}
-            <View style={styles.sectionContainer}>
-                {!church ? (
-                    // Create Church Area
-                    <View style={styles.card}>
-                        <View style={styles.cardHeader}>
-                            <Ionicons name="home" size={20} color={theme.colors.text} />
-                            <Text style={styles.cardTitle}>Crear Nueva Iglesia</Text>
+                        {/* Name & role */}
+                        <Text style={s.username}>@{userStats.username}</Text>
+                        {userStats.full_name && <Text style={s.fullName}>{userStats.full_name}</Text>}
+
+                        <View style={s.roleChip}>
+                            <Ionicons name="shield-checkmark" size={12} color={GOLD} style={{ marginRight: 4 }} />
+                            <Text style={s.roleText}>{userStats.role || 'GUERRERO BÍBLICO'}</Text>
                         </View>
-                        <Text style={styles.cardDesc}>Aún no formas parte de una iglesia. Crea una para competir en conjunto.</Text>
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Nombre de la Iglesia"
-                            placeholderTextColor={theme.colors.textSecondary}
-                            value={churchName}
-                            onChangeText={setChurchName}
-                        />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Ciudad"
-                            placeholderTextColor={theme.colors.textSecondary}
-                            value={churchCity}
-                            onChangeText={setChurchCity}
-                        />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Dirección (Opcional)"
-                            placeholderTextColor={theme.colors.textSecondary}
-                            value={churchAddress}
-                            onChangeText={setChurchAddress}
-                        />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Teléfono (Opcional)"
-                            placeholderTextColor={theme.colors.textSecondary}
-                            value={churchPhone}
-                            onChangeText={setChurchPhone}
-                            keyboardType="phone-pad"
-                        />
+                        {/* Stat pills */}
+                        <View style={s.statsRow}>
+                            <LinearGradient colors={['rgba(212,175,55,0.15)', 'rgba(212,175,55,0.04)']} style={s.statPill}>
+                                <Ionicons name="flash" size={14} color={GOLD} />
+                                <Text style={s.statNum}>{(userStats.total_xp || 0).toLocaleString()}</Text>
+                                <Text style={s.statLabel}>XP</Text>
+                            </LinearGradient>
+                            <LinearGradient colors={['rgba(255,215,0,0.15)', 'rgba(255,215,0,0.04)']} style={s.statPill}>
+                                <Ionicons name="trophy" size={14} color="#FFD700" />
+                                <Text style={[s.statNum, { color: '#FFD700' }]}>{userStats.total_trophies || 0}</Text>
+                                <Text style={s.statLabel}>TROFEOS</Text>
+                            </LinearGradient>
+                            <LinearGradient colors={['rgba(94,22,181,0.2)', 'rgba(94,22,181,0.05)']} style={s.statPill}>
+                                <Ionicons name="medal" size={14} color="#9B59B6" />
+                                <Text style={[s.statNum, { color: '#9B59B6' }]}>{level}</Text>
+                                <Text style={s.statLabel}>NIVEL</Text>
+                            </LinearGradient>
+                        </View>
 
-                        <TouchableOpacity style={styles.submitBtn} onPress={handleCreateChurch} disabled={actionLoading}>
-                            {actionLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.submitBtnText}>FUNDAR IGLESIA</Text>}
+                        {/* XP Bar */}
+                        <View style={s.xpBarContainer}>
+                            <View style={s.xpBarRow}>
+                                <Text style={s.xpBarLabel}>Progreso al nivel {level + 1}</Text>
+                                <Text style={s.xpBarPct}>{Math.round(progress)}%</Text>
+                            </View>
+                            <View style={s.xpBarBg}>
+                                <View style={[s.xpBarFill, { width: `${progress}%` }]} />
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* ── Church Section ──────────────────── */}
+                <View style={s.sectionHeader}>
+                    <View style={s.sectionLine} />
+                    <Text style={s.sectionTitle}>🏛 MI IGLESIA</Text>
+                    <View style={s.sectionLine} />
+                </View>
+
+                {!church ? (
+                    /* Create church form */
+                    <View style={s.card}>
+                        <View style={s.cardTitleRow}>
+                            <View style={s.cardIconBg}>
+                                <Ionicons name="add-circle" size={22} color={GOLD} />
+                            </View>
+                            <Text style={s.cardTitle}>Fundar Iglesia</Text>
+                        </View>
+                        <Text style={s.cardDesc}>
+                            Aún no formas parte de una iglesia. Crea la tuya para competir en el ranking junto a tu equipo.
+                        </Text>
+
+                        <LabelInput label="NOMBRE DE LA IGLESIA *" icon="home-outline" value={churchName} onChangeText={setChurchName} placeholder="Ej: Iglesia Berea Central" />
+                        <LabelInput label="CIUDAD" icon="location-outline" value={churchCity} onChangeText={setChurchCity} placeholder="Ej: Bogotá" />
+                        <LabelInput label="DIRECCIÓN (OPCIONAL)" icon="map-outline" value={churchAddress} onChangeText={setChurchAddress} placeholder="Calle 123 #45-67" />
+                        <LabelInput label="TELÉFONO (OPCIONAL)" icon="call-outline" value={churchPhone} onChangeText={setChurchPhone} placeholder="+57 300..." keyboard="phone-pad" />
+
+                        <TouchableOpacity style={s.primaryBtn} onPress={handleCreateChurch} disabled={actionLoading} activeOpacity={0.8}>
+                            <LinearGradient colors={[GOLD, '#B8860B']} style={s.primaryBtnInner}>
+                                {actionLoading
+                                    ? <ActivityIndicator color="#000" />
+                                    : <>
+                                        <Ionicons name="flag" size={18} color="#000" style={{ marginRight: 8 }} />
+                                        <Text style={s.primaryBtnText}>FUNDAR IGLESIA</Text>
+                                    </>
+                                }
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
                 ) : (
-                    // Manage Church Area
-                    <View style={styles.card}>
-                        <View style={styles.cardHeader}>
-                            <Ionicons name="home" size={20} color={theme.colors.primary} />
-                            <Text style={[styles.cardTitle, { color: theme.colors.primary }]}>{church.name}</Text>
-                        </View>
-                        <Text style={styles.cardDesc}>Esta es tu iglesia actual. Si eres líder, puedes agregar a tus amigos buscando sus usuarios (Gamer Tags).</Text>
+                    /* Manage church */
+                    <View style={s.card}>
+                        <LinearGradient colors={['rgba(212,175,55,0.1)', 'transparent']} style={s.churchBanner}>
+                            <View style={s.churchIconBg}>
+                                <Ionicons name="home" size={28} color={GOLD} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={s.churchName}>{church.name}</Text>
+                                {church.city && <Text style={s.churchMeta}>{church.city}</Text>}
+                            </View>
+                            <View style={s.verifiedBadge}>
+                                <Ionicons name="checkmark-circle" size={16} color="#2ecc71" />
+                                <Text style={s.verifiedTxt}>ACTIVA</Text>
+                            </View>
+                        </LinearGradient>
 
-                        <View style={styles.separator} />
+                        <Text style={s.cardDesc}>
+                            Como líder, puedes añadir miembros buscando su nombre de usuario (GameTag). Ellos quedarán enlazados a tu iglesia y competirán en el ranking local.
+                        </Text>
 
-                        <Text style={styles.miniLabel}>Invitar Usuario al Equipo</Text>
-                        <View style={styles.inlineForm}>
-                            <TextInput
-                                style={[styles.input, { flex: 1, marginBottom: 0 }]}
-                                placeholder="@username"
-                                placeholderTextColor={theme.colors.textSecondary}
-                                value={inviteUsername}
-                                onChangeText={setInviteUsername}
-                                autoCapitalize="none"
-                            />
-                            <TouchableOpacity style={styles.inviteBtn} onPress={handleInviteUser} disabled={actionLoading}>
-                                {actionLoading ? <ActivityIndicator color="#000" /> : <Ionicons name="person-add" size={20} color="#000" />}
+                        <View style={s.divider} />
+
+                        <Text style={s.miniLabel}>INVITAR MIEMBRO</Text>
+                        <View style={s.inviteRow}>
+                            <View style={s.inviteInputWrap}>
+                                <Ionicons name="at" size={16} color="#555" style={{ marginRight: 8 }} />
+                                <TextInput
+                                    style={s.inviteInput}
+                                    value={inviteUsername}
+                                    onChangeText={setInviteUsername}
+                                    placeholder="username del jugador"
+                                    placeholderTextColor="#444"
+                                    autoCapitalize="none"
+                                />
+                            </View>
+                            <TouchableOpacity style={s.inviteBtn} onPress={handleInviteUser} disabled={actionLoading} activeOpacity={0.85}>
+                                <LinearGradient colors={[GOLD, '#B8860B']} style={s.inviteBtnInner}>
+                                    {actionLoading
+                                        ? <ActivityIndicator color="#000" size="small" />
+                                        : <Ionicons name="person-add" size={18} color="#000" />
+                                    }
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     </View>
                 )}
-            </View>
-        </ScrollView>
+
+                {/* ── Danger Zone ─────────────────────── */}
+                <View style={s.sectionHeader}>
+                    <View style={s.sectionLine} />
+                    <Text style={s.sectionTitle}>⚙ CUENTA</Text>
+                    <View style={s.sectionLine} />
+                </View>
+
+                <TouchableOpacity
+                    style={s.dangerBtn}
+                    onPress={() => Alert.alert(
+                        'Cerrar Sesión',
+                        '¿Estás seguro que deseas salir?',
+                        [
+                            { text: 'Cancelar', style: 'cancel' },
+                            { text: 'Salir', style: 'destructive', onPress: async () => { await supabase.auth.signOut(); navigation.replace('Auth'); } }
+                        ]
+                    )}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons name="log-out-outline" size={18} color="#e74c3c" />
+                    <Text style={s.dangerText}>Cerrar Sesión</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </View>
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
+const s = StyleSheet.create({
+    container: { flex: 1, backgroundColor: BG },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 24,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 16, paddingBottom: 20,
     },
     iconBtn: {
-        padding: 8,
+        width: 40, height: 40, borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 20,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: BORDER,
     },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: theme.colors.text,
+    headerTitle: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 2 },
+
+    // Identity card
+    identityCard: {
+        alignItems: 'center', marginHorizontal: 16, marginBottom: 32,
+        backgroundColor: SURFACE, borderRadius: 28, padding: 24,
+        borderWidth: 1, borderColor: 'rgba(212,175,55,0.15)',
     },
-    profileHeader: {
-        alignItems: 'center',
-        marginBottom: 40,
+    avatarBorder: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+    avatarInner: { width: 82, height: 82, borderRadius: 41, backgroundColor: '#0a0a18', overflow: 'hidden' },
+    avatar: { width: '100%', height: '100%' },
+    username: { color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 },
+    fullName: { color: '#666', fontSize: 14, marginBottom: 10 },
+    roleChip: {
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: 'rgba(212,175,55,0.1)', paddingHorizontal: 10, paddingVertical: 5,
+        borderRadius: 12, borderWidth: 1, borderColor: 'rgba(212,175,55,0.2)', marginBottom: 20,
     },
-    avatarGlow: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: theme.colors.surface,
-        borderWidth: 2,
-        borderColor: theme.colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 16,
-        shadowColor: theme.colors.primary,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.5,
-        shadowRadius: 15,
+    roleText: { color: GOLD, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+    statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20, width: '100%' },
+    statPill: {
+        flex: 1, alignItems: 'center', paddingVertical: 12,
+        borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', gap: 2,
     },
-    username: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-        marginBottom: 8,
+    statNum: { color: GOLD, fontSize: 18, fontWeight: '900' },
+    statLabel: { color: '#555', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+    xpBarContainer: { width: '100%' },
+    xpBarRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+    xpBarLabel: { color: '#555', fontSize: 11, fontWeight: '700' },
+    xpBarPct: { color: GOLD, fontSize: 11, fontWeight: '900' },
+    xpBarBg: { height: 6, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' },
+    xpBarFill: { height: '100%', backgroundColor: GOLD, borderRadius: 3 },
+
+    // Section headers
+    sectionHeader: {
+        flexDirection: 'row', alignItems: 'center',
+        marginHorizontal: 16, marginBottom: 16, gap: 12,
     },
-    xpBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(206, 172, 92, 0.1)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-    },
-    xpText: {
-        color: theme.colors.primary,
-        fontWeight: 'bold',
-        fontSize: 14,
-        marginLeft: 6,
-    },
-    sectionContainer: {
-        paddingHorizontal: 20,
-    },
+    sectionLine: { flex: 1, height: 1, backgroundColor: BORDER },
+    sectionTitle: { color: '#555', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+
+    // Card
     card: {
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 20,
-        padding: 24,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: SURFACE, marginHorizontal: 16,
+        borderRadius: 24, padding: 22, borderWidth: 1, borderColor: BORDER,
+        marginBottom: 28,
     },
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
+    cardTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    cardIconBg: {
+        width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(212,175,55,0.1)',
+        alignItems: 'center', justifyContent: 'center', marginRight: 12,
     },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-        marginLeft: 8,
+    cardTitle: { color: '#fff', fontSize: 18, fontWeight: '900' },
+    cardDesc: { color: '#666', fontSize: 14, lineHeight: 22, marginBottom: 20 },
+
+    // Primary btn
+    primaryBtn: { borderRadius: 16, overflow: 'hidden', marginTop: 4 },
+    primaryBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
+    primaryBtnText: { color: '#000', fontSize: 15, fontWeight: '900', letterSpacing: 1 },
+
+    // Church banner
+    churchBanner: {
+        flexDirection: 'row', alignItems: 'center', borderRadius: 16,
+        padding: 16, marginBottom: 16, gap: 12, borderWidth: 1, borderColor: 'rgba(212,175,55,0.15)',
     },
-    cardDesc: {
-        fontSize: 14,
-        color: theme.colors.textSecondary,
-        marginBottom: 20,
-        lineHeight: 20,
+    churchIconBg: {
+        width: 50, height: 50, borderRadius: 14,
+        backgroundColor: 'rgba(212,175,55,0.1)', alignItems: 'center', justifyContent: 'center',
     },
-    input: {
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        borderRadius: 12,
-        padding: 16,
-        color: theme.colors.text,
-        fontSize: 16,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        marginBottom: 12,
+    churchName: { color: '#fff', fontSize: 16, fontWeight: '900' },
+    churchMeta: { color: '#888', fontSize: 12, marginTop: 2 },
+    verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    verifiedTxt: { color: '#2ecc71', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+    divider: { height: 1, backgroundColor: BORDER, marginVertical: 16 },
+    miniLabel: { color: '#555', fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 12 },
+    inviteRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    inviteInputWrap: {
+        flex: 1, flexDirection: 'row', alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14,
+        borderWidth: 1, borderColor: BORDER, paddingHorizontal: 14, paddingVertical: 14,
     },
-    submitBtn: {
-        backgroundColor: theme.colors.primary,
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginTop: 8,
+    inviteInput: { flex: 1, color: '#fff', fontSize: 15 },
+    inviteBtn: { borderRadius: 14, overflow: 'hidden' },
+    inviteBtnInner: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
+
+    // Danger
+    dangerBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        marginHorizontal: 16, paddingVertical: 16, borderRadius: 16,
+        backgroundColor: 'rgba(231,76,60,0.07)', borderWidth: 1, borderColor: 'rgba(231,76,60,0.2)',
+        gap: 10,
     },
-    submitBtnText: {
-        color: '#000',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    separator: {
-        height: 1,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        marginVertical: 20,
-    },
-    miniLabel: {
-        color: theme.colors.text,
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginBottom: 12,
-    },
-    inlineForm: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    inviteBtn: {
-        backgroundColor: theme.colors.primary,
-        width: 54,
-        height: 54,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-    }
+    dangerText: { color: '#e74c3c', fontSize: 15, fontWeight: '800' },
 });

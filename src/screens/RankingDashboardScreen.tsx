@@ -1,440 +1,544 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+    View, Text, StyleSheet, ScrollView, TouchableOpacity,
+    ActivityIndicator, Animated, Image
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-import { theme } from '../theme';
 
+// ─── Design tokens ────────────────────────────────────────
+const GOLD = '#D4AF37';
+const SILVER = '#C0C0C0';
+const BRONZE = '#CD7F32';
+const BG = '#06060E';
+const SURFACE = '#0E0E1C';
+const BORDER = 'rgba(255,255,255,0.07)';
+
+// ─── Helper: Level from XP ────────────────────────────────
+const getLevel = (xp: number) => Math.floor(Math.sqrt(xp / 50)) + 1;
+const getLevelProgress = (xp: number) => {
+    const level = getLevel(xp);
+    const xpForLevel = (level - 1) ** 2 * 50;
+    const xpForNext = level ** 2 * 50;
+    return ((xp - xpForLevel) / (xpForNext - xpForLevel)) * 100;
+};
+
+// ─── Medal component ──────────────────────────────────────
+const Medal = ({ rank }: { rank: number }) => {
+    const colors: Record<number, string[]> = {
+        1: ['#FFD700', '#D4AF37', '#B8860B'],
+        2: ['#E8E8E8', '#C0C0C0', '#A8A8A8'],
+        3: ['#E8A060', '#CD7F32', '#A0602A'],
+    };
+    const labels: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+    if (rank <= 3) {
+        return (
+            <View style={medals.wrapper}>
+                <Text style={{ fontSize: 22 }}>{labels[rank]}</Text>
+            </View>
+        );
+    }
+    return (
+        <View style={[medals.wrapper, medals.plain]}>
+            <Text style={medals.num}>#{rank}</Text>
+        </View>
+    );
+};
+
+const medals = StyleSheet.create({
+    wrapper: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    plain: { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: BORDER },
+    num: { color: '#888', fontWeight: '800', fontSize: 14 },
+});
+
+// ─── Profile Hero Card ─────────────────────────────────────
+const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
+    const level = getLevel(userStats?.total_xp || 0);
+    const progress = getLevelProgress(userStats?.total_xp || 0);
+    const progressAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.timing(progressAnim, {
+            toValue: progress,
+            duration: 1000,
+            delay: 300,
+            useNativeDriver: false,
+        }).start();
+    }, [progress]);
+
+    const avatarSeed = userStats?.username || 'default';
+    const avatarUri = `https://api.dicebear.com/7.x/bottts/png?seed=${avatarSeed}&backgroundColor=transparent`;
+
+    return (
+        <LinearGradient
+            colors={['#0E0E24', '#0A0A18', '#06060E']}
+            style={card.container}
+        >
+            {/* Decorative glow */}
+            <View style={card.glow} />
+
+            {/* Avatar + Identity */}
+            <View style={card.topRow}>
+                <View style={card.avatarShell}>
+                    <LinearGradient colors={[GOLD, '#B8860B']} style={card.avatarGradientBorder}>
+                        <View style={card.avatarInner}>
+                            <Image
+                                source={{ uri: avatarUri }}
+                                style={card.avatar}
+                                defaultSource={require('../../assets/icon.png')}
+                            />
+                        </View>
+                    </LinearGradient>
+                    <View style={card.levelChip}>
+                        <Text style={card.levelChipText}>Lv {level}</Text>
+                    </View>
+                </View>
+
+                <View style={card.identity}>
+                    <Text style={card.username}>@{userStats?.username || 'Jugador'}</Text>
+                    {church && (
+                        <View style={card.churchRow}>
+                            <Ionicons name="home" size={12} color={GOLD} />
+                            <Text style={card.churchName} numberOfLines={1}>{church.name}</Text>
+                        </View>
+                    )}
+                    <View style={card.roleChip}>
+                        <Text style={card.roleText}>{userStats?.role || 'GUERRERO'}</Text>
+                    </View>
+                </View>
+
+                <TouchableOpacity onPress={onNavigate} style={card.settingsBtn}>
+                    <Ionicons name="settings-outline" size={20} color={GOLD} />
+                </TouchableOpacity>
+            </View>
+
+            {/* XP Progress Bar */}
+            <View style={card.xpSection}>
+                <View style={card.xpRow}>
+                    <Text style={card.xpLabel}>NIVEL {level} → {level + 1}</Text>
+                    <Text style={card.xpVal}>{Math.round(progress)}%</Text>
+                </View>
+                <View style={card.progressBg}>
+                    <Animated.View
+                        style={[
+                            card.progressFill,
+                            { width: progressAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) }
+                        ]}
+                    />
+                </View>
+            </View>
+
+            {/* Stats row */}
+            <View style={card.statsRow}>
+                <View style={card.statBox}>
+                    <LinearGradient colors={['rgba(212,175,55,0.15)', 'rgba(212,175,55,0.03)']} style={card.statGrad}>
+                        <Ionicons name="flash" size={18} color={GOLD} />
+                        <Text style={card.statNum}>{(userStats?.total_xp || 0).toLocaleString()}</Text>
+                        <Text style={card.statLabel}>XP TOTAL</Text>
+                    </LinearGradient>
+                </View>
+                <View style={card.statBox}>
+                    <LinearGradient colors={['rgba(255,215,0,0.15)', 'rgba(255,215,0,0.03)']} style={card.statGrad}>
+                        <Ionicons name="trophy" size={18} color="#FFD700" />
+                        <Text style={[card.statNum, { color: '#FFD700' }]}>{userStats?.total_trophies || 0}</Text>
+                        <Text style={card.statLabel}>TROFEOS</Text>
+                    </LinearGradient>
+                </View>
+                <View style={card.statBox}>
+                    <LinearGradient colors={['rgba(94,22,181,0.2)', 'rgba(94,22,181,0.04)']} style={card.statGrad}>
+                        <Ionicons name="medal" size={18} color="#9B59B6" />
+                        <Text style={[card.statNum, { color: '#9B59B6' }]}>{userStats?.level || level}</Text>
+                        <Text style={card.statLabel}>NIVEL</Text>
+                    </LinearGradient>
+                </View>
+            </View>
+        </LinearGradient>
+    );
+};
+
+const card = StyleSheet.create({
+    container: {
+        marginHorizontal: 16,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(212,175,55,0.2)',
+        overflow: 'hidden',
+        marginBottom: 28,
+        padding: 20,
+    },
+    glow: {
+        position: 'absolute', top: -40, right: -40,
+        width: 150, height: 150, borderRadius: 75,
+        backgroundColor: 'rgba(212,175,55,0.06)',
+    },
+    topRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
+    avatarShell: { position: 'relative', marginRight: 14 },
+    avatarGradientBorder: {
+        width: 72, height: 72, borderRadius: 36,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    avatarInner: {
+        width: 66, height: 66, borderRadius: 33,
+        backgroundColor: '#0A0A18', overflow: 'hidden',
+    },
+    avatar: { width: '100%', height: '100%' },
+    levelChip: {
+        position: 'absolute', bottom: -4, right: -4,
+        backgroundColor: '#1a1a2e', borderRadius: 20,
+        borderWidth: 1.5, borderColor: GOLD,
+        paddingHorizontal: 6, paddingVertical: 2,
+    },
+    levelChipText: { color: GOLD, fontSize: 10, fontWeight: '900' },
+    identity: { flex: 1 },
+    username: { color: '#fff', fontSize: 20, fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 },
+    churchRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
+    churchName: { color: GOLD, fontSize: 12, fontWeight: '600', maxWidth: 150 },
+    roleChip: {
+        backgroundColor: 'rgba(255,255,255,0.07)', alignSelf: 'flex-start',
+        paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    },
+    roleText: { color: '#aaa', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+    settingsBtn: {
+        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: 'rgba(212,175,55,0.1)',
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: 'rgba(212,175,55,0.2)',
+    },
+    xpSection: { marginBottom: 18 },
+    xpRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    xpLabel: { color: '#666', fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+    xpVal: { color: GOLD, fontSize: 11, fontWeight: '900' },
+    progressBg: { height: 6, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 3, overflow: 'hidden' },
+    progressFill: {
+        height: '100%', borderRadius: 3,
+        backgroundColor: GOLD,
+    },
+    statsRow: { flexDirection: 'row', gap: 10 },
+    statBox: { flex: 1 },
+    statGrad: {
+        borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8,
+        alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    },
+    statNum: { color: GOLD, fontSize: 18, fontWeight: '900', marginTop: 4 },
+    statLabel: { color: '#555', fontSize: 9, fontWeight: '700', letterSpacing: 1, marginTop: 2 },
+});
+
+// ─── Rank Item ─────────────────────────────────────────────
+const RankRow = ({ item, index, isMe, isGlobal }: any) => {
+    const scaleAnim = useRef(new Animated.Value(0.96)).current;
+    useEffect(() => {
+        Animated.spring(scaleAnim, {
+            toValue: 1, delay: index * 60, friction: 8, tension: 100, useNativeDriver: true
+        }).start();
+    }, []);
+
+    const isTop3 = index < 3;
+    const rankColors = [
+        ['rgba(212,175,55,0.12)', 'rgba(212,175,55,0.03)', GOLD],
+        ['rgba(192,192,192,0.1)', 'rgba(192,192,192,0.02)', SILVER],
+        ['rgba(205,127,50,0.1)', 'rgba(205,127,50,0.02)', BRONZE],
+    ];
+    const [c1, c2, border] = isTop3 ? rankColors[index] : ['rgba(255,255,255,0.02)', 'rgba(255,255,255,0.01)', 'rgba(255,255,255,0.06)'];
+
+    const label = isGlobal ? item.church_name : item.username;
+    const sub = isGlobal && item.city ? item.city : (isGlobal ? '' : '');
+    const score = isGlobal ? (item.total_church_trophies || 0) : (item.total_trophies || 0);
+    const xp = !isGlobal ? (item.total_xp || 0) : null;
+    const level = !isGlobal ? getLevel(item.total_xp || 0) : null;
+
+    const avatarSeed = isGlobal ? item.church_name : item.username;
+    const avatarUri = `https://api.dicebear.com/7.x/bottts/png?seed=${avatarSeed}`;
+
+    return (
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <LinearGradient
+                colors={[c1 as string, c2 as string]}
+                style={[row.container, isMe && row.meHighlight, { borderColor: border as string }]}
+            >
+                <Medal rank={index + 1} />
+
+                {/* Avatar */}
+                <View style={row.avatarWrap}>
+                    <Image source={{ uri: avatarUri }} style={row.avatar} />
+                    {isMe && <View style={row.meDot} />}
+                </View>
+
+                {/* Name + meta */}
+                <View style={row.info}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={[row.name, isMe && { color: GOLD }]} numberOfLines={1}>{label}</Text>
+                        {isMe && <Text style={row.meTag}>TÚ</Text>}
+                    </View>
+                    {sub ? <Text style={row.sub}>{sub}</Text> : null}
+                    {level && <Text style={row.sub}>Nivel {level} · {xp?.toLocaleString()} XP</Text>}
+                </View>
+
+                {/* Score */}
+                <View style={row.scoreBox}>
+                    <Text style={row.scoreVal}>{score}</Text>
+                    <Ionicons name="trophy" size={14} color="#FFD700" />
+                </View>
+            </LinearGradient>
+        </Animated.View>
+    );
+};
+
+const row = StyleSheet.create({
+    container: {
+        flexDirection: 'row', alignItems: 'center', borderRadius: 18,
+        marginBottom: 10, paddingVertical: 12, paddingHorizontal: 14,
+        borderWidth: 1, gap: 10,
+    },
+    meHighlight: { borderColor: GOLD },
+    avatarWrap: { position: 'relative' },
+    avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1a1a2e' },
+    meDot: {
+        position: 'absolute', bottom: 0, right: 0,
+        width: 12, height: 12, borderRadius: 6,
+        backgroundColor: GOLD, borderWidth: 1.5, borderColor: BG,
+    },
+    info: { flex: 1 },
+    name: { color: '#fff', fontSize: 15, fontWeight: '800' },
+    sub: { color: '#666', fontSize: 11, marginTop: 2 },
+    meTag: {
+        backgroundColor: GOLD, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1,
+        color: '#000', fontSize: 9, fontWeight: '900', letterSpacing: 1,
+    },
+    scoreBox: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 10,
+        paddingVertical: 6, borderRadius: 12,
+    },
+    scoreVal: { color: '#FFD700', fontWeight: '900', fontSize: 16 },
+});
+
+// ─── Main Screen ──────────────────────────────────────────
 export const RankingDashboardScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState<'LOCAL' | 'GLOBAL'>('LOCAL');
     const [localRanking, setLocalRanking] = useState([]);
     const [globalRanking, setGlobalRanking] = useState([]);
     const [userStats, setUserStats] = useState<any>(null);
+    const [church, setChurch] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const slideAnim = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useEffect(() => { loadData(); }, []);
+
+    const switchTab = (tab: 'LOCAL' | 'GLOBAL') => {
+        Animated.timing(slideAnim, { toValue: tab === 'LOCAL' ? 0 : 1, duration: 200, useNativeDriver: true }).start();
+        setActiveTab(tab);
+    };
 
     const loadData = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                navigation.replace('Auth');
-                return;
-            }
+            if (!user) { navigation.replace('Auth'); return; }
 
-            // Fetch current user stats first to know their church
-            let userData = null;
-            const { data: fetchedUser, error: userError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', user.id)
-                .single();
+            const { data: fetchedUser } = await supabase.from('users').select('*').eq('id', user.id).single();
+            if (fetchedUser) {
+                setUserStats(fetchedUser);
+                if (fetchedUser.church_id) {
+                    const { data: churchData } = await supabase.from('churches').select('*').eq('id', fetchedUser.church_id).single();
+                    if (churchData) setChurch(churchData);
 
-            if (!userError && fetchedUser) {
-                userData = fetchedUser;
-                setUserStats(fetchedUser as any);
-            }
-
-            // Fetch LOCAL ranking (players within the same church)
-            if (userData?.church_id) {
-                const { data: localData, error: localError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('church_id', userData.church_id)
-                    .order('total_trophies', { ascending: false });
-
-                if (!localError && localData) {
-                    setLocalRanking(localData as never[]);
+                    const { data: localData } = await supabase.from('users')
+                        .select('*').eq('church_id', fetchedUser.church_id)
+                        .order('total_trophies', { ascending: false });
+                    if (localData) setLocalRanking(localData as never[]);
                 }
             }
 
-            // Fetch GLOBAL ranking (Churches against Churches)
-            const { data: globalData, error: globalError } = await supabase
-                .from('church_global_ranking')
-                .select('*')
-                .order('total_church_trophies', { ascending: false });
+            const { data: globalData } = await supabase.from('church_global_ranking')
+                .select('*').order('total_church_trophies', { ascending: false });
+            if (globalData) setGlobalRanking(globalData as never[]);
 
-            if (!globalError && globalData) {
-                setGlobalRanking(globalData as never[]);
-            }
-
-        } catch (error) {
-            console.error('Error loading dashboard:', error);
+        } catch (e) {
+            console.error('Error loading dashboard:', e);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        navigation.replace('Home');
-    };
-
     if (loading) {
         return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
+            <View style={[s.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={GOLD} />
             </View>
         );
     }
 
+    const activeList = activeTab === 'LOCAL' ? localRanking : globalRanking;
+
     return (
-        <View style={{ flex: 1 }}>
-            <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + 100, paddingTop: insets.top + 20 }}>
+        <View style={s.container}>
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 30 }}
+                showsVerticalScrollIndicator={false}
+            >
                 {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-                        <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+                <LinearGradient colors={[BG, 'transparent']} style={[s.header, { paddingTop: insets.top + 10 }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
+                        <Ionicons name="arrow-back" size={22} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Impact Dashboard</Text>
-                    <TouchableOpacity onPress={handleLogout} style={styles.iconBtn}>
-                        <Ionicons name="log-out-outline" size={24} color={theme.colors.error} />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Profile Section */}
-                <View style={styles.profileContainer}>
-                    <View style={styles.profileCard}>
-                        <View style={styles.avatarGlow}>
-                            <Ionicons name="person" size={32} color={theme.colors.textSecondary} />
-                        </View>
-                        <View style={styles.profileInfo}>
-                            <Text style={styles.username}>{userStats?.username || 'Gamer Nuevo'}</Text>
-                            <View style={styles.xpBadge}>
-                                <Ionicons name="star" size={14} color={theme.colors.primary} />
-                                <Text style={styles.xpText}>{userStats?.total_xp || 0} XP Total</Text>
-                            </View>
-                        </View>
+                    <View style={s.headerCenter}>
+                        <Text style={s.headerTitle}>RANKING</Text>
+                        <Text style={s.headerSub}>ADN Impact System</Text>
                     </View>
-
-                    <TouchableOpacity
-                        style={styles.explicitProfileBtn}
-                        onPress={() => navigation.navigate('Profile')}
-                        activeOpacity={0.8}
-                    >
-                        <Ionicons name="settings-outline" size={20} color="#000" />
-                        <Text style={styles.explicitProfileBtnText}>AJUSTES DE IGLESIA Y PERFIL</Text>
+                    <TouchableOpacity onPress={async () => { await supabase.auth.signOut(); navigation.replace('Home'); }} style={s.iconBtn}>
+                        <Ionicons name="log-out-outline" size={22} color="#e74c3c" />
                     </TouchableOpacity>
+                </LinearGradient>
+
+                {/* Profile Hero */}
+                {userStats && (
+                    <ProfileHeroCard
+                        userStats={userStats}
+                        church={church}
+                        onNavigate={() => navigation.navigate('Profile')}
+                    />
+                )}
+
+                {/* Tab Switcher */}
+                <View style={s.tabBar}>
+                    {(['LOCAL', 'GLOBAL'] as const).map(tab => (
+                        <TouchableOpacity
+                            key={tab}
+                            style={[s.tab, activeTab === tab && s.tabActive]}
+                            onPress={() => switchTab(tab)}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons
+                                name={tab === 'LOCAL' ? 'people' : 'earth'}
+                                size={16}
+                                color={activeTab === tab ? GOLD : '#555'}
+                                style={{ marginRight: 6 }}
+                            />
+                            <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
+                                {tab === 'LOCAL' ? 'MI IGLESIA' : 'GLOBAL'}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
 
-                {/* Tabs */}
-                <View style={styles.tabsContainer}>
-                    <TouchableOpacity
-                        style={[styles.tabBtn, activeTab === 'LOCAL' && styles.tabBtnActive]}
-                        onPress={() => setActiveTab('LOCAL')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'LOCAL' && styles.tabTextActive]}>MI IGLESIA</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tabBtn, activeTab === 'GLOBAL' && styles.tabBtnActive]}
-                        onPress={() => setActiveTab('GLOBAL')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'GLOBAL' && styles.tabTextActive]}>GLOBAL (IGLESIAS)</Text>
-                    </TouchableOpacity>
+                {/* Section label */}
+                <View style={s.sectionHeader}>
+                    <View style={s.sectionLine} />
+                    <Text style={s.sectionTitle}>
+                        {activeTab === 'LOCAL' ? '🏠 Clasificación Local' : '🌍 Ranking Mundial'}
+                    </Text>
+                    <View style={s.sectionLine} />
                 </View>
 
-                {/* Ranking List */}
-                <View style={styles.rankingList}>
-                    {activeTab === 'LOCAL' && !userStats?.church_id && (
-                        <Text style={{ color: theme.colors.primary, textAlign: 'center', marginTop: 20, marginBottom: 20 }}>
-                            Aún no formas parte de una iglesia. ¡Ve a tu Perfil y crea una o pide que te inviten para competir!
-                        </Text>
-                    )}
+                {/* No church warning */}
+                {activeTab === 'LOCAL' && !userStats?.church_id && (
+                    <View style={s.emptyBox}>
+                        <Ionicons name="home-outline" size={40} color={GOLD} style={{ marginBottom: 12 }} />
+                        <Text style={s.emptyTitle}>Sin Iglesia Registrada</Text>
+                        <Text style={s.emptySub}>Ve a tu perfil, crea una iglesia o pide que te inviten para aparecer en el ranking local.</Text>
+                        <TouchableOpacity style={s.emptyBtn} onPress={() => navigation.navigate('Profile')}>
+                            <Text style={s.emptyBtnText}>Ir a Perfil →</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
-                    {activeTab === 'LOCAL' ? (
-                        localRanking.map((item: any, index: number) => {
-                            const isTop1 = index === 0;
-                            const isTop2 = index === 1;
-                            const isTop3 = index === 2;
-                            let rankColor = theme.colors.border;
-                            if (isTop1) rankColor = '#FFB800';
-                            if (isTop2) rankColor = '#C0C0C0';
-                            if (isTop3) rankColor = '#CD7F32';
-
-                            return (
-                                <View key={item.id} style={[styles.rankItem, userStats?.id === item.id && styles.rankItemActive]}>
-                                    <View style={[styles.rankBadge, { borderColor: rankColor }]}>
-                                        <Text style={[styles.rankNum, { color: rankColor }]}>#{index + 1}</Text>
-                                    </View>
-                                    <Text style={styles.rankName}>{item.username}</Text>
-                                    <View style={styles.trophyScore}>
-                                        <Text style={styles.trophiesVal}>{item.total_trophies || 0}</Text>
-                                        <Ionicons name="trophy" size={16} color="#FFB800" />
-                                    </View>
-                                </View>
-                            );
-                        })
+                {/* Ranking list */}
+                <View style={{ paddingHorizontal: 16 }}>
+                    {activeList.length > 0 ? (
+                        activeList.map((item: any, index: number) => (
+                            <RankRow
+                                key={activeTab === 'LOCAL' ? item.id : item.church_id}
+                                item={item}
+                                index={index}
+                                isMe={activeTab === 'LOCAL' ? item.id === userStats?.id : item.church_id === userStats?.church_id}
+                                isGlobal={activeTab === 'GLOBAL'}
+                            />
+                        ))
                     ) : (
-                        globalRanking.map((item: any, index: number) => {
-                            const isTop1 = index === 0;
-                            const isTop2 = index === 1;
-                            const isTop3 = index === 2;
-                            let rankColor = theme.colors.border;
-                            if (isTop1) rankColor = '#FFB800';
-                            if (isTop2) rankColor = '#C0C0C0';
-                            if (isTop3) rankColor = '#CD7F32';
-
-                            return (
-                                <View key={item.church_id} style={[styles.rankItem, userStats?.church_id === item.church_id && styles.rankItemActive]}>
-                                    <View style={[styles.rankBadge, { borderColor: rankColor }]}>
-                                        <Text style={[styles.rankNum, { color: rankColor }]}>#{index + 1}</Text>
-                                    </View>
-                                    <View style={{ flex: 1, marginLeft: 12 }}>
-                                        <Text style={styles.rankName}>{item.church_name}</Text>
-                                        {item.city && <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>{item.city}</Text>}
-                                    </View>
-                                    <View style={styles.trophyScore}>
-                                        <Text style={styles.trophiesVal}>{item.total_church_trophies || 0}</Text>
-                                        <Ionicons name="trophy" size={16} color="#FFB800" />
-                                    </View>
-                                </View>
-                            );
-                        })
-                    )}
-
-                    {activeTab === 'LOCAL' && userStats?.church_id && localRanking.length === 0 && (
-                        <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
-                            Aún no hay puntos en el ranking de tu iglesia. ¡Juega para ser el primero!
-                        </Text>
-                    )}
-
-                    {activeTab === 'GLOBAL' && globalRanking.length === 0 && (
-                        <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
-                            El ranking global está vacío. ¡Crea una iglesia primero!
-                        </Text>
+                        activeTab === 'LOCAL' && userStats?.church_id ? (
+                            <View style={s.emptyBox}>
+                                <Text style={s.emptyTitle}>Ranking vacío</Text>
+                                <Text style={s.emptySub}>¡Juega para ser el primero!</Text>
+                            </View>
+                        ) : activeTab === 'GLOBAL' ? (
+                            <View style={s.emptyBox}>
+                                <Text style={s.emptyTitle}>Sin iglesias registradas</Text>
+                                <Text style={s.emptySub}>Crea una iglesia para aparecer aquí.</Text>
+                            </View>
+                        ) : null
                     )}
                 </View>
 
-                {/* Gamification Guide Link */}
-                <TouchableOpacity
-                    style={styles.guideButton}
-                    onPress={() => navigation.navigate('SystemGuide')}
-                    activeOpacity={0.8}
-                >
-                    <View style={styles.guideIconBg}>
-                        <Ionicons name="information" size={24} color={theme.colors.primary} />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 16 }}>
-                        <Text style={styles.guideTitle}>¿Cómo ganar puntos y subir?</Text>
-                        <Text style={styles.guideSub}>Ver guía jerárquica de XP y Trofeos</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#555" />
+                {/* Guide link */}
+                <TouchableOpacity style={s.guideBtn} onPress={() => navigation.navigate('SystemGuide')} activeOpacity={0.8}>
+                    <LinearGradient colors={['rgba(212,175,55,0.12)', 'rgba(212,175,55,0.04)']} style={s.guideBtnInner}>
+                        <Ionicons name="information-circle" size={22} color={GOLD} />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                            <Text style={s.guideTitle}>¿Cómo ganar XP y Trofeos?</Text>
+                            <Text style={s.guideSub}>Guía completa del sistema de impacto</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#444" />
+                    </LinearGradient>
                 </TouchableOpacity>
             </ScrollView>
-
-            <TouchableOpacity
-                style={{
-                    position: 'absolute',
-                    bottom: 20,
-                    left: 20,
-                    right: 20,
-                    backgroundColor: theme.colors.primary,
-                    padding: 18,
-                    borderRadius: 15,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'row',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 5 },
-                    shadowOpacity: 0.5,
-                    shadowRadius: 10,
-                    elevation: 5,
-                }}
-                onPress={() => navigation.navigate('Profile')}
-                activeOpacity={0.9}
-            >
-                <Ionicons name="settings" size={24} color="#000" style={{ marginRight: 10 }} />
-                <Text style={{ color: '#000', fontSize: 16, fontWeight: 'bold' }}>ENTRAR A MI PERFIL E IGLESIA</Text>
-            </TouchableOpacity>
-        </View >
+        </View>
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
+const s = StyleSheet.create({
+    container: { flex: 1, backgroundColor: BG },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 24,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 16, paddingBottom: 16,
     },
+    headerCenter: { alignItems: 'center' },
+    headerTitle: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 2 },
+    headerSub: { color: '#444', fontSize: 10, fontWeight: '600', letterSpacing: 1 },
     iconBtn: {
-        padding: 8,
+        width: 40, height: 40, borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 20,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-    },
-    profileContainer: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        marginHorizontal: 20,
-        borderRadius: 20,
-        marginBottom: 32,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        overflow: 'hidden',
-    },
-    profileCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 20,
-    },
-    explicitProfileBtn: {
-        backgroundColor: theme.colors.primary,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 14,
-    },
-    explicitProfileBtnText: {
-        color: '#000',
-        fontWeight: 'bold',
-        fontSize: 14,
-        letterSpacing: 1,
-        marginLeft: 8,
-    },
-    avatarGlow: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: theme.colors.surface,
-        borderWidth: 2,
-        borderColor: theme.colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    profileInfo: {
-        marginLeft: 16,
-    },
-    username: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-        marginBottom: 4,
-    },
-    xpBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(206, 172, 92, 0.1)', // Primary tint
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 10,
-        alignSelf: 'flex-start',
-    },
-    xpText: {
-        color: theme.colors.primary,
-        fontWeight: 'bold',
-        fontSize: 12,
-        marginLeft: 4,
-    },
-    tabsContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: 20,
-        marginBottom: 20,
-        gap: 10,
-    },
-    tabBtn: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        alignItems: 'center',
-    },
-    tabBtnActive: {
-        backgroundColor: 'rgba(206, 172, 92, 0.15)',
-        borderWidth: 1,
-        borderColor: theme.colors.primary,
-    },
-    tabText: {
-        color: theme.colors.textSecondary,
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    tabTextActive: {
-        color: theme.colors.primary,
-        fontWeight: 'bold',
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-        marginRight: 8,
-    },
-    rankingList: {
-        paddingHorizontal: 20,
-    },
-    rankItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
-    },
-    rankItemActive: {
-        backgroundColor: 'rgba(206, 172, 92, 0.1)',
-        borderColor: theme.colors.primary,
-    },
-    rankBadge: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        borderWidth: 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 16,
-    },
-    rankNum: {
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    rankName: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-    },
-    trophyScore: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-    },
-    trophiesVal: {
-        color: '#FFB800',
-        fontWeight: 'bold',
-        fontSize: 16,
-        marginRight: 4,
-    },
-    guideButton: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#0A0A0A',
-        marginHorizontal: 20, marginTop: 40, marginBottom: 20, padding: 18,
-        borderRadius: 20, borderWidth: 1, borderColor: '#1A1A1A',
-    },
-    guideIconBg: {
-        width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(206, 172, 92, 0.1)',
         alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: BORDER,
     },
-    guideTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
-    guideSub: { color: '#888', fontSize: 12, marginTop: 4, fontWeight: '500' },
+    tabBar: {
+        flexDirection: 'row', marginHorizontal: 16, marginBottom: 24,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderRadius: 16, padding: 4, borderWidth: 1, borderColor: BORDER,
+    },
+    tab: {
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        paddingVertical: 11, borderRadius: 12,
+    },
+    tabActive: { backgroundColor: 'rgba(212,175,55,0.1)', borderWidth: 1, borderColor: 'rgba(212,175,55,0.25)' },
+    tabText: { color: '#555', fontWeight: '700', fontSize: 13 },
+    tabTextActive: { color: GOLD, fontWeight: '900' },
+    sectionHeader: {
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: 16, marginBottom: 16, gap: 12,
+    },
+    sectionLine: { flex: 1, height: 1, backgroundColor: BORDER },
+    sectionTitle: { color: '#fff', fontSize: 14, fontWeight: '800' },
+    emptyBox: {
+        alignItems: 'center', marginHorizontal: 16, marginTop: 20,
+        padding: 30, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.03)',
+        borderWidth: 1, borderColor: BORDER,
+    },
+    emptyTitle: { color: '#fff', fontSize: 18, fontWeight: '800', marginBottom: 8 },
+    emptySub: { color: '#666', fontSize: 14, textAlign: 'center', lineHeight: 20 },
+    emptyBtn: {
+        marginTop: 16, backgroundColor: GOLD, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12,
+    },
+    emptyBtnText: { color: '#000', fontWeight: '900', fontSize: 14 },
+    guideBtn: { marginHorizontal: 16, marginTop: 32 },
+    guideBtnInner: {
+        flexDirection: 'row', alignItems: 'center', padding: 18,
+        borderRadius: 20, borderWidth: 1, borderColor: 'rgba(212,175,55,0.15)',
+    },
+    guideTitle: { color: '#fff', fontSize: 15, fontWeight: '800' },
+    guideSub: { color: '#555', fontSize: 12, marginTop: 2 },
 });
