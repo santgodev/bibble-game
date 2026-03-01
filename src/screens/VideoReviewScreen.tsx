@@ -1,19 +1,19 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
-    View, StyleSheet, TouchableOpacity, Alert, Modal,
-    ScrollView, Platform, Animated, Dimensions
+    View, StyleSheet, TouchableOpacity,
+    ScrollView, Animated, Dimensions
 } from 'react-native';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import { AppText } from '../components';
 import * as MediaLibrary from 'expo-media-library';
-import * as DocumentPicker from 'expo-document-picker';
 import { useLanguage } from '../context/LanguageContext';
 import { useSound } from '../context/SoundContext';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { theme } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
+const GOLD = '#D4AF37';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface WordEntry {
@@ -26,17 +26,14 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
     const { videoUri, category, wordHistory = [] }: { videoUri: string; category: string; wordHistory: WordEntry[] } = route.params || {};
     const { t } = useLanguage();
     const insets = useSafeAreaInsets();
-    const {
-        pauseMusic, resumeMusic, enableMusic, toggleMusic,
-        availableTracks, setInternalTrack, setLocalTrack, currentTrack
-    } = useSound();
+    const { pauseMusic, resumeMusic } = useSound();
 
     const videoRef = useRef<Video>(null);
     const [playbackStatus, setPlaybackStatus] = useState<any>({});
-    const [showMusicPicker, setShowMusicPicker] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
-    // Current word overlay state (synced with playback)
+    // Current word overlay state
     const [currentWord, setCurrentWord] = useState<string>('');
     const [currentResult, setCurrentResult] = useState<'correct' | 'pass' | 'pending' | null>(null);
     const [showOverlay, setShowOverlay] = useState(false);
@@ -116,83 +113,43 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
 
     const handleSave = async () => {
         if (!videoUri) {
-            Alert.alert('Sin video', 'No hay video grabado para guardar.');
+            setSaveMessage({ text: 'No hay video grabado para guardar.', ok: false });
+            setTimeout(() => setSaveMessage(null), 3000);
             return;
         }
 
         try {
             setIsSaving(true);
-
-            // Request FULL (read+write) permissions — NOT writeOnly which breaks createAssetAsync
-            const { status, canAskAgain } = await MediaLibrary.requestPermissionsAsync();
+            const { status } = await MediaLibrary.requestPermissionsAsync();
             if (status !== 'granted') {
-                if (!canAskAgain) {
-                    Alert.alert(
-                        'Permiso bloqueado',
-                        'El permiso de galería está bloqueado. Ve a Ajustes → Apps → ADN Juegos → Permisos → Fotos/Archivos y actívalo manualmente.'
-                    );
-                } else {
-                    Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para guardar el video. Acepta el permiso cuando se solicite.');
-                }
+                setSaveMessage({ text: 'Permiso de galería denegado. Actívalo en ajustes.', ok: false });
+                setTimeout(() => setSaveMessage(null), 4000);
                 return;
             }
 
-            // Smart URI normalization
             let uriToSave = videoUri;
             if (!uriToSave.startsWith('file://') && !uriToSave.startsWith('content://')) {
                 uriToSave = `file://${uriToSave}`;
             }
 
             const asset = await MediaLibrary.createAssetAsync(uriToSave);
-
-            // Create or get album
             const albums = await MediaLibrary.getAlbumsAsync();
-            const existing = albums.find(a => a.title === 'ADN Juegos');
+            const existing = albums.find(a => a.title === 'Berea');
             if (existing) {
                 await MediaLibrary.addAssetsToAlbumAsync([asset], existing, false);
             } else {
-                await MediaLibrary.createAlbumAsync('ADN Juegos', asset, false);
+                await MediaLibrary.createAlbumAsync('Berea', asset, false);
             }
 
-            Alert.alert('✅ ¡Video guardado!', 'Encontrarás el video en tu galería en el álbum "ADN Juegos".');
+            setSaveMessage({ text: '¡Video guardado en tu galería!', ok: true });
+            setTimeout(() => setSaveMessage(null), 3500);
         } catch (error: any) {
             console.error('Save video error:', error);
-            const msg: string = error?.message || '';
-            const isPermErr = msg.includes('permission') || msg.includes('MEDIA_LIBRARY') || msg.includes('granted');
-            Alert.alert(
-                'Error al guardar',
-                isPermErr
-                    ? 'El sistema bloqueó el permiso de galería. Cierra la app, ve a Ajustes → Apps → ADN Juegos → Permisos y activa Fotos/Archivos.'
-                    : `No se pudo guardar el video.\n\n${msg}`
-            );
+            setSaveMessage({ text: 'Error al guardar. Revisa los permisos en ajustes.', ok: false });
+            setTimeout(() => setSaveMessage(null), 4000);
         } finally {
             setIsSaving(false);
         }
-    };
-
-    const handlePickLocal = async () => {
-        try {
-            const res = await DocumentPicker.getDocumentAsync({ type: 'audio/*', copyToCacheDirectory: true });
-            if (!res.canceled && res.assets && res.assets.length > 0) {
-                const file = res.assets[0];
-                setLocalTrack(file.uri, file.name);
-                if (!enableMusic) toggleMusic();
-                resumeMusic();
-                setShowMusicPicker(false);
-            }
-        } catch (err) { console.log('Picker Error', err); }
-    };
-
-    const selectTrack = (index: number) => {
-        setInternalTrack(index);
-        if (!enableMusic) toggleMusic();
-        resumeMusic();
-        setShowMusicPicker(false);
-    };
-
-    const handleSilence = () => {
-        pauseMusic();
-        setShowMusicPicker(false);
     };
 
     const isPlaying = playbackStatus?.isPlaying;
@@ -223,9 +180,7 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
                     <AppText style={styles.headerLabel}>REVISIÓN</AppText>
                     <AppText style={styles.headerCategory} numberOfLines={1}>{category}</AppText>
                 </View>
-                <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMusicPicker(true)} activeOpacity={0.8}>
-                    <Ionicons name="musical-notes" size={20} color={theme.colors.primary} />
-                </TouchableOpacity>
+                <View style={{ width: 40 }} />
             </View>
 
             {/* ── Video Player ── */}
@@ -328,8 +283,8 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <Ionicons name="trophy" size={16} color={theme.colors.primary} />
-                        <AppText style={[styles.statValue, { color: theme.colors.primary }]}>
+                        <Ionicons name="trophy" size={16} color={GOLD} />
+                        <AppText style={[styles.statValue, { color: GOLD }]}>
                             {correctCount + passCount > 0 ? Math.round((correctCount / (correctCount + passCount)) * 100) : 0}%
                         </AppText>
                         <AppText style={styles.statLabel}>PRECISIÓN</AppText>
@@ -378,70 +333,42 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
 
             {/* ── Actions ── */}
             <View style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}>
-                <TouchableOpacity
-                    style={[styles.saveBtn, isSaving && { opacity: 0.6 }]}
-                    onPress={handleSave}
-                    disabled={isSaving}
-                    activeOpacity={0.8}
-                >
-                    <Ionicons name={isSaving ? 'hourglass' : 'download'} size={20} color="#000" />
-                    <AppText style={styles.saveBtnText}>{isSaving ? 'GUARDANDO...' : 'GUARDAR EN GALERÍA'}</AppText>
-                </TouchableOpacity>
-            </View>
-
-            {/* ── Music Picker Modal ── */}
-            <Modal animationType="slide" transparent visible={showMusicPicker} onRequestClose={() => setShowMusicPicker(false)}>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHandle} />
-                        <View style={styles.modalHeader}>
-                            <AppText style={styles.modalTitle}>Música de fondo</AppText>
-                            <TouchableOpacity onPress={() => setShowMusicPicker(false)} style={styles.modalClose}>
-                                <Ionicons name="close" size={20} color="#fff" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <ScrollView style={{ maxHeight: 320, width: '100%' }} showsVerticalScrollIndicator={false}>
-                            <TouchableOpacity style={styles.trackItem} onPress={handleSilence}>
-                                <Ionicons name="volume-mute" size={16} color="#888" style={{ marginRight: 12 }} />
-                                <AppText style={styles.trackName}>Sin música</AppText>
-                            </TouchableOpacity>
-
-                            <View style={styles.modalDivider} />
-                            <AppText style={styles.modalSectionHeader}>Desde tu dispositivo</AppText>
-
-                            <TouchableOpacity style={styles.trackItem} onPress={handlePickLocal}>
-                                <Ionicons name="folder-open" size={16} color={theme.colors.primary} style={{ marginRight: 12 }} />
-                                <AppText style={styles.trackName}>Elegir archivo local</AppText>
-                            </TouchableOpacity>
-
-                            <View style={styles.modalDivider} />
-                            <AppText style={styles.modalSectionHeader}>Pistas incluidas</AppText>
-
-                            {availableTracks.map((track, index) => (
-                                <TouchableOpacity
-                                    key={track.id}
-                                    style={[styles.trackItem, currentTrack?.id === track.id && styles.trackSelected]}
-                                    onPress={() => selectTrack(index)}
-                                >
-                                    <Ionicons
-                                        name={currentTrack?.id === track.id ? 'musical-note' : 'musical-notes-outline'}
-                                        size={16}
-                                        color={currentTrack?.id === track.id ? theme.colors.primary : '#888'}
-                                        style={{ marginRight: 12 }}
-                                    />
-                                    <AppText style={[styles.trackName, currentTrack?.id === track.id && { color: theme.colors.primary }]}>
-                                        {track.name}
-                                    </AppText>
-                                    {currentTrack?.id === track.id && (
-                                        <Ionicons name="checkmark" size={16} color={theme.colors.primary} />
-                                    )}
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
+                {/* Inline save message */}
+                {saveMessage && (
+                    <View style={[styles.saveMsg, saveMessage.ok ? styles.saveMsgOk : styles.saveMsgErr]}>
+                        <Ionicons
+                            name={saveMessage.ok ? 'checkmark-circle' : 'alert-circle'}
+                            size={18}
+                            color={saveMessage.ok ? '#2ecc71' : '#e74c3c'}
+                        />
+                        <AppText style={[styles.saveMsgText, { color: saveMessage.ok ? '#2ecc71' : '#e74c3c' }]}>
+                            {saveMessage.text}
+                        </AppText>
                     </View>
+                )}
+                <View style={styles.actionsRow}>
+                    <TouchableOpacity
+                        style={styles.backBtn}
+                        onPress={() => navigation.goBack()}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="arrow-back" size={18} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.saveBtn, isSaving && { opacity: 0.6 }]}
+                        onPress={handleSave}
+                        disabled={isSaving}
+                        activeOpacity={0.8}
+                    >
+                        <LinearGradient colors={[GOLD, '#B8860B']} style={styles.saveBtnGrad}>
+                            <Ionicons name={isSaving ? 'hourglass' : 'download'} size={18} color="#000" />
+                            <AppText style={styles.saveBtnText}>
+                                {isSaving ? 'GUARDANDO...' : 'GUARDAR VIDEO'}
+                            </AppText>
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
-            </Modal>
+            </View>
         </View>
     );
 };
@@ -473,7 +400,7 @@ const styles = StyleSheet.create({
     headerCategory: {
         fontSize: 16,
         fontWeight: '700',
-        color: theme.colors.primary,
+        color: GOLD,
         maxWidth: 180,
         textAlign: 'center',
     },
@@ -567,7 +494,7 @@ const styles = StyleSheet.create({
     },
     progressFill: {
         height: '100%',
-        backgroundColor: theme.colors.primary,
+        backgroundColor: GOLD,
         borderRadius: 2,
     },
     progressDot: {
@@ -660,92 +587,45 @@ const styles = StyleSheet.create({
     actions: {
         paddingHorizontal: 16,
     },
-    saveBtn: {
+    actionsRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.colors.primary,
-        paddingVertical: 16,
-        borderRadius: 14,
-        gap: 10,
+        gap: 12,
+    },
+    backBtn: {
+        width: 52, height: 52, borderRadius: 16,
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    },
+    saveBtn: {
+        flex: 1,
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    saveBtnGrad: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        paddingVertical: 16, gap: 10,
     },
     saveBtnText: {
         color: '#000',
-        fontWeight: '800',
+        fontWeight: '900',
         fontSize: 14,
-        letterSpacing: 2,
+        letterSpacing: 1.5,
     },
-
-    // Modal
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        justifyContent: 'flex-end',
-    },
-    modalContent: {
-        backgroundColor: '#0f0f1a',
-        borderTopLeftRadius: 28,
-        borderTopRightRadius: 28,
-        paddingHorizontal: 20,
-        paddingBottom: 40,
+    saveMsg: {
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        padding: 14, borderRadius: 14, marginBottom: 10,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
     },
-    modalHandle: {
-        width: 40,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: '#333',
-        alignSelf: 'center',
-        marginTop: 12,
-        marginBottom: 20,
+    saveMsgOk: {
+        backgroundColor: 'rgba(46,204,113,0.07)',
+        borderColor: 'rgba(46,204,113,0.25)',
     },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
+    saveMsgErr: {
+        backgroundColor: 'rgba(231,76,60,0.07)',
+        borderColor: 'rgba(231,76,60,0.25)',
     },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#fff',
-    },
-    modalClose: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalDivider: {
-        height: 1,
-        backgroundColor: 'rgba(255,255,255,0.07)',
-        marginVertical: 10,
-    },
-    modalSectionHeader: {
-        fontSize: 10,
-        color: '#555',
-        letterSpacing: 2,
-        textTransform: 'uppercase',
-        marginBottom: 8,
-        marginLeft: 4,
-    },
-    trackItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 8,
-        borderRadius: 10,
-    },
-    trackSelected: {
-        backgroundColor: 'rgba(212,175,55,0.08)',
-    },
-    trackName: {
-        color: '#ccc',
-        fontSize: 15,
-        flex: 1,
-        fontWeight: '500',
+    saveMsgText: {
+        flex: 1, fontSize: 13, fontWeight: '700',
     },
 });

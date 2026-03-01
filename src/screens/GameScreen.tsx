@@ -342,8 +342,7 @@ export const GameScreen = ({ navigation, route }: any) => {
                             <AppText
                                 variant="header"
                                 style={styles.word}
-                                adjustsFontSizeToFit
-                                numberOfLines={3}
+                                numberOfLines={2}
                             >
                                 {getCurrentWordString()}
                             </AppText>
@@ -360,7 +359,7 @@ export const GameScreen = ({ navigation, route }: any) => {
 
                                     {/* Description - The core meaning/Resumen */}
                                     {(words[wordIndex] as CharadaCard).description && (
-                                        <AppText style={styles.descText} adjustsFontSizeToFit numberOfLines={5}>
+                                        <AppText style={styles.descText} numberOfLines={4}>
                                             {(words[wordIndex] as CharadaCard).description}
                                         </AppText>
                                     )}
@@ -442,10 +441,11 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     word: {
-        fontSize: 90, // Significantly larger
-        lineHeight: 100,
+        fontSize: 78,
+        lineHeight: 88,
         textAlign: 'center',
         fontWeight: '900',
+        includeFontPadding: false,
         textShadowColor: 'rgba(0,0,0,0.7)',
         textShadowOffset: { width: 3, height: 3 },
         textShadowRadius: 6,
