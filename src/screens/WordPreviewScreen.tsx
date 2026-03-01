@@ -71,7 +71,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
     }, []);
 
     useEffect(() => {
-        shuffleAndPick();
+        shuffleAndPick(gameDuration);
     }, [gameDuration, totalPool]);
 
     const toggleMember = (id: string) => {
@@ -85,14 +85,17 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
         return 35;
     };
 
-    const shuffleAndPick = () => {
+    const shuffleAndPick = (dur?: number) => {
         if (!totalPool || totalPool.length === 0) return;
+        const activeDuration = dur ?? gameDuration;
         const pool = [...totalPool];
         for (let i = pool.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [pool[i], pool[j]] = [pool[j], pool[i]];
         }
-        setDisplayedWords(pool.slice(0, getWordsCount(gameDuration)));
+        // Use all available if pool smaller than target
+        const target = Math.min(getWordsCount(activeDuration), pool.length);
+        setDisplayedWords(pool.slice(0, target));
     };
 
     const startGame = () => {
@@ -126,7 +129,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                         <AppText style={s.categoryName} numberOfLines={1}>{category}</AppText>
                         <AppText style={s.categoryMeta}>{displayedWords.length} PALABRAS LISTAS</AppText>
                     </View>
-                    <TouchableOpacity onPress={shuffleAndPick} style={s.shuffleBtn}>
+                    <TouchableOpacity onPress={() => shuffleAndPick(gameDuration)} style={s.shuffleBtn}>
                         <Ionicons name="shuffle" size={22} color={GOLD} />
                     </TouchableOpacity>
                 </LinearGradient>
@@ -139,7 +142,10 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                             <TouchableOpacity
                                 key={seconds}
                                 style={[s.durBtn, gameDuration === seconds && s.durBtnActive]}
-                                onPress={() => setGameDuration(seconds)}
+                                onPress={() => {
+                                    setGameDuration(seconds);
+                                    shuffleAndPick(seconds);
+                                }}
                                 activeOpacity={0.75}
                             >
                                 {gameDuration === seconds

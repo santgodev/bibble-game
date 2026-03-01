@@ -210,11 +210,6 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                     </View>
                 )}
 
-                {item.isCustom && (
-                    <TouchableOpacity onPress={() => handleDelete(item)} style={styles.deleteButton}>
-                        <AppText style={{ fontSize: 16 }}>🗑️</AppText>
-                    </TouchableOpacity>
-                )}
 
                 {locked && (
                     <View style={styles.lockOverlayAbsolute}>
@@ -227,25 +222,7 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         );
     };
 
-    const renderHeader = () => {
-        if (subcategories) return null;
-        return (
-            <TouchableOpacity
-                style={[styles.card, styles.createCard]}
-                onPress={() => navigation.navigate('CreateCategory')}
-                activeOpacity={0.8}
-            >
-                <AppText style={styles.icon}>✨</AppText>
-                <View style={styles.textContainer}>
-                    <AppText variant="subheader" style={styles.title}>{t('create_new')}</AppText>
-                    <AppText variant="caption" style={styles.desc}>{t('create_desc')}</AppText>
-                </View>
-                <View style={styles.arrow}>
-                    <AppText variant="header" style={{ color: '#555' }}>+</AppText>
-                </View>
-            </TouchableOpacity>
-        );
-    };
+    const renderHeader = () => null;
 
     const renderUnleashModal = () => {
         if (!currentQuizCategory || !currentQuizCategory.unleashQuiz) return null;

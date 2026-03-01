@@ -51,6 +51,39 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
         }, [])
     );
 
+    // Contextual hint generator for the impostor based on the chapter/category
+    const getImpostorHint = (catTitle: string, chapterTitle: string, wordPool: any[]): string => {
+        // Map of chapter keywords to contextual hints
+        const CHAPTER_HINTS: Record<string, string> = {
+            'Jesús es Dios': 'Juan 1 • Comienzo del Evangelio • El Verbo se hace carne',
+            'Jesús da vida': 'Juan 2-4 • Las bodas de Caná • El agua y el Espíritu',
+            'Jesús sana': 'Juan 5-6 • Milagros y sanidades • El pan de vida',
+            'Jesús revela': 'Juan 7-9 • La luz del mundo • El ciego de nacimiento',
+            'Jesús ressucita': 'Juan 11-12 • Lázaro • La resurrección y la vida',
+        };
+
+        // Try to find a match by chapter title
+        for (const [key, hint] of Object.entries(CHAPTER_HINTS)) {
+            if (chapterTitle?.toLowerCase().includes(key.toLowerCase()) ||
+                catTitle?.toLowerCase().includes(key.toLowerCase())) {
+                return hint;
+            }
+        }
+
+        // Fallback: build a hint from the word pool itself (pick 2 random words as "context")
+        const words = wordPool
+            .map(w => typeof w === 'string' ? w : w.word)
+            .filter(Boolean)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 2);
+
+        if (words.length >= 2) {
+            return `${chapterTitle || catTitle} • Relacionado con: ${words.join(' y ')}`;
+        }
+
+        return chapterTitle || catTitle || 'Biblia';
+    };
+
     useEffect(() => {
         // Pick random category logic
         if (selectedCategories && selectedCategories.length > 0) {
@@ -60,12 +93,10 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
                 const randomItem = pool[Math.floor(Math.random() * pool.length)];
                 setSecretWord(typeof randomItem === 'string' ? randomItem : randomItem.word);
 
-                // Detailed hint for impostor
-                if (typeof randomItem !== 'string' && randomItem.category) {
-                    setSecretCategory(`${randomCat.capitulo || randomCat.title} • ${randomItem.category.toUpperCase()}`);
-                } else {
-                    setSecretCategory(randomCat.capitulo || randomCat.title);
-                }
+                // Rich contextual hint for the impostor
+                const chapterTitle = randomCat.capitulo || randomCat.title;
+                const richHint = getImpostorHint(randomCat.title, chapterTitle, pool);
+                setSecretCategory(richHint);
             } else {
                 setSecretWord("Error");
             }
@@ -159,8 +190,9 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
 
                                 {hintEnabled && (
                                     <View style={styles.hintTag}>
+                                        <Ionicons name="bulb" size={16} color="#f39c12" style={{ marginBottom: 4 }} />
+                                        <AppText style={styles.hintLabel}>PISTA DEL IMÓSTOR</AppText>
                                         <AppText style={styles.hintValue}>{secretCategory}</AppText>
-                                        <AppText style={styles.hintLabel}>Categoria</AppText>
                                     </View>
                                 )}
                             </View>
@@ -366,22 +398,30 @@ const styles = StyleSheet.create({
         marginBottom: 10
     },
     hintTag: {
-        backgroundColor: 'rgba(231,76,60,0.1)',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
+        backgroundColor: 'rgba(243,156,18,0.12)',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         borderRadius: 15,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#e74c3c'
+        borderColor: 'rgba(243,156,18,0.4)',
+        width: '100%',
+        marginTop: 4,
     },
     hintValue: {
         color: '#fff',
-        fontSize: 20,
-        fontWeight: 'bold'
+        fontSize: 14,
+        fontWeight: '700',
+        textAlign: 'center',
+        lineHeight: 20,
     },
     hintLabel: {
-        color: '#e74c3c',
-        fontSize: 12
+        color: '#f39c12',
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1.5,
+        marginBottom: 4,
+        textTransform: 'uppercase',
     },
     wordPlate: {
         backgroundColor: '#2ecc71',

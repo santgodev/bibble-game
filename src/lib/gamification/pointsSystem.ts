@@ -117,11 +117,12 @@ export const calculateCharadasRewards = (
     const rawXp = Math.round((baseXp + completionBonus + accuracyBonus) * timeMultiplier);
 
     let trophies = 0;
-    if (canEarnTrophies && total >= 3) { // A partir de 3 palabras ya puedes ganar copas
-        // 1 copa por cada 4 palabras adivinadas correctamente recompensa el esfuerzo/tiempo extra
-        trophies += Math.floor(correctWords / 4);
+    if (canEarnTrophies && total >= 3) {
+        // 1 trofeo por cada 20% de exactitud (escala de 0 a 5 trofeos base)
+        // Ej: 60% → 3 trofeos, 80% → 4 trofeos, 100% → 5 trofeos
+        trophies += Math.floor((accuracy * 100) / 20);
 
-        // Bonus extra por alta precisión
+        // Bonus extra por alta precisión (≥80%)
         if (accuracy >= 0.8) {
             trophies += TROPHIES.CHARADAS_PERFECT_ACCURACY;
         }
