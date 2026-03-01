@@ -256,30 +256,44 @@ const RankRow = ({ item, index, isMe, isGlobal }: any) => {
     return (
         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
             <LinearGradient
-                colors={[c1 as string, c2 as string]}
-                style={[row.container, isMe && row.meHighlight, { borderColor: border as string }]}
+                colors={isMe
+                    ? ['rgba(212,175,55,0.22)', 'rgba(212,175,55,0.08)']
+                    : [c1 as string, c2 as string]
+                }
+                style={[
+                    row.container,
+                    isMe && row.meHighlight,
+                    { borderColor: isMe ? GOLD : border as string },
+                ]}
             >
+                {/* Barra lateral izquierda para 'Yo' */}
+                {isMe && <View style={row.meBar} />}
+
                 <Medal rank={index + 1} />
 
                 {/* Avatar */}
                 <View style={row.avatarWrap}>
-                    <Image source={{ uri: avatarUri }} style={row.avatar} />
+                    <Image source={{ uri: avatarUri }} style={[row.avatar, isMe && row.avatarMe]} />
                     {isMe && <View style={row.meDot} />}
                 </View>
 
                 {/* Name + meta */}
                 <View style={row.info}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={[row.name, isMe && { color: GOLD }]} numberOfLines={1}>{label}</Text>
-                        {isMe && <Text style={row.meTag}>TÚ</Text>}
+                        <Text style={[row.name, isMe && row.nameMe]} numberOfLines={1}>{label}</Text>
+                        {isMe && (
+                            <View style={row.meBadge}>
+                                <Text style={row.meBadgeText}>YO</Text>
+                            </View>
+                        )}
                     </View>
                     {sub ? <Text style={row.sub}>{sub}</Text> : null}
                     {level && <Text style={row.sub}>Nivel {level} · {xp?.toLocaleString()} XP</Text>}
                 </View>
 
                 {/* Score */}
-                <View style={row.scoreBox}>
-                    <Text style={row.scoreVal}>{score}</Text>
+                <View style={[row.scoreBox, isMe && row.scoreBoxMe]}>
+                    <Text style={[row.scoreVal, isMe && { fontSize: 18 }]}>{score}</Text>
                     <Ionicons name="trophy" size={14} color="#FFD700" />
                 </View>
             </LinearGradient>
@@ -291,11 +305,20 @@ const row = StyleSheet.create({
     container: {
         flexDirection: 'row', alignItems: 'center', borderRadius: 18,
         marginBottom: 10, paddingVertical: 12, paddingHorizontal: 14,
-        borderWidth: 1, gap: 10,
+        borderWidth: 1, gap: 10, overflow: 'hidden',
     },
-    meHighlight: { borderColor: GOLD },
+    meHighlight: {
+        borderColor: GOLD,
+        borderWidth: 1.5,
+    },
+    // Barra de acento izquierda — el indicador más fácil de distinguir
+    meBar: {
+        position: 'absolute', left: 0, top: 0, bottom: 0,
+        width: 4, backgroundColor: GOLD, borderTopLeftRadius: 18, borderBottomLeftRadius: 18,
+    },
     avatarWrap: { position: 'relative' },
     avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1a1a2e' },
+    avatarMe: { borderWidth: 2, borderColor: GOLD },
     meDot: {
         position: 'absolute', bottom: 0, right: 0,
         width: 12, height: 12, borderRadius: 6,
@@ -303,7 +326,14 @@ const row = StyleSheet.create({
     },
     info: { flex: 1 },
     name: { color: '#fff', fontSize: 15, fontWeight: '800' },
+    nameMe: { color: GOLD, fontSize: 16, fontWeight: '900' },
     sub: { color: '#666', fontSize: 11, marginTop: 2 },
+    meBadge: {
+        backgroundColor: GOLD, borderRadius: 6,
+        paddingHorizontal: 7, paddingVertical: 2,
+    },
+    meBadgeText: { color: '#000', fontSize: 9, fontWeight: '900', letterSpacing: 1.5 },
+    // Legacy (kept for compat)
     meTag: {
         backgroundColor: GOLD, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1,
         color: '#000', fontSize: 9, fontWeight: '900', letterSpacing: 1,
@@ -312,6 +342,10 @@ const row = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: 4,
         backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 10,
         paddingVertical: 6, borderRadius: 12,
+    },
+    scoreBoxMe: {
+        backgroundColor: 'rgba(212,175,55,0.15)',
+        borderWidth: 1, borderColor: 'rgba(212,175,55,0.4)',
     },
     scoreVal: { color: '#FFD700', fontWeight: '900', fontSize: 16 },
 });

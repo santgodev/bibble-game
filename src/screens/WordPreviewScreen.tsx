@@ -83,8 +83,10 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
     }, []);
 
     useEffect(() => {
+        // Solo se ejecuta en la carga inicial (cuando llegan las palabras del pool)
+        // Los cambios de duración son manejados directamente por el botón onPress
         shuffleAndPick(gameDuration);
-    }, [gameDuration, totalPool]);
+    }, [totalPool]);  // ← NO incluir gameDuration aquí o se sobreescribe con valor viejo
 
     const toggleMember = (id: string) => {
         setSelectedMembers(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
@@ -400,7 +402,7 @@ const s = StyleSheet.create({
     durTextActive: { color: '#000', fontWeight: '900', fontSize: 12 },
 
     // Words
-    wordsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    wordsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
     chip: {
         paddingVertical: 8, paddingHorizontal: 13, borderRadius: 12,
         borderWidth: 1,
