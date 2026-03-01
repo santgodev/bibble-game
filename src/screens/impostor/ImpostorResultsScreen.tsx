@@ -427,7 +427,7 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
                         {/* Secret word */}
                         <View style={styles.wordBox}>
                             <AppText style={styles.resultBadge}>PALABRA SECRETA</AppText>
-                            <AppText style={styles.wordValue} numberOfLines={2} adjustsFontSizeToFit>{secretWord}</AppText>
+                            <AppText style={styles.wordValue} numberOfLines={3}>{secretWord}</AppText>
                             <AppText style={styles.catValue}>{secretCategory}</AppText>
                         </View>
 
@@ -558,17 +558,33 @@ const styles = StyleSheet.create({
     // Results Phase
     resultsScroll: { width: '100%', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 40 },
     winBanner: { width: '100%', marginBottom: 24, alignItems: 'center', paddingVertical: 24, borderRadius: 24 },
-    winTitleCit: { fontSize: 26, fontWeight: '900', color: '#2ecc71', textAlign: 'center', marginBottom: 4 },
-    winTitleImp: { fontSize: 26, fontWeight: '900', color: '#e74c3c', textAlign: 'center', marginBottom: 4 },
-    winSub: { color: '#888', fontSize: 15, textAlign: 'center' },
+    winTitleCit: {
+        fontSize: 24, fontWeight: '900', color: '#2ecc71', textAlign: 'center',
+        marginBottom: 4, lineHeight: 34, includeFontPadding: false,
+    },
+    winTitleImp: {
+        fontSize: 24, fontWeight: '900', color: '#e74c3c', textAlign: 'center',
+        marginBottom: 4, lineHeight: 34, includeFontPadding: false,
+    },
+    winSub: { color: '#888', fontSize: 15, textAlign: 'center', lineHeight: 22 },
     resultBadge: { fontSize: 11, fontWeight: '800', color: '#2ecc71', letterSpacing: 2, marginBottom: 8, opacity: 0.8 },
     wordBox: {
         backgroundColor: 'rgba(46,204,113,0.07)', borderWidth: 1, borderColor: 'rgba(46,204,113,0.25)',
-        borderRadius: 20, padding: 20, width: '100%', alignItems: 'center', marginBottom: 16,
+        borderRadius: 20, paddingTop: 18, paddingBottom: 18, paddingHorizontal: 20,
+        width: '100%', alignItems: 'center', marginBottom: 16,
     },
     wordValue: {
-        fontSize: 34, fontWeight: '900', color: '#2ecc71', textTransform: 'uppercase',
-        textAlign: 'center', marginBottom: 4,
+        fontSize: 30,
+        fontWeight: '900',
+        color: '#2ecc71',
+        textTransform: 'uppercase',
+        textAlign: 'center',
+        marginBottom: 4,
+        lineHeight: 42,
+        includeFontPadding: false,
+        paddingTop: 2,
+        flexShrink: 1,
+        width: '100%',
     },
     catValue: { fontSize: 12, color: '#888', textTransform: 'uppercase', letterSpacing: 1 },
     impostorsBox: {
@@ -577,7 +593,13 @@ const styles = StyleSheet.create({
     },
     impItem: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     resultAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#1a1a2e', borderWidth: 2, borderColor: '#fff' },
-    impName: { fontSize: 26, fontWeight: '900', color: '#fff' },
+    impName: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: '#fff',
+        lineHeight: 34,
+        includeFontPadding: false,
+    },
     rewardBtn: { width: '100%', borderRadius: 18, overflow: 'hidden', marginBottom: 14 },
     rewardBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18 },
     rewardBtnText: { color: '#000', fontSize: 16, fontWeight: '900', letterSpacing: 1 },
