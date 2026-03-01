@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Charadas Bíblicas",
-    "slug": "charadas-biblicas",
+    "name": "Berea",
+    "slug": "berea",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
