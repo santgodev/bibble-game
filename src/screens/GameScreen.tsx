@@ -599,8 +599,9 @@ const styles = StyleSheet.create({
 
     // Ready state
     readyCategory: {
-        color: '#fff', fontSize: 30, fontWeight: '900', letterSpacing: 1,
+        color: '#fff', fontSize: 28, fontWeight: '900', letterSpacing: 1,
         textAlign: 'center', marginBottom: 6,
+        lineHeight: 36, includeFontPadding: false, paddingTop: 4,
         textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 6,
     },
     readyInfo: {

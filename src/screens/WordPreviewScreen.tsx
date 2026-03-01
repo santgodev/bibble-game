@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, StyleSheet, ScrollView, TouchableOpacity,
-    Platform, UIManager, Animated
+    Platform, UIManager, Animated, Easing, Dimensions
 } from 'react-native';
 import { AppText } from '../components';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,15 +11,28 @@ import { CharadaCard } from '../data/categories';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// ─── Design tokens ────────────────────────────────────────
 const GOLD = '#D4AF37';
-const BG = '#06060E';
-const SURFACE = '#0E0E1C';
-const BORDER = 'rgba(255,255,255,0.07)';
+const GOLD2 = '#F5D76E';
+const PURPLE = '#7C3AED';
+const PURPLE2 = '#A855F7';
+const BG = '#08081A';
+const SURFACE = 'rgba(255,255,255,0.05)';
+const BORDER = 'rgba(255,255,255,0.08)';
+
+const { width: SW } = Dimensions.get('window');
+
+// Chip color presets cycling through 3 styles
+const CHIP_STYLES = [
+    { bg: 'rgba(212,175,55,0.12)', border: 'rgba(212,175,55,0.35)', text: GOLD },
+    { bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.35)', text: PURPLE2 },
+    { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', text: '#ccc' },
+];
 
 export const WordPreviewScreen = ({ navigation, route }: any) => {
     const { t } = useLanguage();
+    const insets = useSafeAreaInsets();
     const { category, categoryObj, totalPool } = route.params || { category: 'Mock', categoryObj: {}, totalPool: [] };
 
     useFocusEffect(
@@ -29,22 +42,21 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
     );
 
     const [displayedWords, setDisplayedWords] = useState<(string | CharadaCard)[]>([]);
-    const [isPaused, setIsPaused] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
     const [gameDuration, setGameDuration] = useState(60);
-
     const [members, setMembers] = useState<any[]>([]);
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
     const [showMembers, setShowMembers] = useState(false);
 
-    // Shimmer animation for word chips
-    const shimmerAnim = React.useRef(new Animated.Value(0)).current;
+    // Glow pulse animation
+    const glowAnim = useRef(new Animated.Value(0.5)).current;
+    const shuffleSpin = useRef(new Animated.Value(0)).current;
 
-    React.useEffect(() => {
+    useEffect(() => {
         Animated.loop(
             Animated.sequence([
-                Animated.timing(shimmerAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-                Animated.timing(shimmerAnim, { toValue: 0, duration: 1500, useNativeDriver: true }),
+                Animated.timing(glowAnim, { toValue: 1, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
+                Animated.timing(glowAnim, { toValue: 0.5, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
             ])
         ).start();
     }, []);
@@ -93,9 +105,14 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
             const j = Math.floor(Math.random() * (i + 1));
             [pool[i], pool[j]] = [pool[j], pool[i]];
         }
-        // Use all available if pool smaller than target
         const target = Math.min(getWordsCount(activeDuration), pool.length);
         setDisplayedWords(pool.slice(0, target));
+
+        // Spin shuffle icon
+        shuffleSpin.setValue(0);
+        Animated.timing(shuffleSpin, {
+            toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.out(Easing.ease)
+        }).start();
     };
 
     const startGame = () => {
@@ -114,76 +131,110 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
         { seconds: 180, label: '3 MIN' },
     ];
 
+    const spinDeg = shuffleSpin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+    const glowOpacity = glowAnim.interpolate({ inputRange: [0.5, 1], outputRange: [0.4, 0.9] });
+
+    const formatDuration = (s: number) =>
+        s >= 60 ? `${Math.floor(s / 60)}:${s % 60 === 0 ? '00' : String(s % 60).padStart(2, '0')}` : `${s}s`;
+
     return (
-        <View style={s.container}>
+        <View style={s.root}>
+            {/* ── Hero gradient background ── */}
+            <LinearGradient
+                colors={['#0D0520', '#080818', BG]}
+                locations={[0, 0.5, 1]}
+                style={StyleSheet.absoluteFillObject}
+            />
+
+            {/* Decorative glow orb */}
+            <Animated.View style={[s.glowOrb, { opacity: glowOpacity }]} />
+
             <ScrollView
-                contentContainerStyle={s.scroll}
+                contentContainerStyle={[s.scroll, { paddingTop: insets.top + 8 }]}
                 showsVerticalScrollIndicator={false}
             >
-                {/* ── Header ───────────────────────── */}
-                <LinearGradient colors={['#0D0D22', BG]} style={s.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-                        <Ionicons name="arrow-back" size={22} color="#fff" />
+                {/* ── Hero Header ── */}
+                <View style={s.heroRow}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} activeOpacity={0.7}>
+                        <Ionicons name="arrow-back" size={20} color="rgba(255,255,255,0.8)" />
                     </TouchableOpacity>
-                    <View style={{ flex: 1, alignItems: 'center' }}>
-                        <AppText style={s.categoryName} numberOfLines={1}>{category}</AppText>
-                        <AppText style={s.categoryMeta}>{displayedWords.length} PALABRAS LISTAS</AppText>
-                    </View>
-                    <TouchableOpacity onPress={() => shuffleAndPick(gameDuration)} style={s.shuffleBtn}>
-                        <Ionicons name="shuffle" size={22} color={GOLD} />
-                    </TouchableOpacity>
-                </LinearGradient>
 
-                {/* ── Duration selector ────────────── */}
+                    <View style={s.heroCenter}>
+                        <LinearGradient
+                            colors={[PURPLE2, GOLD]}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                            style={s.categoryGradientText}
+                        >
+                            <AppText style={s.categoryName} numberOfLines={1}>{category}</AppText>
+                        </LinearGradient>
+                        <View style={s.wordCountBadge}>
+                            <Ionicons name="layers" size={12} color={GOLD} />
+                            <AppText style={s.wordCountText}>{displayedWords.length} PALABRAS</AppText>
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        onPress={() => shuffleAndPick(gameDuration)}
+                        style={s.shuffleBtn}
+                        activeOpacity={0.8}
+                    >
+                        <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
+                            <Ionicons name="shuffle" size={20} color={GOLD} />
+                        </Animated.View>
+                    </TouchableOpacity>
+                </View>
+
+                {/* ── Duration selector ── */}
                 <View style={s.section}>
-                    <AppText style={s.sectionLabel}>⏱ DURACIÓN DEL JUEGO</AppText>
+                    <View style={s.sectionHead}>
+                        <Ionicons name="timer" size={14} color={PURPLE2} />
+                        <AppText style={s.sectionLabel}>DURACIÓN DEL JUEGO</AppText>
+                    </View>
                     <View style={s.durationRow}>
-                        {durations.map(({ seconds, label }) => (
-                            <TouchableOpacity
-                                key={seconds}
-                                style={[s.durBtn, gameDuration === seconds && s.durBtnActive]}
-                                onPress={() => {
-                                    setGameDuration(seconds);
-                                    shuffleAndPick(seconds);
-                                }}
-                                activeOpacity={0.75}
-                            >
-                                {gameDuration === seconds
-                                    ? <LinearGradient colors={[GOLD, '#B8860B']} style={s.durBtnGrad}>
-                                        <AppText style={s.durTextActive}>{label}</AppText>
-                                    </LinearGradient>
-                                    : <AppText style={s.durText}>{label}</AppText>
-                                }
-                            </TouchableOpacity>
-                        ))}
+                        {durations.map(({ seconds, label }) => {
+                            const active = gameDuration === seconds;
+                            return (
+                                <TouchableOpacity
+                                    key={seconds}
+                                    style={[s.durBtn, active && s.durBtnActive]}
+                                    onPress={() => {
+                                        setGameDuration(seconds);
+                                        shuffleAndPick(seconds);
+                                    }}
+                                    activeOpacity={0.75}
+                                >
+                                    {active ? (
+                                        <LinearGradient colors={[GOLD, '#9B6F00']} style={s.durBtnGrad}>
+                                            <AppText style={s.durTextActive}>{label}</AppText>
+                                        </LinearGradient>
+                                    ) : (
+                                        <AppText style={s.durText}>{label}</AppText>
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
 
-                {/* ── Word chips ───────────────────── */}
+                {/* ── Words grid ── */}
                 <View style={s.section}>
-                    <View style={s.wordsHeader}>
-                        <AppText style={s.sectionLabel}>🎯 PALABRAS DE ESTA RONDA</AppText>
-                        <AppText style={s.wordsCount}>{displayedWords.length}</AppText>
+                    <View style={s.sectionHead}>
+                        <Ionicons name="game-controller" size={14} color={PURPLE2} />
+                        <AppText style={s.sectionLabel}>PALABRAS DE ESTA RONDA</AppText>
+                        <View style={s.countBadge}>
+                            <AppText style={s.countBadgeText}>{displayedWords.length}</AppText>
+                        </View>
                     </View>
                     <View style={s.wordsGrid}>
                         {displayedWords.map((item, index) => {
                             const wordText = typeof item === 'string' ? item : item.word;
-                            // Alternate subtle styles for variety
-                            const isEven = index % 3 === 0;
-                            const isOdd = index % 3 === 1;
+                            const cs = CHIP_STYLES[index % 3];
                             return (
                                 <View
                                     key={index}
-                                    style={[
-                                        s.wordChip,
-                                        isEven && s.wordChipAccent,
-                                        isOdd && s.wordChipMid,
-                                    ]}
+                                    style={[s.chip, { backgroundColor: cs.bg, borderColor: cs.border }]}
                                 >
-                                    <AppText style={[
-                                        s.wordText,
-                                        isEven && { color: GOLD },
-                                    ]} numberOfLines={1}>
+                                    <AppText style={[s.chipText, { color: cs.text }]} numberOfLines={1}>
                                         {wordText}
                                     </AppText>
                                 </View>
@@ -191,14 +242,14 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                         })}
                         {displayedWords.length === 0 && (
                             <View style={s.emptyWords}>
-                                <Ionicons name="alert-circle-outline" size={32} color="#444" />
+                                <Ionicons name="alert-circle-outline" size={32} color="#333" />
                                 <AppText style={s.emptyText}>Sin palabras disponibles</AppText>
                             </View>
                         )}
                     </View>
                 </View>
 
-                {/* ── Who's playing ────────────────── */}
+                {/* ── Who's playing ── */}
                 {members.length > 0 && (
                     <View style={s.section}>
                         <TouchableOpacity
@@ -206,50 +257,58 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                             onPress={() => setShowMembers(!showMembers)}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name="people" size={18} color={GOLD} style={{ marginRight: 8 }} />
-                            <AppText style={s.sectionLabel}>¿QUIÉN JUEGA?</AppText>
+                            <Ionicons name="people" size={14} color={PURPLE2} />
+                            <AppText style={[s.sectionLabel, { flex: 1 }]}>¿QUIÉN JUEGA?</AppText>
                             <Ionicons
-                                name={showMembers ? "chevron-up" : "chevron-down"}
-                                size={16} color="#555" style={{ marginLeft: 'auto' }}
+                                name={showMembers ? 'chevron-up' : 'chevron-down'}
+                                size={16} color="#444"
                             />
                         </TouchableOpacity>
 
                         {showMembers && (
-                            <View style={s.membersGrid}>
-                                {members.map(member => (
-                                    <TouchableOpacity
-                                        key={member.id}
-                                        style={[s.memberChip, selectedMembers.includes(member.id) && s.memberChipActive]}
-                                        onPress={() => toggleMember(member.id)}
-                                        activeOpacity={0.8}
-                                    >
-                                        {selectedMembers.includes(member.id) && (
-                                            <Ionicons name="checkmark-circle" size={14} color={GOLD} style={{ marginRight: 4 }} />
-                                        )}
-                                        <AppText style={[
-                                            s.memberText,
-                                            selectedMembers.includes(member.id) && { color: GOLD }
-                                        ]}>
-                                            {member.username}
-                                        </AppText>
-                                    </TouchableOpacity>
-                                ))}
+                            <View style={[s.wordsGrid, { marginTop: 12 }]}>
+                                {members.map(member => {
+                                    const active = selectedMembers.includes(member.id);
+                                    return (
+                                        <TouchableOpacity
+                                            key={member.id}
+                                            style={[s.memberChip, active && s.memberChipActive]}
+                                            onPress={() => toggleMember(member.id)}
+                                            activeOpacity={0.8}
+                                        >
+                                            {active && <Ionicons name="checkmark-circle" size={13} color={GOLD} style={{ marginRight: 4 }} />}
+                                            <AppText style={[s.memberText, active && { color: GOLD }]}>
+                                                {member.username}
+                                            </AppText>
+                                        </TouchableOpacity>
+                                    );
+                                })}
                             </View>
                         )}
                     </View>
                 )}
 
-                <View style={{ height: 120 }} />
+                <View style={{ height: 130 }} />
             </ScrollView>
 
-            {/* ── Fixed bottom CTA ─────────────────── */}
-            <View style={s.footer}>
-                <TouchableOpacity style={s.startBtn} onPress={startGame} activeOpacity={0.85}>
-                    <LinearGradient colors={[GOLD, '#B8860B']} style={s.startBtnInner}>
-                        <Ionicons name="play" size={22} color="#000" style={{ marginRight: 10 }} />
-                        <AppText style={s.startBtnText}>
-                            JUGAR {gameDuration >= 60 ? `${gameDuration / 60}:${gameDuration % 60 === 0 ? '00' : gameDuration % 60}` : `${gameDuration}s`}
-                        </AppText>
+            {/* ── Fixed CTA ── */}
+            <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
+                <TouchableOpacity
+                    style={[s.startBtn, hasStarted && { opacity: 0.6 }]}
+                    onPress={startGame}
+                    activeOpacity={0.88}
+                    disabled={hasStarted}
+                >
+                    <LinearGradient
+                        colors={[GOLD2, GOLD, '#9B6F00']}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                        style={s.startBtnInner}
+                    >
+                        <Ionicons name="play-circle" size={26} color="#000" />
+                        <View>
+                            <AppText style={s.startBtnText}>JUGAR  {formatDuration(gameDuration)}</AppText>
+                            <AppText style={s.startBtnSub}>{displayedWords.length} palabras · ¡A actuar!</AppText>
+                        </View>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
@@ -258,11 +317,22 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
 };
 
 const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: BG },
-    scroll: { paddingBottom: 40 },
-    header: {
+    root: { flex: 1, backgroundColor: BG },
+    scroll: { paddingHorizontal: 16, paddingBottom: 20 },
+
+    // Glow orb
+    glowOrb: {
+        position: 'absolute', top: -80, left: SW / 2 - 150,
+        width: 300, height: 300, borderRadius: 150,
+        backgroundColor: PURPLE,
+        // RN doesn't have blur, so we stack translucent layers for soft glow effect
+        opacity: 0.18,
+    },
+
+    // Hero
+    heroRow: {
         flexDirection: 'row', alignItems: 'center',
-        paddingTop: 54, paddingBottom: 20, paddingHorizontal: 16,
+        marginBottom: 24, paddingTop: 8,
     },
     backBtn: {
         width: 40, height: 40, borderRadius: 20,
@@ -270,28 +340,51 @@ const s = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 1, borderColor: BORDER,
     },
-    categoryName: {
-        color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: 0.5,
+    heroCenter: { flex: 1, alignItems: 'center' },
+    categoryGradientText: {
+        borderRadius: 8, paddingHorizontal: 4,
     },
-    categoryMeta: {
-        color: '#555', fontSize: 11, fontWeight: '700', marginTop: 2, letterSpacing: 1,
+    categoryName: {
+        fontSize: 22, fontWeight: '900', letterSpacing: 0.5,
+        color: '#fff', // overridden visually by gradient bg on text
+        includeFontPadding: false,
+        lineHeight: 28,
+        paddingTop: 2,
+    },
+    wordCountBadge: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        marginTop: 4,
+    },
+    wordCountText: {
+        color: GOLD, fontSize: 10, fontWeight: '800', letterSpacing: 1.5,
     },
     shuffleBtn: {
         width: 40, height: 40, borderRadius: 20,
         backgroundColor: 'rgba(212,175,55,0.1)',
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: 'rgba(212,175,55,0.2)',
+        borderWidth: 1, borderColor: 'rgba(212,175,55,0.25)',
     },
 
+    // Sections
     section: {
-        marginHorizontal: 16, marginTop: 16,
-        backgroundColor: SURFACE, borderRadius: 20,
-        padding: 16, borderWidth: 1, borderColor: BORDER,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderRadius: 22, padding: 16,
+        borderWidth: 1, borderColor: BORDER,
+        marginBottom: 14,
+    },
+    sectionHead: {
+        flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14,
     },
     sectionLabel: {
-        color: '#555', fontSize: 11, fontWeight: '800',
-        letterSpacing: 1.5, marginBottom: 12,
+        color: '#666', fontSize: 10, fontWeight: '800', letterSpacing: 1.5,
     },
+    countBadge: {
+        marginLeft: 'auto',
+        backgroundColor: 'rgba(212,175,55,0.12)',
+        paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10,
+        borderWidth: 1, borderColor: 'rgba(212,175,55,0.25)',
+    },
+    countBadgeText: { color: GOLD, fontSize: 12, fontWeight: '900' },
 
     // Duration
     durationRow: { flexDirection: 'row', gap: 8 },
@@ -299,66 +392,49 @@ const s = StyleSheet.create({
         flex: 1, borderRadius: 14, overflow: 'hidden',
         borderWidth: 1, borderColor: BORDER,
         backgroundColor: 'rgba(255,255,255,0.03)',
+        minHeight: 46, alignItems: 'center', justifyContent: 'center',
     },
     durBtnActive: { borderColor: GOLD },
-    durBtnGrad: { paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
-    durText: { color: '#666', fontWeight: '800', fontSize: 13, textAlign: 'center', paddingVertical: 12 },
-    durTextActive: { color: '#000', fontWeight: '900', fontSize: 13 },
+    durBtnGrad: { width: '100%', paddingVertical: 13, alignItems: 'center' },
+    durText: { color: '#555', fontWeight: '800', fontSize: 12 },
+    durTextActive: { color: '#000', fontWeight: '900', fontSize: 12 },
 
     // Words
-    wordsHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    wordsCount: {
-        marginLeft: 'auto', color: GOLD, fontWeight: '900', fontSize: 14,
-        backgroundColor: 'rgba(212,175,55,0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8,
+    wordsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+        paddingVertical: 8, paddingHorizontal: 13, borderRadius: 12,
+        borderWidth: 1,
     },
-    wordsGrid: {
-        flexDirection: 'row', flexWrap: 'wrap', gap: 8,
-    },
-    wordChip: {
-        paddingVertical: 7, paddingHorizontal: 12, borderRadius: 10,
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
-    },
-    wordChipAccent: {
-        backgroundColor: 'rgba(212,175,55,0.07)',
-        borderColor: 'rgba(212,175,55,0.2)',
-    },
-    wordChipMid: {
-        backgroundColor: 'rgba(255,255,255,0.06)',
-        borderColor: 'rgba(255,255,255,0.1)',
-    },
-    wordText: { color: '#ccc', fontSize: 13, fontWeight: '600' },
+    chipText: { fontSize: 13, fontWeight: '700' },
     emptyWords: { alignItems: 'center', width: '100%', paddingVertical: 30, gap: 10 },
-    emptyText: { color: '#444', fontSize: 14 },
+    emptyText: { color: '#333', fontSize: 14 },
 
     // Members
-    membersToggle: {
-        flexDirection: 'row', alignItems: 'center',
-    },
-    membersGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+    membersToggle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     memberChip: {
         flexDirection: 'row', alignItems: 'center',
-        paddingVertical: 7, paddingHorizontal: 12, borderRadius: 20,
+        paddingVertical: 8, paddingHorizontal: 13, borderRadius: 20,
         backgroundColor: 'rgba(255,255,255,0.04)',
         borderWidth: 1, borderColor: BORDER,
     },
     memberChipActive: {
-        backgroundColor: 'rgba(212,175,55,0.1)',
-        borderColor: 'rgba(212,175,55,0.4)',
+        backgroundColor: 'rgba(212,175,55,0.08)',
+        borderColor: 'rgba(212,175,55,0.35)',
     },
-    memberText: { color: '#888', fontSize: 13, fontWeight: '700' },
+    memberText: { color: '#777', fontSize: 13, fontWeight: '700' },
 
     // Footer CTA
     footer: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        paddingHorizontal: 16, paddingBottom: 36, paddingTop: 12,
-        backgroundColor: BG,
-        borderTopWidth: 1, borderTopColor: BORDER,
+        paddingHorizontal: 16, paddingTop: 12,
+        backgroundColor: 'rgba(8,8,26,0.96)',
+        borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)',
     },
-    startBtn: { borderRadius: 18, overflow: 'hidden' },
+    startBtn: { borderRadius: 20, overflow: 'hidden' },
     startBtnInner: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 18,
+        paddingVertical: 18, gap: 14,
     },
-    startBtnText: { color: '#000', fontSize: 17, fontWeight: '900', letterSpacing: 1.5 },
+    startBtnText: { color: '#000', fontSize: 18, fontWeight: '900', letterSpacing: 1.5, includeFontPadding: false },
+    startBtnSub: { color: 'rgba(0,0,0,0.55)', fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 2 },
 });
