@@ -30,6 +30,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     const [phase, setPhase] = useState<Phase>('content');
     const [saving, setSaving] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [alreadyDone, setAlreadyDone] = useState(false);
 
     // XP badge animation
     const xpBadgeScale = useRef(new Animated.Value(0)).current;
@@ -115,6 +116,10 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                 if (!result.success && !result.alreadySubmitted) {
                     throw new Error(result.error || 'No se pudo registrar la recompensa del devocional.');
                 }
+
+                if (result.alreadySubmitted) {
+                    setAlreadyDone(true);
+                }
             }
         } catch (err: any) {
             console.error('Error saving node', err);
@@ -179,31 +184,40 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                 <Text style={[styles.resultTitle, { color: nodeTheme.c }]}>¡PASO COMPLETADO!</Text>
                 <Text style={styles.resultDay}>{node.title}</Text>
 
-                <View style={styles.rewardRow}>
-                    {/* XP Badge - animated */}
-                    <Animated.View style={[styles.rewardBox, {
-                        transform: [{ scale: xpBadgeScale }, { translateY: xpBadgeY }],
-                        opacity: xpBadgeOpacity,
-                    }]}>
-                        <View style={styles.rewardIconBg}>
-                            <Ionicons name="flash" size={24} color="#D4AF37" />
-                        </View>
-                        <Text style={[styles.rewardNum, { color: '#D4AF37' }]}>+{node.xpReward}</Text>
-                        <Text style={styles.rewardLabel}>XP GANADOS</Text>
-                    </Animated.View>
+                {alreadyDone ? (
+                    <View style={{ marginTop: 20, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', padding: 15, borderRadius: 15 }}>
+                        <Ionicons name="information-circle" size={30} color="#aaa" />
+                        <Text style={{ color: '#aaa', fontSize: 16, textAlign: 'center', marginTop: 10, fontWeight: 'bold' }}>
+                            Ya has cobrado las recompensas por este estudio. ¡Sigue avanzando al siguiente nivel!
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={styles.rewardRow}>
+                        {/* XP Badge - animated */}
+                        <Animated.View style={[styles.rewardBox, {
+                            transform: [{ scale: xpBadgeScale }, { translateY: xpBadgeY }],
+                            opacity: xpBadgeOpacity,
+                        }]}>
+                            <View style={styles.rewardIconBg}>
+                                <Ionicons name="flash" size={24} color="#D4AF37" />
+                            </View>
+                            <Text style={[styles.rewardNum, { color: '#D4AF37' }]}>+{node.xpReward}</Text>
+                            <Text style={styles.rewardLabel}>XP GANADOS</Text>
+                        </Animated.View>
 
-                    {/* Trophy badge - animated with delay */}
-                    <Animated.View style={[styles.rewardBox, {
-                        transform: [{ scale: xpBadgeScale }, { translateY: xpBadgeY }],
-                        opacity: xpBadgeOpacity,
-                    }]}>
-                        <View style={[styles.rewardIconBg, { backgroundColor: 'rgba(255,215,0,0.1)' }]}>
-                            <Ionicons name="trophy" size={24} color="#FFD700" />
-                        </View>
-                        <Text style={[styles.rewardNum, { color: '#FFD700' }]}>+{node.trophyReward}</Text>
-                        <Text style={styles.rewardLabel}>TROFEOS</Text>
-                    </Animated.View>
-                </View>
+                        {/* Trophy badge - animated with delay */}
+                        <Animated.View style={[styles.rewardBox, {
+                            transform: [{ scale: xpBadgeScale }, { translateY: xpBadgeY }],
+                            opacity: xpBadgeOpacity,
+                        }]}>
+                            <View style={[styles.rewardIconBg, { backgroundColor: 'rgba(255,215,0,0.1)' }]}>
+                                <Ionicons name="trophy" size={24} color="#FFD700" />
+                            </View>
+                            <Text style={[styles.rewardNum, { color: '#FFD700' }]}>+{node.trophyReward}</Text>
+                            <Text style={styles.rewardLabel}>TROFEOS</Text>
+                        </Animated.View>
+                    </View>
+                )}
 
                 <TouchableOpacity
                     style={[styles.ctaBtn, { backgroundColor: nodeTheme.c, paddingHorizontal: 40, marginTop: 40 }]}
