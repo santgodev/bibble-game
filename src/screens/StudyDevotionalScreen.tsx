@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     StatusBar, Animated, ActivityIndicator, Alert
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -17,7 +18,14 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { node, path }: { node: StudyNode; path: StudyPath } = route.params;
 
-    const { playSound, playHaptic } = useSound();
+    const { playSound, playHaptic, pauseMusic, resumeMusic } = useSound();
+
+    useFocusEffect(
+        React.useCallback(() => {
+            pauseMusic();
+            return () => resumeMusic();
+        }, [])
+    );
 
     const [phase, setPhase] = useState<Phase>('content');
     const [saving, setSaving] = useState(false);

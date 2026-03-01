@@ -5,16 +5,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useGameTimer } from '../../hooks';
+import { useSound } from '../../context/SoundContext';
 
 export const ImpostorGameScreen = ({ navigation, route }: any) => {
     const { duration, impostorList, secretWord, secretCategory, players, playerDetails } = route.params;
 
     const [isFinished, setIsFinished] = useState(false);
     const [starterPlayer, setStarterPlayer] = useState('');
+    const { pauseMusic, resumeMusic } = useSound();
 
     useFocusEffect(
         React.useCallback(() => {
             ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+            pauseMusic();
+            return () => resumeMusic();
         }, [])
     );
 

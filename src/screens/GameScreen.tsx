@@ -16,7 +16,7 @@ const MOCK_WORDS = ['Error', 'No Data'];
 export const GameScreen = ({ navigation, route }: any) => {
     const { t } = useLanguage();
     const insets = useSafeAreaInsets();
-    const { playSound, playHaptic, shuffleMusic, setVolumeModifier, availableTracks, setInternalTrack } = useSound();
+    const { playSound, playHaptic, pauseMusic, resumeMusic, shuffleMusic, setVolumeModifier, availableTracks, setInternalTrack } = useSound();
     // Get params - prioritize param duration
     const { category, categoryObj, words: initialWords, duration = 60, playingMembers = [] } = route.params || {};
 
@@ -81,6 +81,7 @@ export const GameScreen = ({ navigation, route }: any) => {
             const lockLandscape = async () => {
                 try {
                     await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+                    pauseMusic();
                 } catch (e) {
                     console.error("Failed to lock landscape", e);
                 }
@@ -92,6 +93,7 @@ export const GameScreen = ({ navigation, route }: any) => {
                     try {
                         await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
                         setVolumeModifier(1.0);
+                        resumeMusic();
                     } catch (e) {
                         console.error("Failed to lock portrait", e);
                     }
@@ -249,8 +251,6 @@ export const GameScreen = ({ navigation, route }: any) => {
     };
 
     const startGame = () => {
-        shuffleMusic();
-        setVolumeModifier(0.2); // Soft background music
         setScore(0);
         setWordIndex(0);
         setWordsAnswered(0);
