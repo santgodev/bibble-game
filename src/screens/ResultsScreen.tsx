@@ -10,7 +10,7 @@ import { theme } from '../theme';
 import { calculateCharadasRewards } from '../lib/gamification/pointsSystem';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSound } from '../context/SoundContext';
-
+import { submitGameResult } from '../lib/gamification/rewardService';
 
 export const ResultsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -24,8 +24,10 @@ export const ResultsScreen = ({ navigation, route }: any) => {
         canEarnTrophies = true,
         duration = 60,           // Duración de la partida en segundos
         sessionId = null,        // ID único de sesión (idempotency key)
+        isTrivia = false,        // Flag desde TriviaGameScreen
     } = route.params || {};
 
+    // Usa lógica de Charadas por ahora, (luego creamos lógica de Trivia específica en pointsSystem params)
     const rewards = calculateCharadasRewards(score, total, canEarnTrophies, duration);
     const { playSound, playHaptic } = useSound();
 
@@ -119,74 +121,23 @@ export const ResultsScreen = ({ navigation, route }: any) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // ── Generar session ID determinista para esta partida ────────
-            const gameSessionId = sessionId || `CHARADAS_${user.id}_${Date.now()}`;
-
-            // ── Anti-farming: verificar idempotencia ─────────────────────
-            const { data: existing } = await supabase
-                .from('events')
-                .select('id')
-                .eq('session_id', gameSessionId)
-                .limit(1);
-
-            if (existing && existing.length > 0) {
-                console.warn('[Charadas] Sesión ya recompensada:', gameSessionId);
-                return;
-            }
-
-            // ── Determinar a quién premiar ────────────────────────────────
-            // Si se seleccionaron jugadores en el menú → premiar a esos.
-            // Si no → premiar solo al usuario logueado.
+            const gameSessionId = sessionId || `${isTrivia ? 'TRIVIA' : 'CHARADAS'}_${user.id}_${Date.now()}`;
             const candidateIds: string[] = playingMembers.length > 0 ? playingMembers : [user.id];
 
-            const { data: validUsers } = await supabase
-                .from('users')
-                .select('id')
-                .in('id', candidateIds);
-
-            // Garantizar que el usuario logueado siempre esté si es jugador
-            const validSet = new Set<string>(validUsers?.map((u: { id: string }) => u.id) ?? []);
-            if (playingMembers.length === 0) validSet.add(user.id);
-
-            const usersToAward = Array.from(validSet);
-            if (usersToAward.length === 0) return;
-
-            // ── Insertar eventos (audit log) ──────────────────────────────
-            const eventPayloads = usersToAward.map((uid: string) => ({
-                user_id: uid,
-                event_type: 'CHARADAS',
-                session_id: gameSessionId,
-                description: `Charadas: ${category || 'Clásico'} — ${score}/${total}`,
-                xp: rewards.xp,
-                trophies_awarded: rewards.trophies,
-            }));
-
-            await supabase.from('events').insert(eventPayloads);
-
-            // ── Actualizar totales (RPC atómica con fallback manual) ──────
-            for (const uid of usersToAward) {
-                const { error: rpcError } = await supabase.rpc('increment_user_rewards', {
-                    p_user_id: uid,
-                    p_xp: rewards.xp,
-                    p_trophies: rewards.trophies,
-                });
-
-                if (rpcError) {
-                    const { data: targetUser } = await supabase
-                        .from('users')
-                        .select('total_xp, total_trophies')
-                        .eq('id', uid)
-                        .single();
-                    if (targetUser) {
-                        await supabase.from('users').update({
-                            total_xp: (targetUser.total_xp || 0) + rewards.xp,
-                            total_trophies: (targetUser.total_trophies || 0) + rewards.trophies,
-                        }).eq('id', uid);
-                    }
-                }
-            }
+            await submitGameResult(supabase, {
+                gameType: isTrivia ? 'TRIVIA' : 'CHARADAS',
+                sessionId: gameSessionId,
+                userIds: candidateIds,
+                payload: {
+                    score,
+                    total,
+                    category: category || 'General',
+                    duration,
+                    canEarnTrophies
+                } as any // Cast because TRIVIA shares CharadasPayload structure for now
+            });
         } catch (err) {
-            console.log('[Charadas] Ranking submission error:', err);
+            console.log('[Results] Error:', err);
         }
     };
 
@@ -214,7 +165,7 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                     <AppText style={styles.scoreValue}>{displayScore}</AppText>
                     <View style={styles.scoreDivider} />
                     <AppText style={styles.scoreTotal}>{total}</AppText>
-                    <AppText style={styles.scoreLabel}>PALABRAS</AppText>
+                    <AppText style={styles.scoreLabel}>{isTrivia ? 'ACIERTOS' : 'PALABRAS'}</AppText>
                 </View>
 
                 {/* Accuracy line */}
@@ -264,8 +215,8 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                     )}
 
                     <TouchableOpacity
-                        style={[styles.btn, styles.btnPrimary]}
-                        onPress={() => navigation.navigate('CategorySelection')}
+                        style={[styles.btn, styles.btnPrimary, isTrivia && { backgroundColor: '#3498db' }]}
+                        onPress={() => navigation.navigate('CategorySelection', { targetGame: isTrivia ? 'trivia' : 'charadas' })}
                         activeOpacity={0.8}
                     >
                         <Ionicons name="refresh" size={18} color="#000" style={{ marginRight: 8 }} />

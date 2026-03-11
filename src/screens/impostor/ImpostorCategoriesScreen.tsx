@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Image, Dimensions, Modal } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Container, AppText, Button } from '../../components';
 import { getCategories, Category, UnleashQuestion } from '../../data/categories';
 import { supabase } from '../../lib/supabase';
@@ -30,8 +31,9 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
     }, [route.params?.selectedIds]);
 
     const loadData = async () => {
-        // Flatten categories strictly for multiple selection
         const data = await getCategories();
+        
+        // Flatten and include Supabase categories
         const flatList: Category[] = [];
         data.forEach(c => {
             if (c.subcategories && c.subcategories.length > 0) {
@@ -40,8 +42,14 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
                 flatList.push(c);
             }
         });
-        // Remove empty folders
-        const cleanList = flatList.filter(c => c.words && c.words.length > 0);
+
+        // IMPORTANTE: No filtramos si c.id es un UUID (lo que indica que viene de Supabase)
+        // ya que esas palabras las cargaremos en la siguiente pantalla si es necesario.
+        const cleanList = flatList.filter(c => 
+            (c.words && c.words.length > 0) || 
+            (c.id.length > 20) // Heurística simple para UUIDs de Supabase
+        );
+        
         setCategories(cleanList);
 
         try {
@@ -171,10 +179,27 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
                 onPress={() => toggleSelection(item)}
                 activeOpacity={locked ? 1 : 0.8}
             >
-                <View style={[styles.minimalistCover, { backgroundColor: locked ? '#111' : (item.color || '#1A1A1A') }]}>
+                <LinearGradient
+                    colors={(item.gradientColors as any) || [item.color || '#1A1A1A', '#000']}
+                    style={[styles.minimalistCover, locked && { opacity: 0.3 }]}
+                >
+                    {item.icon && !locked && (
+                        <Ionicons 
+                            name={item.icon as any} 
+                            size={44} 
+                            color="rgba(255,255,255,0.15)" 
+                            style={styles.floatingIcon} 
+                        />
+                    )}
                     <AppText style={[styles.minimalistTitle, locked && { color: '#555' }]} numberOfLines={2} adjustsFontSizeToFit>{item.title.toUpperCase()}</AppText>
-                    {item.capitulo && <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]} numberOfLines={1}>{item.capitulo}</AppText>}
-                </View>
+                    {item.capitulo ? (
+                        <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]} numberOfLines={1}>{item.capitulo}</AppText>
+                    ) : (
+                        <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]}>
+                            {item.difficulty === 'Fácil' ? '🌱 SEMILLA' : item.difficulty === 'Medio' ? '👣 DISCÍPULO' : '🕊️ MAESTRO'}
+                        </AppText>
+                    )}
+                </LinearGradient>
 
                 {selected && (
                     <View style={styles.checkCircle}>
@@ -303,6 +328,11 @@ const styles = StyleSheet.create({
     minimalistCover: {
         width: '100%', height: '100%',
         justifyContent: 'center', alignItems: 'center', padding: 10,
+    },
+    floatingIcon: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
     },
     minimalistTitle: {
         color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', textAlign: 'center',

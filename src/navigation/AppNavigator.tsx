@@ -18,6 +18,9 @@ import { StudyDevotionalScreen } from '../screens/StudyDevotionalScreen';
 import { SystemGuideScreen } from '../screens/SystemGuideScreen';
 import { useTheme } from '../context/ThemeContext';
 
+// Trivia
+import { TriviaGameScreen } from '../screens/TriviaGameScreen';
+
 // Impostor Screens
 import { ImpostorConfigScreen } from '../screens/impostor/ImpostorConfigScreen';
 import { ImpostorCategoriesScreen } from '../screens/impostor/ImpostorCategoriesScreen';
@@ -66,6 +69,9 @@ export const AppNavigator = () => {
                 <Stack.Screen name="StudyMissions" component={StudyMissionsScreen} />
                 <Stack.Screen name="StudyDevotional" component={StudyDevotionalScreen} />
                 <Stack.Screen name="SystemGuide" component={SystemGuideScreen} />
+
+                {/* Trivia Flow */}
+                <Stack.Screen name="TriviaGame" component={TriviaGameScreen} />
 
                 {/* Impostor Flow */}
                 <Stack.Screen name="ImpostorConfig" component={ImpostorConfigScreen} />

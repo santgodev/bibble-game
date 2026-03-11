@@ -31,6 +31,12 @@ export interface StudyNode {
     question?: string; // Deep question
     application?: string; // Practical app
 
+    // Nuevo micro-quiz interactivo para Devocionales
+    microQuiz?: {
+        question: string;
+        options: QuizOption[];
+    };
+
     quiz?: {
         questions: {
             question: string;
@@ -104,6 +110,15 @@ export const JESUS_REAL_PATH: StudyPath = {
                     passage: 'Antes de que existiera el big bang, el Verbo ya existía. "era el Verbo", "era con Dios", "era Dios". La misma Persona que diseñó el ADN y las galaxias, decidió un día ponerse cara y nombre.',
                     question: '¿Qué cambia en cómo ves a Jesús si lo entiendes como el Creador del universo, no solo como un moralista o buen ejemplo?',
                     application: 'Esta semana, cada vez que veas algo de la naturaleza que te impresione, recuerda conscientemente: "Jesús hizo esto".',
+                    microQuiz: {
+                        question: 'Jesús no es solo alguien que da un buen ejemplo, Él es quien diseñó...',
+                        options: [
+                            { text: 'Las leyes romanas', correct: false },
+                            { text: 'El ADN y las galaxias', correct: true },
+                            { text: 'Los Diez Mandamientos de piedra', correct: false },
+                            { text: 'El arca de Noé', correct: false },
+                        ]
+                    },
                     xpReward: 15,
                     trophyReward: 5,
                 },
@@ -116,6 +131,15 @@ export const JESUS_REAL_PATH: StudyPath = {
                     passage: '"A lo suyo vino, y los suyos no le recibieron. Mas a todos los que le recibieron... les dio potestad de ser hechos hijos de Dios." Llegó a la humanidad que Él creó y fue ignorado. Pero a quienes creen, no los hace seguidores o fans. Los hace hijos.',
                     question: '¿Hay áreas de tu vida en las que decides tú solo sin incluir a Jesús? ¿Qué significaría "recibirlo" en esa área?',
                     application: 'Pon una nota de fondo en tu celular que diga "Hijo(a) de Dios". Cada vez que la veas, recuerda tu identidad principal.',
+                    microQuiz: {
+                        question: '¿Qué le da Jesús a los que le reciben?',
+                        options: [
+                            { text: 'Riquezas inmediatas', correct: false },
+                            { text: 'Potestad de ser hijos de Dios', correct: true },
+                            { text: 'Conocimiento secreto', correct: false },
+                            { text: 'Protección para nunca enfermar', correct: false },
+                        ]
+                    },
                     xpReward: 15,
                     trophyReward: 5,
                 },
@@ -128,6 +152,15 @@ export const JESUS_REAL_PATH: StudyPath = {
                     passage: '"Habitó entre nosotros". En griego significa que puso su tienda de campaña en nuestro barrio. Y lo hizo lleno de gracia (favor) y verdad (honestidad). No te adula, pero tampoco te aplasta.',
                     question: '¿Qué te cuesta más recibir de Jesús: su gracia que te acepta sin mérito, o su verdad que señala lo que hay que cambiar?',
                     application: 'Habla hoy con alguien usando "gracia y verdad": di algo verdadero y necesario, pero hazlo desde un amor genuino.',
+                    microQuiz: {
+                        question: '¿Qué significa que el Verbo "habitó entre nosotros" en griego?',
+                        options: [
+                            { text: 'Que fundó una religión', correct: false },
+                            { text: 'Que se hizo invisible', correct: false },
+                            { text: 'Que construyó una iglesia', correct: false },
+                            { text: 'Que puso su tienda de campaña en nuestro barrio', correct: true },
+                        ]
+                    },
                     xpReward: 15,
                     trophyReward: 5,
                 },

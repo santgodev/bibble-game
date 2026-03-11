@@ -1,26 +1,56 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, ActivityIndicator, Alert, Image
+    TextInput, ActivityIndicator, Alert, Image, Animated, Dimensions, StatusBar
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 
-// ─── Design tokens ────────────────────────────────────────
-const GOLD = '#D4AF37';
-const BG = '#06060E';
-const SURFACE = '#0E0E1C';
-const BORDER = 'rgba(255,255,255,0.07)';
+const { width } = Dimensions.get('window');
 
-const getLevel = (xp: number) => Math.floor(Math.sqrt(xp / 50)) + 1;
-const getLevelProgress = (xp: number) => {
-    const level = getLevel(xp);
-    const xpForL = (level - 1) ** 2 * 50;
-    const xpForN = level ** 2 * 50;
-    return ((xp - xpForL) / (xpForN - xpForL)) * 100;
+// ─── Design tokens ────────────────────────────────────────
+const GOLD = '#F3C623';
+const SILVER = '#BDC3C7';
+const BRONZE = '#CD7F32';
+const BG = '#050510';
+const SURFACE = '#0F0F25';
+const ACCENT = '#3498DB';
+const PURPLE = '#8E44AD';
+const BORDER = 'rgba(255,255,255,0.08)';
+
+// ─── Leveling Logic ───────────────────────────────────────
+const LEVEL_TITLES = [
+    'Semilla', 'Buscador', 'Discípulo', 'Guerrero', 'Vencedor', 'Maestro', 'Anciano', 'Leyenda'
+];
+
+const getLevelInfo = (xp: number) => {
+    // Escalamiento: Level 1 (0), Level 2 (100), Level 3 (300), Level 4 (600)...
+    let level = 1;
+    let xpForNext = 100;
+    let xpCurrentLevelStart = 0;
+    
+    while (xp >= xpForNext && level < 100) {
+        xpCurrentLevelStart = xpForNext;
+        level++;
+        xpForNext += level * 100;
+    }
+
+    const titleIdx = Math.min(Math.floor((level - 1) / 3), LEVEL_TITLES.length - 1);
+    const progress = ((xp - xpCurrentLevelStart) / (xpForNext - xpCurrentLevelStart)) * 100;
+
+    return { level, title: LEVEL_TITLES[titleIdx], progress, xpForNext, nextLevelTitle: LEVEL_TITLES[Math.min(titleIdx + 1, LEVEL_TITLES.length - 1)] };
 };
+
+// ─── Badges Mock Logic ────────────────────────────────────
+const BADGES = [
+    { id: 'early', icon: 'leaf', color: '#2ECC71', label: 'Primeros Pasos', desc: 'Completaste tu primer devocional' },
+    { id: 'trivia', icon: 'extension-puzzle', color: ACCENT, label: 'Sabio de Trivia', desc: 'Responde 20 preguntas correctamente' },
+    { id: 'streak', icon: 'flame', color: '#E67E22', label: 'Incombustible', desc: 'Racha de 7 días activa' },
+    { id: 'church', icon: 'business', color: GOLD, label: 'Pilar de Iglesia', desc: 'Ayudaste a tu iglesia a subir de rango' },
+    { id: 'master', icon: 'trophy', color: PURPLE, label: 'Maestro Bíblico', desc: 'Alcanza el nivel 10' },
+];
 
 // ─── Labelled Input ───────────────────────────────────────
 const LabelInput = ({ label, icon, value, onChangeText, placeholder, keyboard }: any) => (
@@ -43,14 +73,14 @@ const LabelInput = ({ label, icon, value, onChangeText, placeholder, keyboard }:
 
 const inp = StyleSheet.create({
     wrapper: { marginBottom: 14 },
-    label: { color: '#555', fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 6 },
+    label: { color: '#888', fontSize: 11, fontWeight: '800', letterSpacing: 1.2, marginBottom: 8, textTransform: 'uppercase' },
     row: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.04)',
+        backgroundColor: 'rgba(255,255,255,0.03)',
         borderWidth: 1, borderColor: BORDER,
-        borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
+        borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14,
     },
-    field: { flex: 1, color: '#fff', fontSize: 15 },
+    field: { flex: 1, color: '#fff', fontSize: 16 },
 });
 
 export const ProfileScreen = ({ navigation }: any) => {
@@ -65,6 +95,8 @@ export const ProfileScreen = ({ navigation }: any) => {
     const [churchPhone, setChurchPhone] = useState('');
     const [inviteUsername, setInviteUsername] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
+
+    const scrollY = useRef(new Animated.Value(0)).current;
 
     useEffect(() => { loadProfile(); }, []);
 
@@ -81,12 +113,15 @@ export const ProfileScreen = ({ navigation }: any) => {
                     if (churchData) setChurch(churchData);
                 }
             }
-        } catch (e) { console.error(e); }
-        finally { setLoading(false); }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCreateChurch = async () => {
-        if (!churchName) { Alert.alert('Error', 'Ingresa el nombre de la iglesia'); return; }
+        if (!churchName) { Alert.alert('Aviso', 'El nombre de la iglesia es obligatorio para fundarla.'); return; }
         setActionLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -97,50 +132,37 @@ export const ProfileScreen = ({ navigation }: any) => {
                 .select().single();
             if (createError) throw createError;
 
-            if (userStats?.id) {
-                const { error: updateError } = await supabase.from('users').update({ church_id: newChurch.id }).eq('id', userStats.id);
-                if (updateError) throw updateError;
-            } else {
-                const { error: insertError } = await supabase.from('users').insert({
-                    id: user.id, email: user.email,
-                    username: user.user_metadata?.username || user.email?.split('@')[0],
-                    full_name: user.user_metadata?.full_name || 'Gamer',
-                    church_id: newChurch.id, role: 'USER', total_xp: 0, total_trophies: 0, level: 1
-                });
-                if (insertError) throw insertError;
-            }
+            // Vincular usuario
+            const { error: updateError } = await supabase.from('users').update({ church_id: newChurch.id }).eq('id', user.id);
+            if (updateError) throw updateError;
 
-            Alert.alert('¡Iglesia Creada!', `"${newChurch.name}" ya está en el sistema.`);
+            Alert.alert('¡Iglesia Fundada!', `Felicidades, @${userStats.username}. Ahora lideras "${newChurch.name}".`);
             setChurch(newChurch);
-            setUserStats({ ...userStats, church_id: newChurch.id, id: user.id });
+            setUserStats({ ...userStats, church_id: newChurch.id });
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'No se pudo crear la iglesia');
+            Alert.alert('Error', err.message);
         } finally { setActionLoading(false); }
     };
 
     const handleInviteUser = async () => {
-        if (!inviteUsername) { Alert.alert('Error', 'Ingresa el nombre de usuario'); return; }
+        if (!inviteUsername) return;
         setActionLoading(true);
         try {
-            const cleanUsername = inviteUsername.replace(/^@/, '').trim();
-            const { data: targetUsers, error: findError } = await supabase.from('users')
-                .select('*').ilike('username', `%${cleanUsername}%`).limit(1);
-            if (findError) throw new Error('Hubo un problema buscando al usuario.');
-            if (!targetUsers || targetUsers.length === 0) throw new Error('Usuario no encontrado.');
+            const clean = inviteUsername.replace('@', '').trim();
+            const { data: targets } = await supabase.from('users').select('id, username, church_id').ilike('username', clean).limit(1);
+            
+            if (!targets || targets.length === 0) throw new Error('Jugador no encontrado.');
+            const target = targets[0];
 
-            const targetUser = targetUsers[0];
-            if (targetUser.church_id === church.id) {
-                Alert.alert('Info', 'Este usuario ya está en tu iglesia');
-                setActionLoading(false); return;
-            }
+            if (target.church_id === church.id) throw new Error('Ya está en tu iglesia.');
 
-            const { error: updateError } = await supabase.from('users').update({ church_id: church.id }).eq('id', targetUser.id);
-            if (updateError) throw updateError;
+            const { error: updErr } = await supabase.from('users').update({ church_id: church.id }).eq('id', target.id);
+            if (updErr) throw updErr;
 
-            Alert.alert('¡Éxito!', `@${targetUser.username} se ha unido a ${church.name}.`);
+            Alert.alert('¡Miembro Añadido!', `@${target.username} se ha unido a las filas de ${church.name}.`);
             setInviteUsername('');
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'No se pudo invitar al usuario');
+            Alert.alert('Error', err.message);
         } finally { setActionLoading(false); }
     };
 
@@ -152,292 +174,279 @@ export const ProfileScreen = ({ navigation }: any) => {
         );
     }
 
-    const level = getLevel(userStats?.total_xp || 0);
-    const progress = getLevelProgress(userStats?.total_xp || 0);
-    const avatarSeed = userStats?.username || 'default';
-    const avatarUri = `https://api.dicebear.com/7.x/bottts/png?seed=${avatarSeed}`;
+    const { level, title, progress, xpForNext } = getLevelInfo(userStats?.total_xp || 0);
+    const avatarUri = `https://api.dicebear.com/7.x/bottts/png?seed=${userStats?.username || 'berea'}`;
+
+    const headerOpacity = scrollY.interpolate({
+        inputRange: [0, 80],
+        outputRange: [0, 1],
+        extrapolate: 'clamp'
+    });
 
     return (
         <View style={s.container}>
-            <ScrollView
-                contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+            <StatusBar barStyle="light-content" />
+            
+            {/* Header Flotante */}
+            <Animated.View style={[s.floatingHeader, { opacity: headerOpacity, paddingTop: insets.top }]}>
+                <Text style={s.floatingTitle}>@{userStats?.username}</Text>
+            </Animated.View>
+
+            <Animated.ScrollView
+                onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
                 showsVerticalScrollIndicator={false}
             >
-                {/* ── Header gradient ─────────────────── */}
-                <LinearGradient colors={['#0d0d24', BG]} style={[s.header, { paddingTop: insets.top + 10 }]}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
-                        <Ionicons name="arrow-back" size={22} color="#fff" />
+                {/* ── Top Identity Section ────────────────── */}
+                <LinearGradient colors={['#1A1A3F', BG]} style={[s.hero, { paddingTop: insets.top + 20 }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+                        <Ionicons name="chevron-back" size={24} color="#fff" />
                     </TouchableOpacity>
-                    <Text style={s.headerTitle}>MI PERFIL</Text>
-                    <View style={{ width: 40 }} />
+
+                    <View style={s.avatarContainer}>
+                        <LinearGradient colors={[GOLD, '#FF9900']} style={s.levelBadge}>
+                            <Text style={s.levelBadgeText}>{level}</Text>
+                        </LinearGradient>
+                        <View style={s.avatarWrapper}>
+                            <Image source={{ uri: avatarUri }} style={s.avatar} />
+                        </View>
+                        <View style={s.statusDot} />
+                    </View>
+
+                    <Text style={s.displayName}>{userStats?.full_name || 'Guerrero de la Fe'}</Text>
+                    <Text style={s.displayUsername}>@{userStats?.username}</Text>
+                    
+                    <View style={s.titleChip}>
+                        <Ionicons name="sparkles" size={14} color={GOLD} />
+                        <Text style={s.titleChipText}>{title.toUpperCase()}</Text>
+                    </View>
+
+                    <View style={s.mainStatsRow}>
+                        <View style={s.mainStatItem}>
+                            <Text style={s.mainStatVal}>{userStats?.total_xp || 0}</Text>
+                            <Text style={s.mainStatLabel}>EXPERIENCIA</Text>
+                        </View>
+                        <View style={s.statDivider} />
+                        <View style={s.mainStatItem}>
+                            <Text style={[s.mainStatVal, { color: '#FFD700' }]}>{userStats?.total_trophies || 0}</Text>
+                            <Text style={s.mainStatLabel}>TROFEOS</Text>
+                        </View>
+                        <View style={s.statDivider} />
+                        <View style={s.mainStatItem}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="flame" size={20} color="#E67E22" />
+                                <Text style={[s.mainStatVal, { color: '#E67E22', marginLeft: 4 }]}>{userStats?.streak_count || 1}</Text>
+                            </View>
+                            <Text style={s.mainStatLabel}>RACHA DÍAS</Text>
+                        </View>
+                    </View>
                 </LinearGradient>
 
-                {/* ── Profile Identity Card ───────────── */}
-                {userStats && (
-                    <View style={s.identityCard}>
-                        {/* Avatar */}
-                        <LinearGradient colors={[GOLD, '#B8860B']} style={s.avatarBorder}>
-                            <View style={s.avatarInner}>
-                                <Image source={{ uri: avatarUri }} style={s.avatar} />
-                            </View>
-                        </LinearGradient>
-
-                        {/* Name & role */}
-                        <Text style={s.username}>@{userStats.username}</Text>
-                        {userStats.full_name && <Text style={s.fullName}>{userStats.full_name}</Text>}
-
-                        <View style={s.roleChip}>
-                            <Ionicons name="shield-checkmark" size={12} color={GOLD} style={{ marginRight: 4 }} />
-                            <Text style={s.roleText}>{userStats.role || 'GUERRERO BÍBLICO'}</Text>
-                        </View>
-
-                        {/* Stat pills */}
-                        <View style={s.statsRow}>
-                            <LinearGradient colors={['rgba(212,175,55,0.15)', 'rgba(212,175,55,0.04)']} style={s.statPill}>
-                                <Ionicons name="flash" size={14} color={GOLD} />
-                                <Text style={s.statNum}>{(userStats.total_xp || 0).toLocaleString()}</Text>
-                                <Text style={s.statLabel}>XP</Text>
-                            </LinearGradient>
-                            <LinearGradient colors={['rgba(255,215,0,0.15)', 'rgba(255,215,0,0.04)']} style={s.statPill}>
-                                <Ionicons name="trophy" size={14} color="#FFD700" />
-                                <Text style={[s.statNum, { color: '#FFD700' }]}>{userStats.total_trophies || 0}</Text>
-                                <Text style={s.statLabel}>TROFEOS</Text>
-                            </LinearGradient>
-                            <LinearGradient colors={['rgba(94,22,181,0.2)', 'rgba(94,22,181,0.05)']} style={s.statPill}>
-                                <Ionicons name="medal" size={14} color="#9B59B6" />
-                                <Text style={[s.statNum, { color: '#9B59B6' }]}>{level}</Text>
-                                <Text style={s.statLabel}>NIVEL</Text>
-                            </LinearGradient>
-                        </View>
-
-                        {/* XP Bar */}
-                        <View style={s.xpBarContainer}>
-                            <View style={s.xpBarRow}>
-                                <Text style={s.xpBarLabel}>Progreso al nivel {level + 1}</Text>
-                                <Text style={s.xpBarPct}>{Math.round(progress)}%</Text>
-                            </View>
-                            <View style={s.xpBarBg}>
-                                <View style={[s.xpBarFill, { width: `${progress}%` }]} />
-                            </View>
-                        </View>
+                {/* ── XP Progress Bar ─────────────────── */}
+                <View style={s.xpSection}>
+                    <View style={s.xpInfo}>
+                        <Text style={s.xpLabel}>Nivel {level}</Text>
+                        <Text style={s.xpTarget}>{userStats?.total_xp} / {xpForNext} XP</Text>
                     </View>
-                )}
-
-                {/* ── Church Section ──────────────────── */}
-                <View style={s.sectionHeader}>
-                    <View style={s.sectionLine} />
-                    <Text style={s.sectionTitle}>🏛 MI IGLESIA</Text>
-                    <View style={s.sectionLine} />
+                    <View style={s.barBg}>
+                        <LinearGradient 
+                            colors={[GOLD, '#FF9900']} 
+                            start={{x:0, y:0.5}} end={{x:1, y:0.5}}
+                            style={[s.barFill, { width: `${progress}%` }]} 
+                        />
+                    </View>
                 </View>
 
-                {!church ? (
-                    /* Create church form */
-                    <View style={s.card}>
-                        <View style={s.cardTitleRow}>
-                            <View style={s.cardIconBg}>
-                                <Ionicons name="add-circle" size={22} color={GOLD} />
-                            </View>
-                            <Text style={s.cardTitle}>Fundar Iglesia</Text>
-                        </View>
-                        <Text style={s.cardDesc}>
-                            Aún no formas parte de una iglesia. Crea la tuya para competir en el ranking junto a tu equipo.
-                        </Text>
+                {/* ── Badges Section ──────────────────── */}
+                <View style={s.sectionContainer}>
+                    <Text style={s.sectionHeader}>MIS INSIGNIAS</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.badgeScroll}>
+                        {BADGES.map((b, i) => {
+                            const isUnlocked = i < 3; // Mocking first 3 as unlocked
+                            return (
+                                <View key={b.id} style={[s.badgeCard, !isUnlocked && s.lockedBadge]}>
+                                    <View style={[s.badgeIconBg, { backgroundColor: b.color + '20' }]}>
+                                        <Ionicons name={b.icon as any} size={28} color={isUnlocked ? b.color : '#444'} />
+                                    </View>
+                                    <Text style={[s.badgeLabel, !isUnlocked && { color: '#555' }]}>{b.label}</Text>
+                                    {!isUnlocked && (
+                                        <View style={s.lockIconWrap}>
+                                            <Ionicons name="lock-closed" size={10} color="#000" />
+                                        </View>
+                                    )}
+                                </View>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
 
-                        <LabelInput label="NOMBRE DE LA IGLESIA *" icon="home-outline" value={churchName} onChangeText={setChurchName} placeholder="Ej: Iglesia Berea Central" />
-                        <LabelInput label="CIUDAD" icon="location-outline" value={churchCity} onChangeText={setChurchCity} placeholder="Ej: Bogotá" />
-                        <LabelInput label="DIRECCIÓN (OPCIONAL)" icon="map-outline" value={churchAddress} onChangeText={setChurchAddress} placeholder="Calle 123 #45-67" />
-                        <LabelInput label="TELÉFONO (OPCIONAL)" icon="call-outline" value={churchPhone} onChangeText={setChurchPhone} placeholder="+57 300..." keyboard="phone-pad" />
+                {/* ── Guild / Church Section ───────────── */}
+                <View style={s.sectionContainer}>
+                    <Text style={s.sectionHeader}>MI CLAN / IGLESIA</Text>
+                    {!church ? (
+                        <View style={s.glassCard}>
+                            <Text style={s.cardHeadline}>Únete a un equipo</Text>
+                            <Text style={s.cardBody}>No estás en ninguna iglesia. Crea una nueva para que otros jugadores de tu grupo se unan a ti.</Text>
+                            
+                            <LabelInput label="Nombre del Clan" icon="shield-outline" value={churchName} onChangeText={setChurchName} placeholder="Ej. El Ejercito de David" />
+                            <LabelInput label="Ubicación" icon="location-outline" value={churchCity} onChangeText={setChurchCity} placeholder="Ciudad" />
 
-                        <TouchableOpacity style={s.primaryBtn} onPress={handleCreateChurch} disabled={actionLoading} activeOpacity={0.8}>
-                            <LinearGradient colors={[GOLD, '#B8860B']} style={s.primaryBtnInner}>
-                                {actionLoading
-                                    ? <ActivityIndicator color="#000" />
-                                    : <>
-                                        <Ionicons name="flag" size={18} color="#000" style={{ marginRight: 8 }} />
-                                        <Text style={s.primaryBtnText}>FUNDAR IGLESIA</Text>
-                                    </>
-                                }
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    /* Manage church */
-                    <View style={s.card}>
-                        <LinearGradient colors={['rgba(212,175,55,0.1)', 'transparent']} style={s.churchBanner}>
-                            <View style={s.churchIconBg}>
-                                <Ionicons name="home" size={28} color={GOLD} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={s.churchName}>{church.name}</Text>
-                                {church.city && <Text style={s.churchMeta}>{church.city}</Text>}
-                            </View>
-                            <View style={s.verifiedBadge}>
-                                <Ionicons name="checkmark-circle" size={16} color="#2ecc71" />
-                                <Text style={s.verifiedTxt}>ACTIVA</Text>
-                            </View>
-                        </LinearGradient>
-
-                        <Text style={s.cardDesc}>
-                            Como líder, puedes añadir miembros buscando su nombre de usuario (GameTag). Ellos quedarán enlazados a tu iglesia y competirán en el ranking local.
-                        </Text>
-
-                        <View style={s.divider} />
-
-                        <Text style={s.miniLabel}>INVITAR MIEMBRO</Text>
-                        <View style={s.inviteRow}>
-                            <View style={s.inviteInputWrap}>
-                                <Ionicons name="at" size={16} color="#555" style={{ marginRight: 8 }} />
-                                <TextInput
-                                    style={s.inviteInput}
-                                    value={inviteUsername}
-                                    onChangeText={setInviteUsername}
-                                    placeholder="username del jugador"
-                                    placeholderTextColor="#444"
-                                    autoCapitalize="none"
-                                />
-                            </View>
-                            <TouchableOpacity style={s.inviteBtn} onPress={handleInviteUser} disabled={actionLoading} activeOpacity={0.85}>
-                                <LinearGradient colors={[GOLD, '#B8860B']} style={s.inviteBtnInner}>
-                                    {actionLoading
-                                        ? <ActivityIndicator color="#000" size="small" />
-                                        : <Ionicons name="person-add" size={18} color="#000" />
-                                    }
+                            <TouchableOpacity style={s.actionBtn} onPress={handleCreateChurch} disabled={actionLoading}>
+                                <LinearGradient colors={[ACCENT, '#2980B9']} style={s.actionBtnInner}>
+                                    {actionLoading ? <ActivityIndicator color="#fff" /> : <Text style={s.actionBtnText}>FUNDAR CLAN</Text>}
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>
-                    </View>
-                )}
+                    ) : (
+                        <View style={s.glassCard}>
+                            <View style={s.guildHeader}>
+                                <View style={s.guildAvatar}>
+                                    <Ionicons name="home" size={24} color={GOLD} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={s.guildName}>{church.name}</Text>
+                                    <Text style={s.guildMeta}>{church.city || 'Ubicación desconocida'}</Text>
+                                </View>
+                                <View style={s.rankPill}>
+                                    <Text style={s.rankPillText}>LÍDER</Text>
+                                </View>
+                            </View>
 
-                {/* ── Danger Zone ─────────────────────── */}
-                <View style={s.sectionHeader}>
-                    <View style={s.sectionLine} />
-                    <Text style={s.sectionTitle}>⚙ CUENTA</Text>
-                    <View style={s.sectionLine} />
+                            <View style={s.divider} />
+                            
+                            <Text style={s.subLabel}>AÑADIR GUERRERO</Text>
+                            <View style={s.inviteRow}>
+                                <TextInput 
+                                    style={s.minimalInput}
+                                    placeholder="@gamertag..."
+                                    placeholderTextColor="#555"
+                                    value={inviteUsername}
+                                    onChangeText={setInviteUsername}
+                                    autoCapitalize="none"
+                                />
+                                <TouchableOpacity style={s.miniBtn} onPress={handleInviteUser}>
+                                    <Ionicons name="add" size={24} color="#000" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
                 </View>
 
-                <TouchableOpacity
-                    style={s.dangerBtn}
-                    onPress={() => Alert.alert(
-                        'Cerrar Sesión',
-                        '¿Estás seguro que deseas salir?',
-                        [
-                            { text: 'Cancelar', style: 'cancel' },
-                            { text: 'Salir', style: 'destructive', onPress: async () => { await supabase.auth.signOut(); navigation.replace('Auth'); } }
-                        ]
-                    )}
-                    activeOpacity={0.8}
+                {/* ── Danger Zone ─────────────────────── */}
+                <TouchableOpacity 
+                    style={s.logoutBtn}
+                    onPress={() => {
+                        Alert.alert('Cerrar Sesión', '¿Estás seguro?', [
+                            { text: 'No', style: 'cancel' },
+                            { text: 'Sí, Salir', style: 'destructive', onPress: async () => { await supabase.auth.signOut(); navigation.replace('Auth'); } }
+                        ]);
+                    }}
                 >
-                    <Ionicons name="log-out-outline" size={18} color="#e74c3c" />
-                    <Text style={s.dangerText}>Cerrar Sesión</Text>
+                    <Ionicons name="log-out-outline" size={20} color="#e74c3c" />
+                    <Text style={s.logoutText}>CERRAR SESIÓN</Text>
                 </TouchableOpacity>
-            </ScrollView>
+
+            </Animated.ScrollView>
         </View>
     );
 };
 
 const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: BG },
-    header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 16, paddingBottom: 20,
+    floatingHeader: {
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+        backgroundColor: SURFACE, borderBottomWidth: 1, borderBottomColor: BORDER,
+        alignItems: 'center', paddingBottom: 15,
     },
-    iconBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: BORDER,
+    floatingTitle: { color: GOLD, fontWeight: '900', fontSize: 16 },
+    hero: {
+        alignItems: 'center', paddingHorizontal: 20, paddingBottom: 30,
+        borderBottomLeftRadius: 40, borderBottomRightRadius: 40,
     },
-    headerTitle: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 2 },
-
-    // Identity card
-    identityCard: {
-        alignItems: 'center', marginHorizontal: 16, marginBottom: 32,
-        backgroundColor: SURFACE, borderRadius: 28, padding: 24,
-        borderWidth: 1, borderColor: 'rgba(212,175,55,0.15)',
+    backBtn: { alignSelf: 'flex-start', padding: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12 },
+    avatarContainer: { marginVertical: 20, position: 'relative' },
+    avatarWrapper: {
+        width: 120, height: 120, borderRadius: 60,
+        backgroundColor: SURFACE, borderWidth: 4, borderColor: GOLD,
+        padding: 10, overflow: 'hidden', elevation: 20, shadowColor: GOLD, shadowOpacity: 0.3, shadowRadius: 20
     },
-    avatarBorder: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-    avatarInner: { width: 82, height: 82, borderRadius: 41, backgroundColor: '#0a0a18', overflow: 'hidden' },
     avatar: { width: '100%', height: '100%' },
-    username: { color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 },
-    fullName: { color: '#666', fontSize: 14, marginBottom: 10 },
-    roleChip: {
-        flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(212,175,55,0.1)', paddingHorizontal: 10, paddingVertical: 5,
-        borderRadius: 12, borderWidth: 1, borderColor: 'rgba(212,175,55,0.2)', marginBottom: 20,
+    levelBadge: {
+        position: 'absolute', top: -5, right: -5, zIndex: 5,
+        width: 40, height: 40, borderRadius: 20,
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 3, borderColor: BG
     },
-    roleText: { color: GOLD, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-    statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20, width: '100%' },
-    statPill: {
-        flex: 1, alignItems: 'center', paddingVertical: 12,
-        borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', gap: 2,
+    levelBadgeText: { color: '#000', fontWeight: '900', fontSize: 16 },
+    statusDot: {
+        position: 'absolute', bottom: 10, right: 10,
+        width: 18, height: 18, borderRadius: 9,
+        backgroundColor: '#2ECC71', borderWidth: 3, borderColor: BG
     },
-    statNum: { color: GOLD, fontSize: 18, fontWeight: '900' },
-    statLabel: { color: '#555', fontSize: 9, fontWeight: '700', letterSpacing: 1 },
-    xpBarContainer: { width: '100%' },
-    xpBarRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-    xpBarLabel: { color: '#555', fontSize: 11, fontWeight: '700' },
-    xpBarPct: { color: GOLD, fontSize: 11, fontWeight: '900' },
-    xpBarBg: { height: 6, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' },
-    xpBarFill: { height: '100%', backgroundColor: GOLD, borderRadius: 3 },
+    displayName: { color: '#fff', fontSize: 24, fontWeight: '900' },
+    displayUsername: { color: '#888', fontSize: 16, marginTop: 4 },
+    titleChip: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: 'rgba(243, 198, 35, 0.1)', paddingHorizontal: 16, paddingVertical: 8,
+        borderRadius: 20, marginTop: 15, borderWidth: 1, borderColor: 'rgba(243, 198, 35, 0.2)'
+    },
+    titleChipText: { color: GOLD, fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
+    mainStatsRow: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
+        width: '100%', marginTop: 30, backgroundColor: 'rgba(255,255,255,0.03)',
+        paddingVertical: 20, borderRadius: 24, borderWidth: 1, borderColor: BORDER
+    },
+    mainStatItem: { alignItems: 'center' },
+    mainStatVal: { color: '#fff', fontSize: 20, fontWeight: '900' },
+    mainStatLabel: { color: '#666', fontSize: 10, fontWeight: '800', marginTop: 4, letterSpacing: 0.8 },
+    statDivider: { width: 1, height: 30, backgroundColor: BORDER },
 
-    // Section headers
-    sectionHeader: {
-        flexDirection: 'row', alignItems: 'center',
-        marginHorizontal: 16, marginBottom: 16, gap: 12,
-    },
-    sectionLine: { flex: 1, height: 1, backgroundColor: BORDER },
-    sectionTitle: { color: '#555', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+    xpSection: { marginTop: -25, paddingHorizontal: 25 },
+    xpInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+    xpLabel: { color: '#fff', fontWeight: '800', fontSize: 12 },
+    xpTarget: { color: GOLD, fontWeight: '900', fontSize: 12 },
+    barBg: { height: 12, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: BORDER },
+    barFill: { height: '100%', borderRadius: 6 },
 
-    // Card
-    card: {
-        backgroundColor: SURFACE, marginHorizontal: 16,
-        borderRadius: 24, padding: 22, borderWidth: 1, borderColor: BORDER,
-        marginBottom: 28,
+    sectionContainer: { marginTop: 35, paddingHorizontal: 20 },
+    sectionHeader: { color: '#555', fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 15 },
+    badgeScroll: { paddingRight: 40, gap: 15 },
+    badgeCard: {
+        width: 110, height: 140, backgroundColor: SURFACE, borderRadius: 24,
+        alignItems: 'center', justifyContent: 'center', padding: 10,
+        borderWidth: 1, borderColor: BORDER
     },
-    cardTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    cardIconBg: {
-        width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(212,175,55,0.1)',
-        alignItems: 'center', justifyContent: 'center', marginRight: 12,
-    },
-    cardTitle: { color: '#fff', fontSize: 18, fontWeight: '900' },
-    cardDesc: { color: '#666', fontSize: 14, lineHeight: 22, marginBottom: 20 },
+    badgeIconBg: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+    badgeLabel: { color: '#fff', fontSize: 11, fontWeight: '800', textAlign: 'center' },
+    lockedBadge: { opacity: 0.5, backgroundColor: 'rgba(0,0,0,0.2)' },
+    lockIconWrap: { position: 'absolute', top: 10, right: 10, backgroundColor: GOLD, padding: 2, borderRadius: 4 },
 
-    // Primary btn
-    primaryBtn: { borderRadius: 16, overflow: 'hidden', marginTop: 4 },
-    primaryBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
-    primaryBtnText: { color: '#000', fontSize: 15, fontWeight: '900', letterSpacing: 1 },
+    glassCard: {
+        backgroundColor: SURFACE, borderRadius: 28, padding: 22,
+        borderWidth: 1, borderColor: BORDER
+    },
+    cardHeadline: { color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 8 },
+    cardBody: { color: '#888', fontSize: 14, lineHeight: 22, marginBottom: 20 },
+    actionBtn: { marginTop: 10, borderRadius: 16, overflow: 'hidden' },
+    actionBtnInner: { paddingVertical: 16, alignItems: 'center' },
+    actionBtnText: { color: '#fff', fontWeight: '900', letterSpacing: 1 },
 
-    // Church banner
-    churchBanner: {
-        flexDirection: 'row', alignItems: 'center', borderRadius: 16,
-        padding: 16, marginBottom: 16, gap: 12, borderWidth: 1, borderColor: 'rgba(212,175,55,0.15)',
-    },
-    churchIconBg: {
-        width: 50, height: 50, borderRadius: 14,
-        backgroundColor: 'rgba(212,175,55,0.1)', alignItems: 'center', justifyContent: 'center',
-    },
-    churchName: { color: '#fff', fontSize: 16, fontWeight: '900' },
-    churchMeta: { color: '#888', fontSize: 12, marginTop: 2 },
-    verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    verifiedTxt: { color: '#2ecc71', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-    divider: { height: 1, backgroundColor: BORDER, marginVertical: 16 },
-    miniLabel: { color: '#555', fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 12 },
-    inviteRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    inviteInputWrap: {
-        flex: 1, flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14,
-        borderWidth: 1, borderColor: BORDER, paddingHorizontal: 14, paddingVertical: 14,
-    },
-    inviteInput: { flex: 1, color: '#fff', fontSize: 15 },
-    inviteBtn: { borderRadius: 14, overflow: 'hidden' },
-    inviteBtnInner: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
+    guildHeader: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+    guildAvatar: { width: 50, height: 50, borderRadius: 15, backgroundColor: 'rgba(243, 198, 35, 0.1)', alignItems: 'center', justifyContent: 'center' },
+    guildName: { color: '#fff', fontSize: 18, fontWeight: '900' },
+    guildMeta: { color: '#555', fontSize: 13, marginTop: 2 },
+    rankPill: { backgroundColor: GOLD, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    rankPillText: { color: '#000', fontSize: 10, fontWeight: '900' },
+    divider: { height: 1, backgroundColor: BORDER, marginVertical: 20 },
+    subLabel: { color: '#444', fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15 },
+    inviteRow: { flexDirection: 'row', gap: 10 },
+    minimalInput: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, paddingHorizontal: 15, color: '#fff', height: 48, borderWidth: 1, borderColor: BORDER },
+    miniBtn: { width: 48, height: 48, backgroundColor: GOLD, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
-    // Danger
-    dangerBtn: {
+    logoutBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        marginHorizontal: 16, paddingVertical: 16, borderRadius: 16,
-        backgroundColor: 'rgba(231,76,60,0.07)', borderWidth: 1, borderColor: 'rgba(231,76,60,0.2)',
-        gap: 10,
+        marginTop: 40, marginHorizontal: 20, paddingVertical: 18,
+        borderWidth: 1, borderColor: 'rgba(231,76,60,0.2)', borderRadius: 20, gap: 10
     },
-    dangerText: { color: '#e74c3c', fontSize: 15, fontWeight: '800' },
+    logoutText: { color: '#e74c3c', fontWeight: '900', letterSpacing: 1 },
 });

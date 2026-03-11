@@ -1,18 +1,41 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, useWindowDimensions, StatusBar, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../theme';
 import { AppText } from '../components';
+import { supabase } from '../lib/supabase';
 
 export const HomeScreen = ({ navigation }: any) => {
     const { width, height } = useWindowDimensions();
     const insets = useSafeAreaInsets();
 
-    // Pulsating glow animations
+    const [userData, setUserData] = useState<any>(null);
+
     const goldPulse = useRef(new Animated.Value(0.4)).current;
     const redPulse = useRef(new Animated.Value(0.4)).current;
     const purplePulse = useRef(new Animated.Value(0.4)).current;
+    const bluePulseValue = useRef(new Animated.Value(0.4)).current; // Fixed naming collision
+
+    const fetchUserData = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            setUserData(data);
+        }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchUserData();
+        }, [])
+    );
 
     useEffect(() => {
         const goldLoop = Animated.loop(
@@ -35,10 +58,20 @@ export const HomeScreen = ({ navigation }: any) => {
                 Animated.timing(purplePulse, { toValue: 0.4, duration: 1600, useNativeDriver: false }),
             ])
         );
+        const blueLoop = Animated.loop(
+            Animated.sequence([
+                Animated.delay(1200),
+                Animated.timing(bluePulseValue, { toValue: 1, duration: 1600, useNativeDriver: false }),
+                Animated.timing(bluePulseValue, { toValue: 0.4, duration: 1600, useNativeDriver: false }),
+            ])
+        );
+
         goldLoop.start();
         redLoop.start();
         purpleLoop.start();
-        return () => { goldLoop.stop(); redLoop.stop(); purpleLoop.stop(); };
+        blueLoop.start();
+        
+        return () => { goldLoop.stop(); redLoop.stop(); purpleLoop.stop(); blueLoop.stop(); };
     }, []);
 
     const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
@@ -58,6 +91,11 @@ export const HomeScreen = ({ navigation }: any) => {
         outputRange: ['rgba(155, 89, 182, 0.4)', 'rgba(155, 89, 182, 1)'], // Matches #9B59B6
     });
 
+    const blueBorderColor = bluePulseValue.interpolate({
+        inputRange: [0.4, 1],
+        outputRange: ['rgba(52, 152, 219, 0.4)', 'rgba(52, 152, 219, 1)'], // Blue for Trivia
+    });
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
@@ -75,32 +113,54 @@ export const HomeScreen = ({ navigation }: any) => {
                 }]} />
             </View>
 
-            {/* Header / Config & Ranking & Profile */}
-            <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-                {/* PROFILE BUTTON */}
-                <TouchableOpacity
-                    style={[styles.settingsButton, { marginRight: 12, backgroundColor: 'rgba(212, 175, 55, 0.2)', borderWidth: 1, borderColor: theme.colors.primary }]}
-                    onPress={() => navigation.navigate('Profile')}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="person" size={20} color={theme.colors.primary} />
-                </TouchableOpacity>
+            {/* ── HEADER COMPACTO ── */}
+            <View style={[styles.compactHeader, { paddingTop: insets.top + 10, paddingHorizontal: 20 }]}>
+                <View style={styles.headerTopRow}>
+                    <View style={styles.userInfoMini}>
+                        <AppText style={styles.userNameMini}>¡HOLA, {userData?.username?.toUpperCase() || 'GUERRERO'}!</AppText>
+                        <AppText style={styles.userLevelMini}>NIVEL {Math.floor((userData?.total_xp || 0) / 100) + 1} • {userData?.total_xp || 0} XP</AppText>
+                    </View>
+                    
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        {/* Racha Compacta pero Vibrante */}
+                        <TouchableOpacity 
+                            style={styles.streakPill}
+                            onPress={() => navigation.navigate('Profile')}
+                            activeOpacity={0.8}
+                        >
+                            <Animated.View style={{ transform: [{ scale: goldPulse }] }}>
+                                <Ionicons name="flame" size={18} color="#FF4500" />
+                            </Animated.View>
+                            <AppText style={styles.streakValuePill}>{userData?.streak_count || 1}</AppText>
+                            <AppText style={styles.streakLabelPill}>DÍAS</AppText>
+                        </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.settingsButton, { marginRight: 12 }]}
-                    onPress={() => navigation.navigate('RankingDashboard')}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="trophy-outline" size={24} color="#FFB800" />
-                </TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                            <Ionicons name="person-circle-outline" size={32} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
 
-                <TouchableOpacity
-                    style={styles.settingsButton}
-                    onPress={() => navigation.navigate('Settings')}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="settings-outline" size={24} color={theme.colors.textSecondary} />
-                </TouchableOpacity>
+                {/* Botones de acción flotantes (Config, Ranking) */}
+                <View style={styles.floatingActions}>
+                    <TouchableOpacity
+                        style={styles.actionPill}
+                        onPress={() => navigation.navigate('RankingDashboard')}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="trophy-outline" size={14} color="#FFB800" />
+                        <AppText style={styles.actionPillText}>RANKING</AppText>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.actionPill}
+                        onPress={() => navigation.navigate('Settings')}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="settings-outline" size={14} color="rgba(255,255,255,0.6)" />
+                        <AppText style={styles.actionPillText}>AJUSTES</AppText>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Main Content */}
@@ -117,7 +177,7 @@ export const HomeScreen = ({ navigation }: any) => {
                 <View style={styles.btnWrapper}>
                     <AnimatedTouchableOpacity
                         style={[styles.playButton, { borderColor: goldBorderColor }]}
-                        onPress={() => navigation.navigate('CategorySelection')}
+                        onPress={() => navigation.navigate('CategorySelection', { targetGame: 'charadas' })}
                         activeOpacity={0.8}
                     >
                         <Ionicons name="mic" size={20} color={theme.colors.primary} style={{ marginRight: 10 }} />
@@ -134,6 +194,18 @@ export const HomeScreen = ({ navigation }: any) => {
                     >
                         <Ionicons name="eye-off" size={20} color="#e74c3c" style={{ marginRight: 10 }} />
                         <AppText style={[styles.playButtonText, { color: '#e74c3c' }]}>EL IMPOSTOR</AppText>
+                    </AnimatedTouchableOpacity>
+                </View>
+
+                {/* Trivia Button with pulsing blue border */}
+                <View style={[styles.btnWrapper, { marginTop: 14 }]}>
+                    <AnimatedTouchableOpacity
+                        style={[styles.playButton, { borderColor: blueBorderColor, backgroundColor: 'rgba(52, 152, 219, 0.05)' }]}
+                        onPress={() => navigation.navigate('CategorySelection', { targetGame: 'trivia' })}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="help-buoy" size={20} color="#3498DB" style={{ marginRight: 10 }} />
+                        <AppText style={[styles.playButtonText, { color: '#3498DB' }]}>TRIVIA BÍBLICA</AppText>
                     </AnimatedTouchableOpacity>
                 </View>
 
@@ -295,5 +367,72 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         marginBottom: 4,
         opacity: 0.8,
+    },
+    // Estilos para Header Compacto y Racha
+    compactHeader: {
+        marginBottom: 10,
+    },
+    headerTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    streakPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 69, 0, 0.15)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 69, 0, 0.4)',
+        gap: 6,
+    },
+    streakValuePill: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#FF4500',
+    },
+    streakLabelPill: {
+        fontSize: 8,
+        fontWeight: '800',
+        color: '#FF8C00',
+        letterSpacing: 1,
+    },
+    floatingActions: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    actionPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        gap: 4,
+    },
+    actionPillText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: 'rgba(255,255,255,0.6)',
+        letterSpacing: 0.5,
+    },
+    userInfoMini: {
+        justifyContent: 'center',
+    },
+    userNameMini: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: '#fff',
+        letterSpacing: 0.5,
+    },
+    userLevelMini: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.5)',
+        fontWeight: '700',
     },
 });

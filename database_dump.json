@@ -1,0 +1,1886 @@
+{
+  "Resumen": {
+    "TotalCategorias": 7,
+    "TotalTrivia": 60,
+    "TotalCharadas": 64
+  },
+  "Categorias": [
+    {
+      "id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "slug": "biblia_basica",
+      "title": "Biblia Básica",
+      "description": "Fundamentos de la fe",
+      "icon": "book",
+      "base_color": "#27AE60",
+      "required_level": 1,
+      "is_premium": false,
+      "created_at": "2026-03-11T20:51:02.405921+00:00"
+    },
+    {
+      "id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "slug": "personajes_biblicos",
+      "title": "Personajes Bíblicos",
+      "description": "Héroes y Villanos",
+      "icon": "people",
+      "base_color": "#27AE60",
+      "required_level": 1,
+      "is_premium": false,
+      "created_at": "2026-03-11T20:51:02.405921+00:00"
+    },
+    {
+      "id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "slug": "milagros",
+      "title": "Milagros",
+      "description": "Actos sobrenaturales de Dios",
+      "icon": "flash",
+      "base_color": "#27AE60",
+      "required_level": 1,
+      "is_premium": false,
+      "created_at": "2026-03-11T20:51:02.405921+00:00"
+    },
+    {
+      "id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "slug": "parabolas",
+      "title": "Parábolas",
+      "description": "Historias de Jesús",
+      "icon": "chat",
+      "base_color": "#27AE60",
+      "required_level": 1,
+      "is_premium": false,
+      "created_at": "2026-03-11T20:51:02.405921+00:00"
+    },
+    {
+      "id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "slug": "vida_cristiana",
+      "title": "Vida Cristiana",
+      "description": "Práctica de la fe",
+      "icon": "heart",
+      "base_color": "#27AE60",
+      "required_level": 1,
+      "is_premium": false,
+      "created_at": "2026-03-11T20:51:02.405921+00:00"
+    },
+    {
+      "id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "slug": "antiguo_testamento",
+      "title": "Antiguo Testamento",
+      "description": "Génesis hasta los profetas",
+      "icon": "map",
+      "base_color": "#27AE60",
+      "required_level": 1,
+      "is_premium": false,
+      "created_at": "2026-03-11T20:51:02.405921+00:00"
+    },
+    {
+      "id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "slug": "nuevo_testamento",
+      "title": "Nuevo Testamento",
+      "description": "Jesús y la iglesia primitiva",
+      "icon": "boat",
+      "base_color": "#27AE60",
+      "required_level": 1,
+      "is_premium": false,
+      "created_at": "2026-03-11T20:51:02.405921+00:00"
+    }
+  ],
+  "TriviaQuestions": [
+    {
+      "id": "6df8423c-1d43-4d73-b392-45ca472420bf",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "question": "¿Qué famoso mar cruzaron los israelitas en tierra seca para escapar de Egipto?",
+      "difficulty_level": 1,
+      "options": [
+        "El Mar Mediterráneo",
+        "El Mar Muerto",
+        "El Mar de Galilea",
+        "El Mar Rojo"
+      ],
+      "correct_index": 3,
+      "explanation": "Dios abrió el Mar Rojo para que su pueblo cruzara a salvo, mostrando que Él siempre abre un camino de escape.",
+      "verse_support": "Éxodo 14:21-22"
+    },
+    {
+      "id": "99959d66-0254-4b95-9539-405a7c9b87d9",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "question": "En la parábola del hijo pródigo, ¿qué hizo el padre cuando vio a su hijo regresar de lejos?",
+      "difficulty_level": 1,
+      "options": [
+        "Corrió, lo abrazó y lo besó",
+        "Lo ignoró",
+        "Le reclamó su dinero",
+        "Lo envió a trabajar con los sirvientes"
+      ],
+      "correct_index": 0,
+      "explanation": "El padre corrió a recibirlo, lo cual ilustra cómo Dios nos recibe con alegría cuando nos arrepentimos y volvemos a Él.",
+      "verse_support": "Lucas 15:20"
+    },
+    {
+      "id": "d4cb1331-355d-44e4-9d8f-175f7c9365e9",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "question": "¿Qué día celebramos que Jesús volvió a vivir luego de ser crucificado?",
+      "difficulty_level": 1,
+      "options": [
+        "Nochebuena",
+        "Día de Resurrección (Pascua)",
+        "El diluvio",
+        "Pentecostés"
+      ],
+      "correct_index": 1,
+      "explanation": "La Resurrección es el centro de nuestra fe; porque Él vive nosotros también tenemos vida eterna.",
+      "verse_support": "Marcos 16:6"
+    },
+    {
+      "id": "52d8a668-36ad-4075-b6ee-af2843268002",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "question": "¿A qué profeta le habló Dios desde una zarza ardiente que no se consumía?",
+      "difficulty_level": 2,
+      "options": [
+        "Moisés",
+        "Elías",
+        "Isaías",
+        "Jeremías"
+      ],
+      "correct_index": 0,
+      "explanation": "Dios llamó a Moisés desde la zarza para liberar a Israel, demostrando que Dios se manifiesta de formas asombrosas en nuestra vida cotidiana.",
+      "verse_support": "Éxodo 3:2-4"
+    },
+    {
+      "id": "d6c0034f-0f84-40a4-b45b-fc70c1ce8221",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "question": "Según Jesús en la parábola del sembrador, ¿sobre dónde cayó la semilla que sí dio buen fruto?",
+      "difficulty_level": 2,
+      "options": [
+        "Junto al camino",
+        "Entre espinos",
+        "En pedregales",
+        "En buena tierra"
+      ],
+      "correct_index": 3,
+      "explanation": "La buena tierra representa el corazón de quienes escuchan el mensaje de Dios, lo entienden y lo ponen en práctica.",
+      "verse_support": "Mateo 13:23"
+    },
+    {
+      "id": "cd81fdbf-96c4-406d-ad3f-782bd4a532aa",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Qué amigo de Jesús estuvo muerto por cuatro días antes de que Jesús lo resucitara?",
+      "difficulty_level": 2,
+      "options": [
+        "Lázaro",
+        "Pedro",
+        "Juan",
+        "Judas"
+      ],
+      "correct_index": 0,
+      "explanation": "La resurrección de Lázaro probó que Jesús tiene absoluto poder sobre la vida y la muerte.",
+      "verse_support": "Juan 11:43-44"
+    },
+    {
+      "id": "93330c24-2c5a-4309-92af-80cd2cfeec24",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "question": "¿Qué regalo dice Jesús que nos dejaría como nuestro ayudador y guía cuando Él regresara al cielo?",
+      "difficulty_level": 2,
+      "options": [
+        "Un ángel guardián",
+        "El Espíritu Santo",
+        "Una gran riqueza",
+        "Un templo nuevo"
+      ],
+      "correct_index": 1,
+      "explanation": "El Espíritu Santo vive dentro de los creyentes para guiarlos, consolarlos y darles poder para vivir cristianamente.",
+      "verse_support": "Juan 14:16-17"
+    },
+    {
+      "id": "a5b9534d-25f4-4c24-b805-02b7c34a5c94",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "question": "¿Cómo sanó Jesús a una mujer que había padecido flujo de sangre por 12 años?",
+      "difficulty_level": 2,
+      "options": [
+        "Pidiéndole que se lavara",
+        "Orando por ella",
+        "Ella tocó el borde de su manto",
+        "Mandándole aceite"
+      ],
+      "correct_index": 2,
+      "explanation": "La mujer actuó con fe pura. Su creencia de que solo acercarse a Él la sanaría fue recompensada.",
+      "verse_support": "Marcos 5:28-29"
+    },
+    {
+      "id": "8cfcb2fc-1e2e-49a7-b83d-799d1295a306",
+      "category_id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "question": "¿A quién le dio Dios las tablas de piedra con los 10 Mandamientos?",
+      "difficulty_level": 2,
+      "options": [
+        "A Abraham",
+        "A Moisés",
+        "A Noé",
+        "A David"
+      ],
+      "correct_index": 1,
+      "explanation": "Dios le entregó su ley a Moisés en el Monte Sinaí para que el pueblo aprendiera a vivir rectamente.",
+      "verse_support": "Éxodo 31:18"
+    },
+    {
+      "id": "ac331440-2287-4ac5-9a3e-630fb9ac6101",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "question": "¿Qué apóstol era un cobrador de impuestos antes de seguir a Jesús?",
+      "difficulty_level": 2,
+      "options": [
+        "Mateo",
+        "Lucas",
+        "Juan",
+        "Pedro"
+      ],
+      "correct_index": 0,
+      "explanation": "Jesús llamó a Mateo aunque los cobradores de impuestos eran muy odiados. Dios usa a las personas menos esperadas.",
+      "verse_support": "Mateo 9:9"
+    },
+    {
+      "id": "526401d3-a4e8-4867-b809-60a0286e53a1",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "question": "En Pentecostés, ¿qué forma visible acompañó la llenura del Espíritu Santo sobre los discípulos?",
+      "difficulty_level": 2,
+      "options": [
+        "Una nube oscura",
+        "Lenguas como de fuego",
+        "Un río de agua",
+        "Un arcoíris"
+      ],
+      "correct_index": 1,
+      "explanation": "Esto simbolizaba la presencia ardiente y purificadora de Dios, capacitando a los creyentes para expandir el evangelio.",
+      "verse_support": "Hechos 2:3"
+    },
+    {
+      "id": "651ba6e1-a6a1-4a01-bc27-f9a84ff88d78",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Qué profeta fue ascendido al cielo en un torbellino de fuego y caballos?",
+      "difficulty_level": 2,
+      "options": [
+        "Jeremías",
+        "Ezequiel",
+        "Elías",
+        "Eliseo"
+      ],
+      "correct_index": 2,
+      "explanation": "Elías no experimentó la muerte regular sino que Dios se lo llevó directamente asumiendo su fidelidad inquebrantable.",
+      "verse_support": "2 Reyes 2:11"
+    },
+    {
+      "id": "b489e81b-a926-4440-9641-2058cddfb057",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "question": "¿Quién era el rey famoso por su inmensa sabiduría y por construir el templo en Jerusalén?",
+      "difficulty_level": 2,
+      "options": [
+        "El rey David",
+        "El rey Salomón",
+        "El rey Saúl",
+        "El rey Ezequías"
+      ],
+      "correct_index": 1,
+      "explanation": "Salomón pidió sabiduría a Dios en lugar de riquezas cuando era joven. Dios le otorgó sabiduría además de riquezas.",
+      "verse_support": "1 Reyes 3:11-12"
+    },
+    {
+      "id": "685e0439-4c4b-4303-b31e-4eaffa5dbe81",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "question": "En la parábola de los talentos, ¿qué hizo el siervo que recibió un talento?",
+      "difficulty_level": 2,
+      "options": [
+        "Lo invirtió en bancos",
+        "Lo gastó",
+        "Hizo un negocio grande",
+        "Lo escondió bajo la tierra"
+      ],
+      "correct_index": 3,
+      "explanation": "Actuó por miedo en vez de fe. Dios quiere que multipliquemos los dones y habilidades que Él nos ha dado.",
+      "verse_support": "Mateo 25:25"
+    },
+    {
+      "id": "a43ef555-b273-4d77-ba22-b2fc9e35d641",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "question": "¿Cuál es conocido como 'El Fruto del Espíritu' según la carta a los Gálatas?",
+      "difficulty_level": 2,
+      "options": [
+        "Amor, gozo, paz, paciencia...",
+        "Fe, esperanza y caridad",
+        "Profecía y lenguas",
+        "Diezmos y ofrendas"
+      ],
+      "correct_index": 0,
+      "explanation": "Estos comportamientos no se logran por esfuerzo humano, sino que son resultado ('fruto') de tener una relación cercana con Dios.",
+      "verse_support": "Gálatas 5:22-23"
+    },
+    {
+      "id": "3c9b0b30-cd5c-49c1-80f2-2d4778d0d76e",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "question": "¿En dónde realizó Jesús su primer milagro convirtiendo el agua en vino?",
+      "difficulty_level": 2,
+      "options": [
+        "En el templo",
+        "En unas bodas en Caná",
+        "En un barco",
+        "En el desierto"
+      ],
+      "correct_index": 1,
+      "explanation": "Jesús eligió una fiesta de bodas para revelar su gloria inicial, mostrando que Él se interesa en el gozo y la vida diaria de las personas.",
+      "verse_support": "Juan 2:11"
+    },
+    {
+      "id": "318b71fe-9f71-4f40-b640-d83cc2c6f336",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Cómo se llamaba la reina que salvó a su pueblo judío arriesgando su propia vida frente al rey persa?",
+      "difficulty_level": 2,
+      "options": [
+        "Rut",
+        "María",
+        "Ester",
+        "Sara"
+      ],
+      "correct_index": 2,
+      "explanation": "Ester entendió que Dios la había puesto en una posición de poder 'para una hora como esta', enseñando que nuestra influencia es un llamado.",
+      "verse_support": "Ester 4:14"
+    },
+    {
+      "id": "12f6bab0-29fe-45eb-8186-ba81b5dddf0f",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "question": "Cuando le preguntaron a Jesús cuántas veces debemos perdonar, Él respondió 'hasta setenta veces siete'. ¿Qué significa?",
+      "difficulty_level": 2,
+      "options": [
+        "Solo perdonar 490 veces",
+        "Perdonar siempre sin límite",
+        "Llevar un cuaderno de apuntes",
+        "Perdonar solo si el otro lo merece"
+      ],
+      "correct_index": 1,
+      "explanation": "Cristo usó el número setenta veces siete como una metáfora para mostrar que el perdón verdadero es inagotable porque Él así nos perdona a nosotros.",
+      "verse_support": "Mateo 18:21-22"
+    },
+    {
+      "id": "690824be-74a2-464b-9437-a94629a8deb5",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "question": "¿Qué profeta del Antiguo Testamento detalló el sufrimiento crucificado de Jesús al afirmar 'herido fue por nuestras rebeliones' siglos antes?",
+      "difficulty_level": 3,
+      "options": [
+        "Jeremías",
+        "Daniel",
+        "Malaquías",
+        "Isaías"
+      ],
+      "correct_index": 3,
+      "explanation": "Isaías 53 contiene profecías extraordinariamente exactas sobre Cristo, evidenciando que el sacrificio expiatorio de Dios siempre fue el plan central.",
+      "verse_support": "Isaías 53:5"
+    },
+    {
+      "id": "5395aac3-4420-49cc-be12-e0dfedff8cc6",
+      "category_id": null,
+      "question": "¿Quién construyó el arca?",
+      "difficulty_level": 1,
+      "options": [
+        "Moisés",
+        "Noé",
+        "Abraham",
+        "David"
+      ],
+      "correct_index": 1,
+      "explanation": "¡Correcto! Es Noé.",
+      "verse_support": "Génesis 6"
+    },
+    {
+      "id": "bf4929c7-573d-4c4d-9bcd-564f0ed844c0",
+      "category_id": null,
+      "question": "¿Quién derrotó a Goliat?",
+      "difficulty_level": 1,
+      "options": [
+        "David",
+        "Saúl",
+        "Samuel",
+        "Josué"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es David.",
+      "verse_support": "1 Samuel 17"
+    },
+    {
+      "id": "75c1aa58-89ae-42c7-afc4-22dccdce4610",
+      "category_id": null,
+      "question": "¿Quién fue tragado por un gran pez?",
+      "difficulty_level": 2,
+      "options": [
+        "Jonás",
+        "Daniel",
+        "Elías",
+        "Isaías"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Jonás.",
+      "verse_support": "Jonás 1"
+    },
+    {
+      "id": "d7df56c1-0019-4e95-9ec3-b7124c631cd2",
+      "category_id": null,
+      "question": "Adivinanza: Construí un arca enorme para salvar a mi familia y a los animales. ¿Quién soy?",
+      "difficulty_level": 1,
+      "options": [
+        "Noé",
+        "Moisés",
+        "Pedro",
+        "Lot"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Noé.",
+      "verse_support": "Génesis 6"
+    },
+    {
+      "id": "738437ff-68fd-40d4-b7e3-35e5ca3be819",
+      "category_id": null,
+      "question": "Adivinanza: Maté a un gigante con solo una piedra. ¿Quién soy?",
+      "difficulty_level": 1,
+      "options": [
+        "David",
+        "Sansón",
+        "Salomón",
+        "Gedeón"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es David.",
+      "verse_support": "1 Samuel 17"
+    },
+    {
+      "id": "5e1bd82c-8483-40f7-bc17-14f932a396da",
+      "category_id": null,
+      "question": "Adivinanza: Pasé una noche con leones y sobreviví. ¿Quién soy?",
+      "difficulty_level": 2,
+      "options": [
+        "Daniel",
+        "José",
+        "Elías",
+        "Jeremías"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Daniel.",
+      "verse_support": "Daniel 6"
+    },
+    {
+      "id": "380ce277-1c09-47fd-b270-001845f51bac",
+      "category_id": null,
+      "question": "¿Quién derrotó a Goliat?",
+      "difficulty_level": 1,
+      "options": [
+        "David",
+        "Saúl",
+        "Samuel",
+        "Abraham"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es David.",
+      "verse_support": "La Biblia"
+    },
+    {
+      "id": "778ecd48-65ff-4a18-bf64-851d57f4b798",
+      "category_id": null,
+      "question": "¿Quién sobrevivió al foso de los leones?",
+      "difficulty_level": 1,
+      "options": [
+        "Daniel",
+        "Moisés",
+        "Elías",
+        "Isaías"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Daniel.",
+      "verse_support": "La Biblia"
+    },
+    {
+      "id": "a76d96a9-5583-42e8-8b5d-868430fe89f7",
+      "category_id": null,
+      "question": "¿Qué convirtió Jesús en vino?",
+      "difficulty_level": 1,
+      "options": [
+        "Agua",
+        "Aceite",
+        "Leche",
+        "Miel"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Agua.",
+      "verse_support": "La Biblia"
+    },
+    {
+      "id": "0cc90d58-d603-4c09-93f9-7bb529a77f26",
+      "category_id": null,
+      "question": "¿Cuántos panes tenía el niño en la multiplicación?",
+      "difficulty_level": 1,
+      "options": [
+        "5",
+        "3",
+        "7",
+        "10"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es 5.",
+      "verse_support": "La Biblia"
+    },
+    {
+      "id": "8f999133-be37-4766-92b7-a83cfeedb673",
+      "category_id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "question": "¿En cuántos días creó Dios el mundo y todo lo que hay en él, incluyendo el descanso?",
+      "difficulty_level": 1,
+      "options": [
+        "5 días",
+        "7 días",
+        "10 días",
+        "30 días"
+      ],
+      "correct_index": 1,
+      "explanation": "Dios creó todo en seis días y descansó en el séptimo, estableciendo el principio del descanso para nosotros.",
+      "verse_support": "Génesis 2:2-3"
+    },
+    {
+      "id": "64b79849-fc18-499b-9a1d-9ebe7b593911",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Quién fue llamado por Dios para construir un arca y salvar a su familia del diluvio?",
+      "difficulty_level": 1,
+      "options": [
+        "Moisés",
+        "Abraham",
+        "Noé",
+        "David"
+      ],
+      "correct_index": 2,
+      "explanation": "Noé creyó a Dios y construyó el arca, siendo un ejemplo de obediencia cuando nadie más le creía.",
+      "verse_support": "Hebreos 11:7"
+    },
+    {
+      "id": "e4f0f234-08fe-4355-8366-2c78801f634f",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "question": "¿Qué joven pastor derrotó a un gigante usando una honda y una piedra?",
+      "difficulty_level": 1,
+      "options": [
+        "Josué",
+        "David",
+        "Salomón",
+        "Gedeón"
+      ],
+      "correct_index": 1,
+      "explanation": "David no confió en armas humanas, sino en el nombre de Dios, enseñando que Dios nos da la victoria frente a problemas gigantes.",
+      "verse_support": "1 Samuel 17:49-50"
+    },
+    {
+      "id": "64e0bcea-8d88-4711-ac7b-c2fd0f6c45fd",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "question": "¿En qué ciudad nació Jesús?",
+      "difficulty_level": 1,
+      "options": [
+        "Jerusalén",
+        "Nazaret",
+        "Belén",
+        "Jericó"
+      ],
+      "correct_index": 2,
+      "explanation": "Jesús nació en Belén, cumpliendo exactamente lo que el profeta Miqueas había anunciado cientos de años antes.",
+      "verse_support": "Miqueas 5:2"
+    },
+    {
+      "id": "7d14b5bf-eb88-4711-9e23-9e100941a375",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "question": "¿Qué alimento multiplicó Jesús para dar de comer a cinco mil hombres?",
+      "difficulty_level": 1,
+      "options": [
+        "Panes y peces",
+        "Uvas y vino",
+        "Manzanas y trigo",
+        "Corderos"
+      ],
+      "correct_index": 0,
+      "explanation": "Jesús tomó cinco panes y dos peces de un niño, mostrando que Él puede hacer mucho con lo poco que le entregamos.",
+      "verse_support": "Juan 6:9-11"
+    },
+    {
+      "id": "eb2744e4-ad32-4ffd-bac2-3bd266f15b1a",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "question": "En la parábola de Jesús, ¿qué hizo el buen samaritano que no hicieron los líderes religiosos?",
+      "difficulty_level": 1,
+      "options": [
+        "Orar en voz alta",
+        "Ayudar a un hombre herido",
+        "Dar dinero al templo",
+        "Predicar en la calle"
+      ],
+      "correct_index": 1,
+      "explanation": "El buen samaritano se detuvo a ayudar al herido, enseñándonos que el verdadero amor a Dios se refleja ayudando al prójimo.",
+      "verse_support": "Lucas 10:33-34"
+    },
+    {
+      "id": "eceb0d8c-9fcd-4502-afef-3b3d582bdd8c",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "question": "¿Cómo nos comunicamos con Dios?",
+      "difficulty_level": 1,
+      "options": [
+        "Haciendo buenas obras",
+        "A través de la oración",
+        "Solo yendo a la iglesia",
+        "Leyendo muchos libros"
+      ],
+      "correct_index": 1,
+      "explanation": "La oración es simplemente hablar con Dios como con un amigo que siempre nos escucha.",
+      "verse_support": "Filipenses 4:6"
+    },
+    {
+      "id": "acc5715e-707a-444e-9f71-68f0d5bfd1ca",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "question": "¿Quién fue tragado por un gran pez por desobedecer a Dios?",
+      "difficulty_level": 1,
+      "options": [
+        "Jonás",
+        "Job",
+        "Daniel",
+        "Elías"
+      ],
+      "correct_index": 0,
+      "explanation": "Jonás intentó huir de la misión que Dios le dio, pero Dios usó al gran pez para salvarlo y corregir su camino.",
+      "verse_support": "Jonás 1:17"
+    },
+    {
+      "id": "9dcf0d2a-b771-411b-a37f-86dedc90497c",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Quién fue el primer hombre creado por Dios?",
+      "difficulty_level": 1,
+      "options": [
+        "Adán",
+        "Caín",
+        "Abel",
+        "Set"
+      ],
+      "correct_index": 0,
+      "explanation": "Dios formó a Adán del polvo de la tierra y sopló en él aliento de vida.",
+      "verse_support": "Génesis 2:7"
+    },
+    {
+      "id": "7447e121-6388-489f-93d6-351a97cbb986",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "question": "¿Sobre qué elemento caminó Jesús sorprendiendo a sus amigos?",
+      "difficulty_level": 1,
+      "options": [
+        "Fuego",
+        "Agua",
+        "Nubes",
+        "Viento"
+      ],
+      "correct_index": 1,
+      "explanation": "Jesús caminó sobre el agua en medio de la tormenta, mostrando que Él tiene el control absoluto de la naturaleza.",
+      "verse_support": "Mateo 14:25"
+    },
+    {
+      "id": "bba8333e-4c7c-4d8d-8317-9413bc8bcc07",
+      "category_id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "question": "¿Cuántas partes principales tiene la Biblia?",
+      "difficulty_level": 1,
+      "options": [
+        "Dos: Antiguo y Nuevo Testamento",
+        "Tres: Pasado, Presente y Futuro",
+        "Solo una historia",
+        "Cuatro Evangelios"
+      ],
+      "correct_index": 0,
+      "explanation": "La Biblia está dividida en dos testamentos: el Antiguo (antes de Cristo) y el Nuevo (después de Cristo).",
+      "verse_support": "2 Timoteo 3:16"
+    },
+    {
+      "id": "278b8369-83c9-4d16-969a-a3a64d648af8",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Cómo se llamaba la madre de Jesús?",
+      "difficulty_level": 1,
+      "options": [
+        "Marta",
+        "María",
+        "Rut",
+        "Ester"
+      ],
+      "correct_index": 1,
+      "explanation": "María fue elegida por Dios debido a su fe y disposición para obedecer los planes divinos.",
+      "verse_support": "Lucas 1:30-31"
+    },
+    {
+      "id": "ea817731-bd5e-4947-970f-0c70aa55f0ba",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "question": "¿En qué concilio apostólico se debatió intensamente si los gentiles convertidos a Jesús debían circuncidarse y guardar la ley de Moisés?",
+      "difficulty_level": 3,
+      "options": [
+        "Concilio de Antioquía",
+        "Concilio de Jerusalén",
+        "Concilio de Nicea",
+        "Concilio de Roma"
+      ],
+      "correct_index": 1,
+      "explanation": "El Concilio de Jerusalén, relatado en Hechos 15, fue vital para asentar que la salvación espiritual es por la sola fe y gracia y no por cumplir ritos judíos tradicionales.",
+      "verse_support": "Hechos 15:1-2"
+    },
+    {
+      "id": "3a63cb09-7435-40ae-b98b-48a0871f7475",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "question": "En la parábola del hijo pródigo, ¿qué pecado subyacente revela la actitud del hijo mayor que se queda en casa?",
+      "difficulty_level": 3,
+      "options": [
+        "Inmoralidad",
+        "Flojera",
+        "Autojustificación y orgullo religioso",
+        "Rebeldía física"
+      ],
+      "correct_index": 2,
+      "explanation": "Jesús apuntó esta parábola contra los religiosos fariseos. El hijo mayor muestra que uno puede estar cerca del Padre físicamente pero alienado afectivamente por creerse perfecto.",
+      "verse_support": "Lucas 15:28-29"
+    },
+    {
+      "id": "ac332049-ea7a-4642-83c4-97e1627ad48e",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Qué sacerdote, maestro y escriba regresó a Jerusalén desde Babilonia dedicando su corazón a estudiar y enseñar la Ley?",
+      "difficulty_level": 3,
+      "options": [
+        "Nehemías",
+        "Zorobabel",
+        "Malaquías",
+        "Esdras"
+      ],
+      "correct_index": 3,
+      "explanation": "Esdras fue un erudito que trajo un avivamiento espiritual al leer apasionadamente la Escritura tras reconstruirse Jerusalén.",
+      "verse_support": "Esdras 7:10"
+    },
+    {
+      "id": "f974fb05-8571-40bf-ab56-9b7e603737fd",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "question": "El apóstol Pablo establece que somos justificados (declarados inocentes ante Dios) no por obras sino por fe en Cristo, fuertemente en su carta a...",
+      "difficulty_level": 3,
+      "options": [
+        "Los Romanos",
+        "Los Efesios",
+        "Hebreos",
+        "Filemón"
+      ],
+      "correct_index": 0,
+      "explanation": "Romanos es la exposición teológica más densa del Nuevo Testamento. Plantea el problema universal del pecado y la inmensa solución a través de la fe.",
+      "verse_support": "Romanos 3:23-24"
+    },
+    {
+      "id": "ce655e1b-d49c-46c2-bedc-ab9035607e92",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "question": "¿Qué oficial militar romano le dijo a Jesús 'di la palabra, y mi siervo sanará', lo cual asombró a Cristo por su madura fe?",
+      "difficulty_level": 3,
+      "options": [
+        "Poncio Pilato",
+        "Un gobernador de Siria",
+        "Un Centurión",
+        "Cornelio"
+      ],
+      "correct_index": 2,
+      "explanation": "El centurión entendía de línea de mando y autoridad espiritual; Jesús declaró no haber hallado una fe tan estructurada en el mismo Israel.",
+      "verse_support": "Lucas 7:7"
+    },
+    {
+      "id": "e6ec3006-9500-48f7-be46-8c30cbc62161",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "question": "¿Quién era el líder de la resistencia ante la cual cayó finalmente la amurallada ciudad de Jericó tras 7 días de marchas constantes?",
+      "difficulty_level": 3,
+      "options": [
+        "Sansón",
+        "Moisés",
+        "Gedeón",
+        "Josué"
+      ],
+      "correct_index": 3,
+      "explanation": "Josué confió en un plan divinamente ilógico de marchar en silencio e impartir gritos y trompetas al final, enseñando que Dios responde a la persistente paciencia activa.",
+      "verse_support": "Josué 6:20"
+    },
+    {
+      "id": "42cab675-ce5c-4e36-aa61-2f4ad10c0e77",
+      "category_id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "question": "¿Qué nombre hebreo del Antiguo Testamento se traduce literalmente como Jesucristo en el Nuevo Testamento?",
+      "difficulty_level": 3,
+      "options": [
+        "Enoc",
+        "Josué (Yeshua)",
+        "Jehová",
+        "Elías"
+      ],
+      "correct_index": 1,
+      "explanation": "Tanto Josué en hebreo como Jesús en griego (Yeshua) significan 'El Señor Salva'. Josué llevó al pueblo de Dios territorialmente; Jesús, eternamente.",
+      "verse_support": "Mateo 1:21"
+    },
+    {
+      "id": "b576924f-81ca-420d-ba8a-425f21af513a",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "question": "¿A quién dirigió Lucas su Evangelio y el libro de los Hechos (probablemente un dignatario)?",
+      "difficulty_level": 3,
+      "options": [
+        "Teófilo",
+        "Filemón",
+        "Priscila",
+        "Aquila"
+      ],
+      "correct_index": 0,
+      "explanation": "Lucas, un médico, recopiló meticulosamente la información con métodos de historiador para proporcionar certidumbre en las enseñanzas a Teófilo y a los futuros creyentes.",
+      "verse_support": "Lucas 1:3"
+    },
+    {
+      "id": "61c4e3a8-0573-40f1-baf3-9e545e9b8690",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "question": "En la armadura de Dios (Efesios 6), la 'espada del Espíritu' representa específicamente:",
+      "difficulty_level": 3,
+      "options": [
+        "El entusiasmo",
+        "La fe",
+        "La verdad",
+        "La palabra de Dios"
+      ],
+      "correct_index": 3,
+      "explanation": "Es la única arma ofensiva de la lista. Conocer la Biblia nos permite discernir y contrarrestar mentiras como Jesús hizo en el desierto ante la tentación.",
+      "verse_support": "Efesios 6:17"
+    },
+    {
+      "id": "98137ce2-2983-42c2-bda1-ce581116db82",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "question": "¿Quién construyó el arca?",
+      "difficulty_level": 1,
+      "options": [
+        "Moisés",
+        "Noé",
+        "Abraham",
+        "David"
+      ],
+      "correct_index": 1,
+      "explanation": "¡Correcto! Es Noé.",
+      "verse_support": "Génesis 6"
+    },
+    {
+      "id": "03f5ca64-94b0-4588-9b67-f7930de8acd9",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Quién derrotó a Goliat?",
+      "difficulty_level": 1,
+      "options": [
+        "David",
+        "Saúl",
+        "Samuel",
+        "Josué"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es David.",
+      "verse_support": "1 Samuel 17"
+    },
+    {
+      "id": "516f3607-e163-46b0-b6cb-d29eef1b6739",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Quién fue tragado por un gran pez?",
+      "difficulty_level": 2,
+      "options": [
+        "Jonás",
+        "Daniel",
+        "Elías",
+        "Isaías"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Jonás.",
+      "verse_support": "Jonás 1"
+    },
+    {
+      "id": "8d8efaad-6fc2-4ccc-bd11-87ded9fb5121",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "Adivinanza: Construí un arca enorme para salvar a mi familia y a los animales. ¿Quién soy?",
+      "difficulty_level": 1,
+      "options": [
+        "Noé",
+        "Moisés",
+        "Pedro",
+        "Lot"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Noé.",
+      "verse_support": "Génesis 6"
+    },
+    {
+      "id": "45c17016-6266-47d4-b87d-7c79c0c2e3b8",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "Adivinanza: Maté a un gigante con solo una piedra. ¿Quién soy?",
+      "difficulty_level": 1,
+      "options": [
+        "David",
+        "Sansón",
+        "Salomón",
+        "Gedeón"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es David.",
+      "verse_support": "1 Samuel 17"
+    },
+    {
+      "id": "9ffaa3f7-ec4d-45b9-a1b0-cf9e96562c5f",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "Adivinanza: Pasé una noche con leones y sobreviví. ¿Quién soy?",
+      "difficulty_level": 2,
+      "options": [
+        "Daniel",
+        "José",
+        "Elías",
+        "Jeremías"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Daniel.",
+      "verse_support": "Daniel 6"
+    },
+    {
+      "id": "51cd7f0e-084e-495f-a43c-ddcb93b0244c",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Quién derrotó a Goliat?",
+      "difficulty_level": 1,
+      "options": [
+        "David",
+        "Saúl",
+        "Samuel",
+        "Abraham"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es David.",
+      "verse_support": "La Biblia"
+    },
+    {
+      "id": "8c4b82a7-68a1-42bb-9eb6-581327c238e5",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "question": "¿Quién sobrevivió al foso de los leones?",
+      "difficulty_level": 1,
+      "options": [
+        "Daniel",
+        "Moisés",
+        "Elías",
+        "Isaías"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Daniel.",
+      "verse_support": "La Biblia"
+    },
+    {
+      "id": "224e0dfa-5e0f-44ad-907d-90b1a7596a4e",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "question": "¿Qué convirtió Jesús en vino?",
+      "difficulty_level": 1,
+      "options": [
+        "Agua",
+        "Aceite",
+        "Leche",
+        "Miel"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es Agua.",
+      "verse_support": "La Biblia"
+    },
+    {
+      "id": "5b5fb954-d1d1-4dd9-bfdf-1a280e2461e1",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "question": "¿Cuántos panes tenía el niño en la multiplicación?",
+      "difficulty_level": 1,
+      "options": [
+        "5",
+        "3",
+        "7",
+        "10"
+      ],
+      "correct_index": 0,
+      "explanation": "¡Correcto! Es 5.",
+      "verse_support": "La Biblia"
+    }
+  ],
+  "CharadasRestantes": [
+    {
+      "id": "dbd35efb-129a-441c-9708-99390a1203c7",
+      "category_id": null,
+      "word": "La Batalla de David y Goliat",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Pídele a alguien que actúe de gigante",
+        "Necesitas una honda imaginaria",
+        "Apunta a la frente"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "de9a6d45-fb51-4a7d-8ba5-cefec05b782c",
+      "category_id": null,
+      "word": "Daniel en el foso de los leones",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Actúa como si estuvieras rodeado de leones",
+        "Ponte a orar de rodillas con fe",
+        "Eres salvado por un ángel"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "a48a5efd-4828-4c90-84b7-27608d603947",
+      "category_id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "word": "Arca de Noé",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Flota en el agua",
+        "Salva a una familia",
+        "Incluye parejas de animales"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "894d53b3-293e-4f7b-9cec-3714533caa34",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "David y Goliat",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Involucra a alguien pequeño y a alguien grande",
+        "Usa una pequeña piedra",
+        "Termina con la derrota total de un bando"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "d2f78267-1847-4ec7-a3ae-87cf3505ef21",
+      "category_id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "word": "La Creación",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Habla de principios y orden absoluto",
+        "Duró seis días de profundo impacto",
+        "Hay luz, oscuridad, mares y aves"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "04dfd205-a9eb-437e-be95-dbe809c3734d",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "word": "La Cruz",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Esencial y vital en la fe",
+        "Símbolo físico hecho de madera",
+        "Involucra extremo sacrificio y perdón verdadero"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "0d9ac49b-bf54-4840-94f7-f4addd5c4b54",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "word": "Pescando Peces",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Ocurre junto a las orillas o mar adentro",
+        "Incluye el uso manual de redes",
+        "Es lo que hacían los apóstoles"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "2406a12e-c4d1-4dd7-bb7f-76b3af34e924",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Jesús y los niños",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Hay personas muy pequeñas acercándose",
+        "Demuestra amor incondicional con brazos abiertos",
+        "Los adultos querían impedir lo que pasaba"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "aae73c3e-b31e-4303-9006-ee04cef8613a",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "Moisés abre el Mar",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Hay un escape hacia zonas áridas",
+        "Se usa una vara mágica o bastón divino",
+        "Agua controlada físicamente hacia dos lados"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "f50281d3-146d-4d7f-9961-9c6031b995a5",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "word": "Los Reyes Magos",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Personas extranjeras y observadoras atentas",
+        "Llevan cajas pequeñas llenas de cosas caras",
+        "Suelen mirar en los cielos para la ruta"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "42eef499-5887-4370-993f-939b7b1b33db",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "word": "Caminando en el agua",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Rompe las leyes naturales físicas completamente",
+        "Ocurre entre viento fuerte de la noche",
+        "Muestra gran fe frente al miedo real"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "5e0fbf20-d69a-459c-a1fc-5ef265498dfb",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Eva comiendo manzana",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Ocurre al interior de un hermoso lugar natural",
+        "Demuestra rotunda desobediencia inicial de alguien",
+        "Se relaciona con alimentarse rápido y esconderse"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "ee9acef2-16cd-4d61-87eb-384e7c263f85",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "word": "Leyendo la Biblia",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Demanda observación y profunda atención silenciosa",
+        "Generalmente incluye libros llenos de información antigua",
+        "Implica voltear páginas a diario temprano"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "fcf088cd-f9b3-4bc5-badb-f4aee6c0810b",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "word": "Bautismo",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Ocurre sumergidos y no de manera seca",
+        "Se requiere la ayuda directa de alguien más",
+        "Termina usualmente en una nueva vida feliz"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "cbfc598e-b2f9-4879-affe-fd97fd244ce4",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "word": "El Pesebre",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Es de noche rodeados por animales",
+        "Representa profundo frío y naciente calor juntos",
+        "Pobreza rodeada por inmensa realeza presente"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "62492c75-b604-4bf3-bc06-c7fa6d0fa9e1",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Sansón",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Un líder con tremendo poder bruto evidente",
+        "Muy reconocible por tener cabello peculiar largo",
+        "Pierde la batalla real con una astuta mujer engañosa"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "ef1932f9-2d91-4303-b115-432378a98bfe",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "word": "Buen Samaritano",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Aquel que sana físicamente vendando curaciones",
+        "Representa apoyo real y efectivo a extranjeros",
+        "Recoge a un hombre mal herido sangrando"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "624e0f44-4369-4cb8-a82d-ed6c226fe594",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "word": "Orar de rodillas",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Tiene postura corporal claramente devota y sumisa",
+        "Demanda ojos cerrados firmemente y atención plena",
+        "Interacción comunicativa directa hablada en silencio"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "a5407cb8-0280-4a54-adc0-f75ce051e9d8",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "El Diluvio",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Días y largas noches lluviosas intensas continuas",
+        "Involucra un barco gigante con olor animal intenso",
+        "Finaliza alegremente con promesas multicolor de paz"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "da03b4eb-f11e-4710-a903-f0d220df57f5",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "word": "Levantando un Paralítico",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Estaba tirado todo el tiempo postrado débil",
+        "Hubo un esfuerzo milagroso inesperado notable y efectivo",
+        "Incluía que le bajaran el techo dramáticamente para ayuda"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "cdf0d2ec-3e9e-487b-a9e2-5e14d1c90683",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "word": "Oveja Perdida",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Trata del cuidado profundo protector maternal o pastoral",
+        "Incluye un escape ingenuo tonto e irresponsable temporal",
+        "Llevada sobre los hombros felizmente como premio ganado"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "14049c61-75d6-4758-8e1d-764fb3b1d6bb",
+      "category_id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "word": "La Última Cena",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Un grupo amplio masculino cenando alimentos básicos tranquilamente",
+        "Bebiendo líquido en una cáliz ceremonioso representativo simbólico",
+        "Marcó fatalmente antes que todos fuesen sorpresivamente traicionados"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "b0374370-3ff9-4a2a-b2ed-1bda04a7aa9f",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Jonás",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Rebeldía clara mediante escape por aguas lejanas",
+        "Ocurrió tragado por inmenso animal gigante desconocido atemorizante",
+        "Predicador dramático renegado con arrepentimiento forzoso salvador final"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "b214410d-1d19-4028-b164-939c9e349150",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "La Zarza Ardiente",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Presentaba fuego visual ilógico consumible sin destruir materialmente real",
+        "Aparecía apartada oculta frente a rústico gran pastor atónito",
+        "De ahí surge mandamiento a descalzarse sagradamente con respeto sumo"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "bb7974ff-b3b7-4cd3-ab73-a5b81eced3ab",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "word": "El Hijo Pródigo",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Incluye irse feliz para luego derrochar mucho dinero",
+        "Trata sobre apestosos cerdos insalubres indeseados comiendo algarrobas",
+        "Retorna trágicamente pobre antes que rico y sorprendido por abrazo final"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "21f42222-3df7-4a17-a68b-22e76b7bfea7",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "word": "Cegado en el camino (Pablo)",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Deslumbrado profundamente ante luz radical transformadora superior impensable",
+        "Aconteció cayendo súbito golpeado tropezando ciego temeroso impotente",
+        "Dejó agresividad atrás virando destino apostólico hacia nuevas tierras"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "6acdcae6-e9b0-4dad-b13e-bde1dad70803",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "Los Diez Mandamientos",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Grabados directamente divinos y pesados físicamente imposibles falsificar",
+        "Resultan de un encuentro tormentoso denso lleno truenos arriba misterioso",
+        "El responsable portador acabó furioso temporal rompiendo estruendosos trozos abajo inmensos"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "456476a6-f7e7-4f3a-a39b-cb71ae020320",
+      "category_id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "word": "Gólgota (Lugar de la Calavera)",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Un paraje tosco montañoso triste empinado elevado notable final indeseado",
+        "Involucró lamentos agonizantes con gran sed asfixia y fuerte crucifixión real trágica masiva",
+        "Tres maderos dolorosos enclavados con ruidosa violencia por crueles manos bárbaras allí mismo"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "469be801-e74d-4506-8fdc-31b5511c9516",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Moisés de bebé en la cesta",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Involucra lloriqueos arrullados y canastas flotantes rústicas pequeñas escondidas ansiosamente sigilosamente solas",
+        "Tenia hermanita hábil vigilando alerta cerca matorral acuático ansiosa por resolver pronta salvación oportuna",
+        "Acaba adoptado rica princesita con inmenso capital egipcio pagando nodriza propia encubierta irónicamente"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "7d529fda-19fc-4c11-bd06-03a132d730cf",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "word": "El Diezmo",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Ocurre soltando finanzas monedas papeletas generosas libre voluntad entregadas secretamente separadas responsablemente apartadas devotamente para siempre",
+        "Suma por proporción divina exactamente pequeña pero muy simbólica de fe total real absoluta ciega financiera",
+        "Promete abrir inmensas puertas de bendición abundancia multiplicada sorpresiva"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "fec3529d-4460-425a-926f-249d72b8e869",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "word": "El Sembrador",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Involucra semillas agrícolas tiradas al azar fuertemente regadas libre campo sin medir tierra correcta ni mala previamente",
+        "Implica algunas morir entre sol fuerte maleza agobiante pájaros comelones devoradores instantáneos robadores de toda labor efectuada veloz",
+        "Enseña el poder que tiene oídos prestando atención devocional arraigados profundamente transformando fruto masivo generoso abundante final"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "bc20db4c-3a19-4703-92c9-fe0a1cf50f33",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "word": "Agua a Vino (Bodas de Caná)",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Hubo escasez lamentable vergonzosa penosa fiesta alegre boda ajetreada y madre ansiosa suplicante pidió intervenir rápidamente salva al honor familiar pronto",
+        "Resultó que enormes grandes vasijas tinajas pesadísimas llenadas puro abundante cristalino líquido bebible sin sabor fueron transmutadas rojizo dulzón premium altísima calidad exquisito exquisita",
+        "Evitó bochorno público total con magistral silencioso acto sublime oculto reservando gran maravilla postrera maravillosa final perfecta"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "1cf42282-1558-4ae9-a2f8-2a62d1f88ee1",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Zaqueo en el árbol",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Era rechoncho bajito impopular ladrón dinero estado recaudador infame vil",
+        "Trepó ágilmente vegetación para mirar a alguien notable popular rodeado apretado",
+        "Aceptó gozosamente cena inmediata arrepentido devolviendo multiplicado bienes extra"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "3db44537-9fd7-4447-ba7c-8e48ca13e840",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "word": "Ayuno",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Sientes hambre real ruido estómago sacrificio voluntario abnegado control físico absoluto",
+        "Mezclado ferviente ruego clamor a Dios constante y debilitante físicamente",
+        "Evitas manjares viandas ricas deliciosas prefiriendo claridad espíritu mental enfocada superior atenta despierta total absoluta pureza silenciosa secreta"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "c78f61ec-d87c-470b-bafd-6b5b975aa654",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "Muros de Jericó cayendo",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Involucró vueltas misteriosas caminadas silencio tropa masiva armada calladita expectante disciplinada",
+        "Cerró con sonido ruidoso estruendo inmenso choque piedra tierra polvo denso asfixiante temblor derrumbe espectacular imponente victoria mágica inesperada total caída ruidosa masiva colosal epopeya rústica estruendosa",
+        "No emplearon máquinas arietes convencionales armas lógicas solo fe gritada acústica trompetas"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "b231464d-44bd-44ed-9c67-9f124ca80312",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "word": "El Apocalipsis",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Involucra sellos bestias dragones trompetas copas símbolos épicos batallas celestes oscuras finales aterradoras complejas gloriosas futuras místicas proféticas visión encriptada en isla desierta",
+        "Culmina brillantemente con esplendor cristal oro eterna paz ciudad divina nupcias cordero maravilloso desenlace final absoluto universal eterno divino victorioso glorioso final",
+        "Suele dar misterio complejo intriga ansiedad estudiarlo descifrar números raros oscuros"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "897a0b00-4bf3-4da1-95a5-8853a4ba5a32",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "word": "Lázaro, ven fuera",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Incluía olor apestoso fetidez hedor cueva fúnebre triste lágrimas masivas amigas",
+        "Hubo llamado grito alta orden tajante despertador fuerte mandatorio",
+        "Vino hombre vendado momificado tambaleante espantoso y resucitado atónico vivo coleando feliz maravilla"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "52902f75-1caa-49e2-bbe4-9888ffc439b8",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Elías huyendo a la cueva",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Habiendo sido valiente sintió terrible miedo pavor cobardía deprimido asustado letal",
+        "Durmió profundamente rústico comió alimento divino fortalecido angélicamente especial místico milagroso puro orgánico divino excelso misterioso oculto reservado apartado triste nostálgico silencioso y llorón",
+        "Escuchó al Creador no ruidoso viento ni rayo sino silbito sutil fino interno susurro gentil apacible consuelo reparador transformador sanador aliviador restaurador"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "46413d53-a9ae-47c6-b170-3c3ef99072ff",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "Las Plagas de Egipto",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Ocurrió río rojo sangre insectos ranas moscas molestosas asfixiantes",
+        "Gobernante necio obstinado terco corazón duro insistía esclavizar aguantando azote dolor castigo divino repetición ruda cruel castigo severo implacable temeroso ruego angustia ruego clamor cediendo terco falso hipócrita tirano",
+        "Finalizó trágica muerte triste luto dolor hijos primogénitos fin esclavitud liberación salida veloz festin amargo prisas maletas libertad"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "ed99d5f6-cb6b-43c9-b71f-4b761fc9cb65",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "word": "Construir sobre la Roca",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Se compara con cimientos arena duna suelta frágil contra piedra firme pesada",
+        "Involucra clima fuerte lluvioso tormentoso vendaval vientos ráfaga huracán destructor",
+        "Quien escucha repara la vida obedeciendo se salva estructuralmente ileso victorioso firme intacto"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "c278c1bd-7368-4515-bdcb-fc7074f2f007",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "word": "Ofrenda de la Viuda",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Fue mujer pobrecita humilde arrojando monedas latón muy pequeñitas valor monetario nulo espeso minúsculo insignificante",
+        "Comparó con grandes ricachones daban sobra fariseos ricos gordos altivos presuntuosos engreídos ruidosos dadores espectáculo sonoro y vistoso público presuntuoso show off tacaños corazón duro dinero suelto vuelto migajas sobras",
+        "Es un acto entrega brutal porcentual total valioso invaluable entrega divina superior entrega real total plena honesta generosa desinteresada desmedida fe grande altísima admiración sincera enorme ejemplar modesta ejemplar real y cruda"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "7cf11ee1-f5c1-48f0-a03a-7778fdc2254c",
+      "category_id": "003e4286-5bad-4972-ac4a-0906c0f2b773",
+      "word": "El Paraíso (El Jardín)",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Había fruta prohibida ríos lindos árboles vida bellos leones dóciles corderos preciosidad pacífica armoniosa desnudez pura casta transparente honesta feliz gozosa inocente silvestre natural silvestre inmaculada prístina virginal radiante perfecta hermosa idílica sublime encantadora celestial espléndida deslumbrante",
+        "Culminó terrible con expulsión trágica castigo exilio vergüenza espinos sudor frente triste tragedia amarga separación",
+        "Lugar que Dios armó bello idílico y perfecto paraíso primigenio inicial Edén"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "f4d0c3cc-8fd4-45cb-b79e-eb4327915853",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "word": "Día de Pentecostés",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Hubo idiomas y lenguas extranjeras no estudiadas previas",
+        "Incluía llamaradas lumínicas estruendo sonoro ventarrón poderoso",
+        "Marcó el debut e inicio expansivo mundial universal de la Iglesia valerosa de Cristo"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "cf1ef31a-9c47-45b3-89f6-074b4f1638d8",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "word": "Transfiguración de Jesús",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "En montaña inmerso ropa brillante luz cegadora deslumbrador incandescente ropa",
+        "Fueron de visita figuras místicas de Elías y Moisés hablando apariciones misteriosas conversando gloriosos puros asombrosos espectaculares rutilantes relucientes esplendentes fulgurantes brillantes blancos impecables excelsos radiantes",
+        "Pedro asustadísimo ingenuo atontado sugirió montar casetas toldos tiendas honoríficas ridículo aturdido choque emoción sorpresa pánico glorioso majestuoso estupendo"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "70f33daa-09b1-4151-a2db-70ae810bdb2b",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "El Tabernáculo",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Carpa inmensa santuario desierto piel muebles oro altar velos oscuros divisiones",
+        "Adentro contenía Arca pacto propiciatorio presencia chekinah nube fuego divina temible majestuosa reverencia extrema sumo respeto sagrado prohibido restringido temeroso pavor místico",
+        "Para acceder exigía ritos limpiezas ofrendas corderos sacerdote sangre pureza rigor"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "82814643-7a4e-49d2-9ead-f439b94989db",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "word": "Sermón del Monte",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Sentado alzó voz multitud campestre pacífica atenta extensa charla discursiva maestro montaña ladera verde aire puro aire libre pastizales muchedumbre rebaño congregado asamblea multitudinario gentío expectante",
+        "Mencionaba bienaventurados pobres mansos llorones pacíficos luz sal mundo salinidad pureza resplandor buen vivir paz justicia caridad misericordia compasión rectitud amor",
+        "Dictaminó el resumen ético más influyente amor enemigos regla oro perdonatorio noble grandioso superior sublime divino humano social perfecto mandamiento enseñanza"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "d3cec7d6-b3d3-465a-bdac-a972735803e3",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Pablo en el naufragio (Malta)",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Causado por tempestad euroclidón semanas oscuras ayuno forzoso miedo marino terror náutico brújula rotas barcos tablas madera nadando salvados milagro",
+        "Arribaron playa e intentando calentar fuego fogata inofensiva salió serpiente víbora letal picadura inmensa dolor encono susto mortal asombro",
+        "El afectado sacudió bicho fuego sin inmutarse creyendo ser magia o dios locales atónicos boquiabiertos mudos"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "89fadde2-78db-45ca-8e26-8cb497c468ce",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "word": "El siervo despiadado (De Los 10.000 talentos)",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Fue absuelto de cifra exagerada millonaria incalculable vida inmensa favor",
+        "Inmediatamente agarró compañero por el cuello estrangulado exigiendo cien moneditas limosna vuelto sencillo mendigo suelto menuda pequeña poco escasa irónicamente brutal",
+        "Recibió encierro severo castigo prisión carcelario verdugo tortura condena justicia"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "4a798645-7ee6-441c-a8ef-eaf7876996e0",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "word": "El yugo desigual",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Metáfora agrícola buey burrito arando disparejos torcidos cojeando asimétricos disparejo tirando desnivel ineficaz desastre arrastre ladeado desviado choque error junta fracasa",
+        "Significa relación compromisos alianzas matrimonio creyente atado a no creyente incredulidad fe choca luz tiniebla opuestos incompatibles",
+        "Termina causando roce tensión sufrimiento desilusión fractura moral espiritual desvío dolor lastima estruja divide confunde rompe quiebra"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "08be5947-15db-4d61-8824-30a72ac4fc7f",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "word": "Muerte de Ananías y Safira",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Hubo fingimiento donación engaño mentira hipocresía avaros tacaños aparentar santos mostrar falso teatro egoísmo fingir falso engañar estafar disimular tapar disfraz mentir codicia",
+        "Cayeron muertos instantáneos terror paralizó asistentes espanto pavor fúnebre severo castigo fulminante rápido letal divino juicio",
+        "Enseñó a primera iglesia no burlarse Espíritu Santo solemnidad respeto reverencia purificación disciplina"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "b21881d0-7105-470e-bf99-11d9bede34d5",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Josías (El rey niño)",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Gobernó infante bajito pequeño corona inmensa trono grande inmaduro edad",
+        "Encontró libro polvoriento antiguo rollo perdido ley arrimado templo sucio escombros abandonado descuidado roto ignorado marginado empolvado arrumbado guardado limpieza",
+        "Lloró rasgó vestido ordenó reforma inmensa limpieza nacional avivamiento despertar volver Dios purificar país arrasó ídolos"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "d2d5166e-c1e6-478d-bc87-14a40cd82031",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "Construcción de la Torre de Babel",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Proyecto egoísta inmenso ingeniería ladrillos fama fama humano rebelde alto altitud alzar orgullo prepotencia desafío vanidad altura techo desafío presunción humana altiva rascacielos cimientos obra civil colosal edificación ladrillos brea asfalto albañil masiva",
+        "Terminó en balbuceo incoherencias ruido confusión idiomas extraños caos mímica gestos frustración abandono emigración ruido desorden dispersos exilio separan huida emigrantes mundiales",
+        "Generó multiplicidad cultural etnias alejamiento fin de unificación global perversa"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "36ba5ccf-c32f-4e2d-8f5b-24055ffcf9be",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "word": "La Red y los Peces",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Tira malla inmensa arrastra recoge de todo moluscos buenos basuras malos mezclados revueltos combinados amontonados",
+        "Orilla agua playa arena separación meticulosa escrutinio descarte selección limpieza basura fuego recolección cestas juicio final separación escrutinio",
+        "Comparó el fin ciclo mundo malvados echados horno fuego llanto crujir desesperante lamento ardiente llamas condena dolor final separación justa certera dolorosa eterna definitiva"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "712f80c1-703d-46df-8f88-4a99ceff9990",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "word": "La Justificación por la Fe",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Un tribunal legal juez sentencia culpable inocente indulto libre perdonado fianza paga otro absuelto liberado cargo exento deuda cancelada paga anulada multa saldada limpia gratis expediente inmaculado",
+        "No logras por esfuerzo sudor buenas obras méritos filantropía sudor cansancio propio inútil ganar cielo imposible autosuficiente fracaso",
+        "Recibir mero regalo creer sacrificio cruz regalo gracia divina paz corazón limpia inmerecido amor gratis favor mérito de otro apropiado fe"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "7f044ca9-cab6-4f4c-bdb1-913c9926f056",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "word": "Eunuco Etíope Bautizado",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Funcionario ministro africano negro lejano carruaje leyendo profeta enigmático confuso desierto solitario árido carroza polvorienta viaje lectura intrigado pasaje Isaías confuso lector devoto investigador ignorante buscador sediento",
+        "Apareció predicador corriendo guiado ángel espíritu rápido Felipe intérprete explicación claridad revelación iluminación charla entendida",
+        "Vio agua oasis charco bajense ruego bautizar feliz gozoso bautizado eunuco fe convertida alegría siguió viaje solitario mojado pero eufórico extasiado feliz renovado"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "4fb17bca-c12f-4293-8c74-ba4a13cebb42",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Ezequiel",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Profeta raro mímico dramas exiliado junto río triste esclavo marginado",
+        "Tuvo visiones carros fuego ruedas ojos ángeles rarísimas huesos secos juntándose calaveras ejército vida ruido esqueleto armar revivir chasquido unión",
+        "Dios mandó predicarles madera respirar espíritu viento vida avivamiento levantar nación moribunda"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "aa0a258b-e5db-4a4e-abef-757ef515cc69",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "La Serpiente de Bronce",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Pueblo rebelde mordido venenos víboras quejumbras rabia quejas murmullo dolor llanto hinchazón enfermedad castigo arena plaga reptiles veneno colmillo",
+        "Curación extraña forjar metal subir asta poste mirar reptil metálico fijar vista sanar medicina insólita mirar figura milagrosa cura absurda inusual extravagante salvación mirada",
+        "Símbolo previo tipo cristo crucificado fe fijada sanación mirada salva"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "45c08dd7-089a-4837-95dc-d59f21be8d6a",
+      "category_id": "e1b9b5c8-b376-4499-8137-477c16b7848a",
+      "word": "El Concilio de Jerusalén",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Asamblea junta debate acalorado acalorada reunión grave seria tensa choque cultural choque mentes teológico doctrinario legal",
+        "Discutían gentiles costumbres cuchillo dieta no comer cerdo no sangre ahogado leyes viejas tradición moises carga pesada forzosa imposición judaísmo prosélito",
+        "Pablo Pedro Santiago pactaron libre gracia no atar libertar carta acuerdo paz unidad gozo libertad cristiana consenso armonía"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "39c22116-e495-4119-99b3-e2f00b1bd078",
+      "category_id": "dc90a2b3-f234-4c98-9d71-5e7bc63a69a3",
+      "word": "Las diez vírgenes",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Jóvenes invitadas traje fiesta antorcha lámpara candil espera novio boda fiesta noche oscuridad vela vigilia boda",
+        "Demora sueño letargo dormir cerrar ojos cansancio roncando cabeceando despabilar ronquidos sopor",
+        "Grito medianoche despertar susto 5 listas previsoras aceiteras reservas frasco relleno iluminan y 5 locas insensatas distraídas apagadas descuidadas rogar aceite denegado puerta cerrada cerradura portazo exclusión final"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "8598811b-66f2-4e1a-a541-d99f6401e766",
+      "category_id": "9e7ec24a-4a2c-4956-999a-d569f695c271",
+      "word": "Llevar la cruz diaria",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "No es joya dije cuello oro plata brillar moda colgante superficial",
+        "Involucra negarse decir no capricho orgullo matar ego morir carne renuncia sudor fatiga padecer disciplina sacrificio abnegación entrega sufrir dolor sumisión rendición pesada carga gozosa muerte diaria resurrección espiritual constante lucha interior",
+        "Seguir paso huella ensangrentada maestro pisar modelo caminar sufrir alegrarse obediencia extrema radical sumisión total"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "203ceb3e-9685-4375-86df-9a120e3af453",
+      "category_id": "5748fa9f-ceb3-44aa-95be-c3be71a53584",
+      "word": "Eliseo y el hacha flotante",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Talando madera obrero esforzado tala orilla río herramienta fierro hierro pesado tajo corte sudor leña trabajo peón peones tala bosque",
+        "Chispazo suelta herramienta salpica resbala cae profundo remolino hundido pérdida pánico herramienta ajena préstamo deuda dolor tristeza llanto obrero desesperado queja angustia prestada valiosa fierro hundido irrecuperable",
+        "Profeta corta rama palito lanza agua milagro físico fierro liviano flota madera hunde inversión ley natural rescate asombroso"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "16514f7e-2cac-4816-bc91-3bafaf008592",
+      "category_id": "e3f467bd-2603-4066-a450-2b96269f1388",
+      "word": "Melquisedec",
+      "difficulty_level": 3,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Aparece fugaz misterioso Abraham guerra victoria regreso botines desierto pan vino misterio paz rey salem",
+        "Sin genealogía sin padres origen fecha muerte sin edad sacerdote altísimo único misterioso eterno tipo Cristo rey sacerdote dualidad asombrosa majestuosa pacífico bendición suprema superior",
+        "Abraham rinde diezmos entrega riquezas reconocimiento sumisión reverencia grandioso respeto homenaje tributo tributario honra máxima ofrenda ofrendamiento diezmar dador"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "a06b2107-262d-4b7b-9a8d-84c769da19eb",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "La Batalla de David y Goliat",
+      "difficulty_level": 1,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Pídele a alguien que actúe de gigante",
+        "Necesitas una honda imaginaria",
+        "Apunta a la frente"
+      ],
+      "is_active": true
+    },
+    {
+      "id": "7ce82eb3-2eb7-4eb4-8679-7a8dd2bc1bf0",
+      "category_id": "8085d0ed-9543-4959-87c1-1a43475569f8",
+      "word": "Daniel en el foso de los leones",
+      "difficulty_level": 2,
+      "verse_ref": null,
+      "description": null,
+      "impostor_hints": [
+        "Actúa como si estuvieras rodeado de leones",
+        "Ponte a orar de rodillas con fe",
+        "Eres salvado por un ángel"
+      ],
+      "is_active": true
+    }
+  ]
+}

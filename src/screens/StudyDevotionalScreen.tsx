@@ -13,7 +13,7 @@ import { Confetti } from '../components/Confetti';
 import { useSound } from '../context/SoundContext';
 import { submitGameResult } from '../lib/gamification/rewardService';
 
-type Phase = 'content' | 'activity' | 'result';
+type Phase = 'content' | 'microQuiz' | 'activity' | 'result';
 type ActivityType = 'flip' | 'choice' | 'verse_complete';
 
 // ─── Activity generator ─────────────────────────────────────
@@ -113,25 +113,52 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     const backOpacity = flipAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0, 1] });
 
     const handleOptionSelect = (index: number) => {
-        if (answered || !node.quiz) return;
+        if (answered) return;
         setSelectedOption(index);
-        const currQ = node.quiz.questions[currentQuestionIndex];
-        const correct = currQ.options[index].correct;
+
+        let correct = false;
+        if (node.type === 'quiz' && node.quiz) {
+            correct = node.quiz.questions[currentQuestionIndex].options[index].correct;
+        } else if (phase === 'microQuiz' && node.microQuiz) {
+            correct = node.microQuiz.options[index].correct;
+        } else {
+             return;
+        }
+
         setIsCorrect(correct);
         setAnswered(true);
         correct ? bounce() : shake();
     };
 
     const handleAction = async () => {
-        // Devotional: first go to activity, then complete
+        // Devotional: content -> microQuiz -> activity -> save
         if (node.type === 'devotional' && phase === 'content') {
-            if (activity) {
+            if (node.microQuiz) {
+                setPhase('microQuiz');
+                return;
+            } else if (activity) {
                 setPhase('activity');
                 return;
             }
         }
 
-        // En quiz, manejar 'siguiente' o 'intentar de nuevo'
+        if (phase === 'microQuiz') {
+            if (!isCorrect) {
+                 setSelectedOption(null);
+                 setAnswered(false);
+                 return;
+            }
+            // Is correct: reset state for next steps
+            setSelectedOption(null);
+            setAnswered(false);
+            if (activity) {
+                 setPhase('activity');
+                 return;
+            }
+            // If no activity, it will fall through to save!
+        }
+
+        // En quiz grueso, manejar 'siguiente' o 'intentar de nuevo'
         if (node.type === 'quiz') {
             if (!isCorrect) {
                 setSelectedOption(null);
@@ -277,6 +304,120 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     }
 
     // ===================================
+    // PHASE: MICRO-QUIZ (Validation)
+    // ===================================
+    if (phase === 'microQuiz' && node.microQuiz) {
+        return (
+             <View style={[styles.container, { paddingTop: insets.top }]}>
+                 <StatusBar barStyle="light-content" backgroundColor="#050505" />
+                 <View style={styles.header}>
+                     <TouchableOpacity onPress={() => setPhase('content')} style={styles.iconBtn}>
+                         <Ionicons name="arrow-back" size={22} color="#fff" />
+                     </TouchableOpacity>
+                     <View style={styles.headerCenter}>
+                         <Text style={[styles.headerSub, { color: nodeTheme.c }]}>RETO DEL DÍA</Text>
+                     </View>
+                     <View style={{ width: 40 }} />
+                 </View>
+
+                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                     <View style={styles.stepRow}>
+                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
+                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
+                         <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
+                         <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
+                     </View>
+
+                     <Animated.View style={{ transform: [{ translateX: shakeAnim }, { scale: scaleAnim }] }}>
+                         <View style={styles.quizCard}>
+                             <View style={[styles.iconCircleBig, { backgroundColor: nodeTheme.c + '15', marginBottom: 20 }]}>
+                                 <Ionicons name="flash" size={36} color={nodeTheme.c} />
+                             </View>
+                             <Text style={styles.quizQuestion}>{node.microQuiz.question}</Text>
+                         </View>
+                     </Animated.View>
+
+                     <View style={styles.optionsContainer}>
+                         {node.microQuiz.options.map((option, i) => {
+                             let borderColor = '#1A1A1A';
+                             let bgColor = '#0A0A0A';
+                             let textColor = '#ccc';
+                             let rightIcon: string | null = null;
+
+                             if (answered && selectedOption === i) {
+                                 borderColor = option.correct ? '#27AE60' : '#E74C3C';
+                                 bgColor = option.correct ? 'rgba(39,174,96,0.1)' : 'rgba(231,76,60,0.1)';
+                                 textColor = option.correct ? '#27AE60' : '#E74C3C';
+                                 rightIcon = option.correct ? 'checkmark-circle' : 'close-circle';
+                             } else if (answered && option.correct) {
+                                 borderColor = '#27AE60'; textColor = '#27AE60';
+                             }
+
+                             return (
+                                 <TouchableOpacity
+                                     key={i}
+                                     style={[styles.optionCard, { borderColor, backgroundColor: bgColor }]}
+                                     onPress={() => handleOptionSelect(i)}
+                                     activeOpacity={answered ? 1 : 0.7}
+                                 >
+                                     <View style={[styles.optionLetterBox, { borderColor }]}>
+                                         <Text style={[styles.optionLetter, { color: textColor }]}>
+                                             {['A', 'B', 'C', 'D'][i]}
+                                         </Text>
+                                     </View>
+                                     <Text style={[styles.optionText, { color: textColor }]}>{option.text}</Text>
+                                     {rightIcon && <Ionicons name={rightIcon as any} size={20} color={textColor} />}
+                                 </TouchableOpacity>
+                             );
+                         })}
+                     </View>
+
+                     {answered && !isCorrect && (
+                         <View style={[styles.feedbackCard, { borderColor: '#E74C3C', backgroundColor: 'rgba(231,76,60,0.08)' }]}>
+                             <Ionicons name="close-circle" size={24} color="#E74C3C" />
+                             <View style={{ flex: 1, marginLeft: 10 }}>
+                                 <Text style={[styles.feedbackTitle, { color: '#E74C3C' }]}>Aún no</Text>
+                                 <Text style={styles.feedbackText}>Vuelve a intentarlo para continuar la lectura.</Text>
+                             </View>
+                         </View>
+                     )}
+                     {answered && isCorrect && (
+                         <View style={[styles.feedbackCard, { borderColor: '#27AE60', backgroundColor: 'rgba(39,174,96,0.08)' }]}>
+                             <Ionicons name="checkmark-circle" size={24} color="#27AE60" />
+                             <View style={{ flex: 1, marginLeft: 10 }}>
+                                 <Text style={[styles.feedbackTitle, { color: '#27AE60' }]}>¡Excelente!</Text>
+                                 <Text style={styles.feedbackText}>Has entendido la esencia del devocional.</Text>
+                             </View>
+                         </View>
+                     )}
+                     
+                     <View style={{ height: 40 }} />
+                 </ScrollView>
+
+                 <View style={styles.activityFooter}>
+                     <TouchableOpacity
+                         style={[
+                             styles.ctaBtn,
+                             { backgroundColor: (answered && isCorrect) ? nodeTheme.c : '#1a1a1a' },
+                             (!answered || !isCorrect) && { borderWidth: 1, borderColor: '#222', opacity: 0.5 }
+                         ]}
+                         onPress={handleAction}
+                         disabled={!answered || !isCorrect}
+                         activeOpacity={0.8}
+                     >
+                         <Ionicons name="arrow-forward-circle" size={22} color={(answered && isCorrect) ? '#000' : '#555'} />
+                         <View style={{ marginLeft: 12 }}>
+                             <Text style={[styles.ctaBtnText, { color: (answered && isCorrect) ? '#000' : '#555' }]}>
+                                 {activity ? 'Siguiente: Aplicación' : 'Reclamar Loot'}
+                             </Text>
+                         </View>
+                     </TouchableOpacity>
+                 </View>
+             </View>
+        );
+    }
+
+    // ===================================
     // PHASE: ACTIVITY (Flip Card)
     // ===================================
     if (phase === 'activity' && activity) {
@@ -299,6 +440,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
 
                     {/* Step indicator */}
                     <View style={styles.stepRow}>
+                        <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                         <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
@@ -439,6 +581,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                         <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
                         <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
+                        <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
                     </View>
                 )}
 
@@ -480,7 +623,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                                         <Text style={styles.teaserText}>{node.question}</Text>
                                         <View style={styles.teaserFooter}>
                                             <Ionicons name="lock-closed" size={12} color="#555" />
-                                            <Text style={styles.teaserLocked}>La aplicación práctica se revela en el siguiente paso</Text>
+                                            <Text style={styles.teaserLocked}>Completa la lectura para acceder al reto</Text>
                                         </View>
                                     </LinearGradient>
                                 )}
@@ -625,14 +768,14 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                                         ? (answered && !isCorrect
                                             ? 'Intenta de nuevo'
                                             : (!isLastQuestion ? 'Siguiente Pregunta' : 'Terminar Reto'))
-                                        : node.type === 'devotional' && activity
-                                            ? 'Continuar a Actividad'
+                                        : node.type === 'devotional' && (node.microQuiz || activity)
+                                            ? (node.microQuiz ? 'Ir al Reto' : 'Continuar a Actividad')
                                             : 'He completado esto'}
                                 </Text>
                                 {(node.type !== 'quiz' || (answered && isCorrect)) && (
                                     <Text style={styles.ctaBtnSub}>
-                                        {node.type === 'devotional' && activity
-                                            ? 'La aplicación te espera 👀'
+                                        {node.type === 'devotional' && (node.microQuiz || activity)
+                                            ? 'Aún falta un paso más 👀'
                                             : node.type === 'quiz' && !isLastQuestion
                                                 ? 'Continuar'
                                                 : `Reclamar +${node.xpReward} XP`}

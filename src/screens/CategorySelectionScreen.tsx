@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Image, Dimensions, ImageBackground, Platform, Modal } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Container, AppText, Button } from '../components';
-import { getCategories, deleteCategory, Category, UnleashQuestion } from '../data/categories';
+import { getCategories, deleteCategory, Category, UnleashQuestion, TriviaQuestion, WordItem } from '../data/categories';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
 import { theme } from '../theme';
@@ -22,6 +23,7 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
     const { playSound, playHaptic } = useSound();
     const subcategories = route?.params?.subcategories;
     const parentTitle = route?.params?.parentTitle;
+    const targetGame = route?.params?.targetGame || 'charadas'; // Nuevo flag
 
     const [categories, setCategories] = React.useState<Category[]>([]);
     const [completedMissions, setCompletedMissions] = React.useState<string[]>([]);
@@ -167,24 +169,88 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                             return;
                         }
                     }
+
+                    // --- CARGA DINÁMICA DE CONTENIDO DESDE SUPABASE ---
+                    const proceedToGame = async (categoryWithData: Category) => {
+                        if (targetGame === 'trivia') {
+                            navigation.navigate('TriviaGame', {
+                                categoryObj: categoryWithData,
+                                questions: categoryWithData.trivia,
+                                duration: 60,
+                                difficulty: 1,
+                                canEarnTrophies: true
+                            });
+                        } else {
+                            navigation.navigate('WordPreview', {
+                                category: categoryWithData.title,
+                                categoryObj: categoryWithData,
+                                totalPool: categoryWithData.words,
+                                canEarnTrophies: true
+                            });
+                        }
+                    };
+
+                    const loadContentAndStart = async () => {
+                        // Si ya tiene datos (Local/Offline), ir directo
+                        if (targetGame === 'trivia' && item.trivia && item.trivia.length > 0) {
+                            proceedToGame(item);
+                            return;
+                        }
+                        if (targetGame === 'charadas' && item.words && item.words.length > 0) {
+                            proceedToGame(item);
+                            return;
+                        }
+
+                        // Si no tiene datos, intentar bajar de Supabase
+                        try {
+                            if (targetGame === 'trivia') {
+                                const { data: qs } = await supabase
+                                    .from('trivia_questions')
+                                    .select('*')
+                                    .eq('category_id', item.id);
+                                
+                                if (qs && qs.length > 0) {
+                                    const mappedQs: TriviaQuestion[] = qs.map((q: any) => ({
+                                        id: q.id,
+                                        question: q.question,
+                                        options: q.options,
+                                        correctIndex: q.correct_index,
+                                        difficulty: q.difficulty_level,
+                                        explanation: q.explanation,
+                                        verseSupport: q.verse_support
+                                    }));
+                                    proceedToGame({ ...item, trivia: mappedQs });
+                                } else {
+                                    Alert.alert('Próximamente 🚧', 'Esta categoría de Trivia no tiene preguntas aún.');
+                                }
+                            } else {
+                                const { data: ws } = await supabase
+                                    .from('words')
+                                    .select('*')
+                                    .eq('category_id', item.id);
+
+                                if (ws && ws.length > 0) {
+                                    const mappedWords: WordItem[] = ws.map((w: any) => ({
+                                        id: w.id,
+                                        word: w.word,
+                                        difficulty: w.difficulty_level,
+                                        impostorHints: w.impostor_hints
+                                    }));
+                                    proceedToGame({ ...item, words: mappedWords });
+                                } else {
+                                    Alert.alert('Próximamente 🚧', 'Esta categoría de Charadas no tiene palabras aún.');
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Error fetching dynamic content:', err);
+                            Alert.alert('Error', 'No se pudo cargar el contenido de esta categoría.');
+                        }
+                    };
+
                     if (item.subcategories && item.subcategories.length > 0) {
                         navigation.push('CategorySelection', { subcategories: item.subcategories, parentTitle: item.title });
                     } else {
-                        // Determinar si puede ganar trofeos.
-                        // Solo evaluamos los paths que tienen validación nativa `jr-w...-quiz`
-                        let userHasCompletedDevotional = true;
-                        if (item.id === 'bib_juan2' && !completedMissions.includes('jr-w1-quiz')) userHasCompletedDevotional = false;
-                        if (item.id === 'bib_juan3' && !completedMissions.includes('jr-w2-quiz')) userHasCompletedDevotional = false;
-                        if (item.id === 'bib_juan4' && !completedMissions.includes('jr-w3-quiz')) userHasCompletedDevotional = false;
-                        if (item.id === 'promo_2026') userHasCompletedDevotional = false;
-                        if (item.id === 'biblia_basica') userHasCompletedDevotional = false;
-
-                        navigation.navigate('WordPreview', {
-                            category: item.title,
-                            categoryObj: item,
-                            totalPool: item.words,
-                            canEarnTrophies: userHasCompletedDevotional
-                        });
+                        loadContentAndStart();
                     }
                 }}
                 activeOpacity={locked ? 1 : 0.8}
@@ -196,10 +262,27 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                         resizeMode="contain"
                     />
                 ) : (
-                    <View style={[styles.minimalistCover, { backgroundColor: locked ? '#111' : (item.color || '#1A1A1A') }]}>
+                    <LinearGradient
+                        colors={(item.gradientColors as any) || [item.color || '#1A1A1A', '#000']}
+                        style={[styles.minimalistCover, locked && { opacity: 0.3 }]}
+                    >
+                        {item.icon && !locked && (
+                            <Ionicons 
+                                name={item.icon as any} 
+                                size={44} 
+                                color="rgba(255,255,255,0.15)" 
+                                style={{ position: 'absolute', top: 10, right: 10 }} 
+                            />
+                        )}
                         <AppText style={[styles.minimalistTitle, locked && { color: '#555' }]}>{item.title.toUpperCase()}</AppText>
-                        {item.capitulo && <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]}>{item.capitulo}</AppText>}
-                    </View>
+                        {item.capitulo ? (
+                            <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]}>{item.capitulo}</AppText>
+                        ) : (
+                            <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]}>
+                                {item.difficulty === 'Fácil' ? '🌱 SEMILLA' : item.difficulty === 'Medio' ? '👣 DISCÍPULO' : '🕊️ MAESTRO'}
+                            </AppText>
+                        )}
+                    </LinearGradient>
                 )}
 
                 {item.image && (

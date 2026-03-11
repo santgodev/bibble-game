@@ -1,3 +1,46 @@
+// Nivel de dificultad universal
+export type DifficultyLevel = 1 | 2 | 3; // 1: Semilla, 2: Discípulo, 3: Maestro
+
+export interface WordItem {
+    id?: string;
+    word: string;
+    difficulty?: DifficultyLevel;
+    verseRef?: string;
+    description?: string;
+    impostorHints?: string[]; // Pistas para ayudar a inocentes en nivel semilla
+}
+
+export interface TriviaQuestion {
+    id?: string;
+    question: string;
+    options: string[];
+    correctIndex: number; 
+    difficulty?: DifficultyLevel;
+    explanation?: string; 
+    verseSupport?: string; 
+}
+
+export interface BiteSizedDevotional {
+    id: string;
+    seasonId: string;
+    dayNumber: number;
+    title: string;
+    verseText: string;
+    reflection: string;
+    challengeAction: string;
+    
+    microQuiz: {
+        question: string;
+        options: string[];
+        correctIndex: number;
+    };
+    
+    rewards: {
+        xp: number;
+        unlocksCategorySlug?: string;
+    };
+}
+
 export interface CharadaCard {
     word: string;
     verse?: string;
@@ -5,7 +48,7 @@ export interface CharadaCard {
     mime?: string;
     // New fields for classification
     category?: string;
-    difficulty?: string;
+    difficulty?: string | DifficultyLevel; // Compatible con nueva API
     // New fields for Apocalipsis
     title?: string;
     capitulo?: string;
@@ -16,6 +59,7 @@ export interface CharadaCard {
     // Audio triggers
     onShowSound?: string; // 'wrong', 'correct', etc.
     bgMusic?: string; // filename from assets/sounds
+    impostorHints?: string[]; // Para retrospectiva
 }
 
 export interface UnleashQuestion {
@@ -30,8 +74,9 @@ export interface Category {
     description: string;
     icon: string;
     color: string;
-    words: (string | CharadaCard)[];
-    difficulty: 'Fácil' | 'Medio' | 'Difícil';
+    words: (string | CharadaCard | WordItem)[];
+    trivia?: TriviaQuestion[]; // NUEVO: Soporte para trivia
+    difficulty: 'Fácil' | 'Medio' | 'Difícil' | DifficultyLevel;
     isCustom?: boolean;
     image?: any; // For require() or uri
     capitulo?: string; // Optional chapter number/title for minimalist cover
@@ -40,9 +85,11 @@ export interface Category {
     hideCamera?: boolean; // If true, do not show camera preview/record
     subcategories?: Category[]; // Nested categories for grouping
     unleashQuiz?: UnleashQuestion[]; // Preguntas requeridas para desbloquear la categoría
+    slug?: string; // Slug para identificar categorías entre DB y Local
 }
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../lib/supabase';
 
 export const DEFAULT_CATEGORIES: Category[] = [
     {
@@ -54,6 +101,48 @@ export const DEFAULT_CATEGORIES: Category[] = [
         color: '#27AE60',
         difficulty: 'Fácil' as const,
         image: null,
+        trivia: [
+            {
+                question: '¿Quién construyó un arca de madera enorme para salvar a su familia y del diluvio?',
+                options: ['Moisés', 'Abraham', 'Noé', 'David'],
+                correctIndex: 2,
+                difficulty: 1,
+                explanation: 'Dios le ordenó a Noé construir el arca para salvar a su familia y especies de animales.',
+                verseSupport: 'Génesis 6:14'
+            },
+            {
+                question: '¿Qué joven pastor derrotó al gigante filisteo con una honda y una piedra?',
+                options: ['Salomón', 'David', 'Saúl', 'Jonatán'],
+                correctIndex: 1,
+                difficulty: 1,
+                explanation: 'David, siendo joven, confió en el nombre de Dios para vencer a Goliat.',
+                verseSupport: '1 Samuel 17:49'
+            },
+            {
+                question: '¿Qué animal habló con Eva en el jardín del Edén?',
+                options: ['Un león', 'Una serpiente', 'Un cuervo', 'Un burro'],
+                correctIndex: 1,
+                difficulty: 1,
+                explanation: 'La serpiente era más astuta que todos los animales del campo y engañó a Eva.',
+                verseSupport: 'Génesis 3:1'
+            },
+            {
+                question: '¿Cuántos panes y peces multiplicó Jesús para alimentar a los 5000?',
+                options: ['7 panes y 3 peces', '5 panes y 2 peces', '3 panes y 2 peces', '10 panes y 5 peces'],
+                correctIndex: 1,
+                difficulty: 2,
+                explanation: 'Un niño entregó su almuerzo de 5 panes de cebada y 2 pececillos que Jesús multiplicó.',
+                verseSupport: 'Juan 6:9'
+            },
+            {
+                question: '¿A qué tribu de Israel pertenecía el rey Saúl (el primer rey)?',
+                options: ['Judá', 'Leví', 'Benjamín', 'Efraín'],
+                correctIndex: 2,
+                difficulty: 3,
+                explanation: 'Saúl era hijo de Cis, varón de la tribu más pequeña, Benjamín.',
+                verseSupport: '1 Samuel 9:1'
+            }
+        ],
         words: [
             'El Arca', 'Adán', 'Eva', 'Rey David', 'Goliat', 'Moisés',
             'Mar Rojo', 'Mandamientos', 'La Cruz', 'Jesús', 'María',
@@ -251,6 +340,55 @@ export const DEFAULT_CATEGORIES: Category[] = [
 
 export const getCategories = async (): Promise<Category[]> => {
     try {
+        // 1. Intentar cargar desde Supabase (REAL TIME)
+        const { data: supabaseCategories, error } = await supabase
+            .from('categories')
+            .select('*')
+            .order('required_level', { ascending: true });
+
+        if (!error && supabaseCategories && supabaseCategories.length > 0) {
+            // Mapear el formato de Supabase al formato de la Interfaz Category
+            // Nota: En una app real, traeríamos también las relaciones de words/trivia
+            const mapped: Category[] = supabaseCategories.map(cat => {
+                const colors: Record<string, string[]> = {
+                    'biblia_basica': ['#27AE60', '#1E8449'],
+                    'personajes_biblicos': ['#3498DB', '#21618C'],
+                    'milagros': ['#F1C40F', '#D4AC0D'],
+                    'parabolas': ['#E67E22', '#A04000'],
+                    'vida_cristiana': ['#E74C3C', '#943126'],
+                    'antiguo_testamento': ['#9B59B6', '#6C3483'],
+                    'nuevo_testamento': ['#1ABC9C', '#117A65'],
+                };
+                
+                return {
+                    id: cat.id,
+                    title: cat.title,
+                    description: cat.description || '',
+                    slug: cat.slug,
+                    icon: cat.icon || 'book',
+                    color: cat.base_color || '#1A1A1A',
+                    gradientColors: colors[cat.slug] || [cat.base_color || '#1A1A1A', '#000000'],
+                    difficulty: cat.required_level === 3 ? 'Difícil' : cat.required_level === 2 ? 'Medio' : 'Fácil',
+                    words: [], 
+                    trivia: [] 
+                };
+            });
+
+            // Si es TRIVIA, necesitamos cargar las preguntas para estas categorías
+            // Por simplicidad en este parche, si hay categorías en Supabase, las devolvemos.
+            // Para mantener compatibilidad con el sistema offline, mezclamos.
+            const customJson = await AsyncStorage.getItem('custom_categories');
+            const customCategories: Category[] = customJson ? JSON.parse(customJson) : [];
+            
+            // Unir DEFAULT (como fallback/base) con Supabase (como verdad actual)
+            // Filtramos duplicados por slug para que Supabase mande sobre el código
+            const all = [...mapped, ...DEFAULT_CATEGORIES, ...customCategories];
+            const unique = all.filter((v, i, a) => a.findIndex(t => (t.slug === v.slug || t.id === v.id)) === i);
+            
+            return unique;
+        }
+
+        // 2. Si falla Supabase, usar el sistema local tradicional
         const customJson = await AsyncStorage.getItem('custom_categories');
         const customCategories: Category[] = customJson ? JSON.parse(customJson) : [];
         return [...DEFAULT_CATEGORIES, ...customCategories];

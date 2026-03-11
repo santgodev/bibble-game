@@ -21,7 +21,7 @@ import { calculateCharadasRewards, calculateImpostorRewards, ImpostorPlayerRewar
 // TIPOS
 // ─────────────────────────────────────────────────────────
 
-export type GameType = 'CHARADAS' | 'IMPOSTOR' | 'DEVOTIONAL' | 'LEADER_AWARD';
+export type GameType = 'CHARADAS' | 'IMPOSTOR' | 'DEVOTIONAL' | 'LEADER_AWARD' | 'TRIVIA';
 
 export interface CharadasPayload {
     score: number;
@@ -134,7 +134,6 @@ export const submitGameResult = async (supabase: any, result: GameResult): Promi
                 rewards = validUserIds.map((uid: string) => ({ userId: uid, xp: r.xp, trophies: r.trophies }));
                 break;
             }
-
             case 'IMPOSTOR': {
                 const p = result.payload as ImpostorPayload;
                 const calculated = calculateImpostorRewards(
@@ -143,6 +142,13 @@ export const submitGameResult = async (supabase: any, result: GameResult): Promi
                     p.citizensWon
                 );
                 rewards = calculated.map((r: ImpostorPlayerReward) => ({ userId: r.userId, xp: r.xp, trophies: r.trophies }));
+                break;
+            }
+
+            case 'TRIVIA': {
+                const p = result.payload as CharadasPayload; // Misma estructura para simplificar
+                const r = calculateCharadasRewards(p.score, p.total, p.canEarnTrophies, p.duration);
+                rewards = validUserIds.map((uid: string) => ({ userId: uid, xp: r.xp, trophies: r.trophies }));
                 break;
             }
 
@@ -175,6 +181,10 @@ export const submitGameResult = async (supabase: any, result: GameResult): Promi
                     const p = result.payload as CharadasPayload;
                     return `Charadas: ${p.category} — ${p.score}/${p.total}`;
                 }
+                case 'TRIVIA': {
+                    const p = result.payload as CharadasPayload;
+                    return `Trivia: ${p.category} — ${p.score}/${p.total}`;
+                }
                 case 'IMPOSTOR':
                     return `Impostor: partida completada`;
                 case 'DEVOTIONAL': {
@@ -201,10 +211,12 @@ export const submitGameResult = async (supabase: any, result: GameResult): Promi
         if (eventError) throw new Error(`Event insert failed: ${eventError.message}`);
 
         // ─────────────────────────────────────────────────────
-        // 5. ACTUALIZAR TOTALES CON RPC ATÓMICA
-        // Evita race conditions (Read-Modify-Write)
+        // 5. ACTUALIZAR TOTALES CON RPC ATÓMICA Y MANEJAR RACHAS
         // ─────────────────────────────────────────────────────
+        const today = new Date().toISOString().split('T')[0];
+
         for (const r of rewards) {
+            // A. Incrementar Puntos
             const { error: rpcError } = await supabase.rpc('increment_user_rewards', {
                 p_user_id: r.userId,
                 p_xp: r.xp,
@@ -213,7 +225,42 @@ export const submitGameResult = async (supabase: any, result: GameResult): Promi
 
             if (rpcError) {
                 console.error(`[RewardService] RPC failed for user ${r.userId}:`, rpcError);
-                // No lanza error global — otros usuarios siguen recibiendo sus puntos
+            }
+
+            // B. Manejar Racha (Streak)
+            const { data: user } = await supabase
+                .from('users')
+                .select('streak_count, last_activity_date')
+                .eq('id', r.userId)
+                .single();
+
+            if (user) {
+                let newStreak = user.streak_count || 0;
+                const lastDate = user.last_activity_date;
+                
+                if (!lastDate) {
+                    newStreak = 1;
+                } else if (lastDate !== today) {
+                    const last = new Date(lastDate);
+                    const now = new Date(today);
+                    const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 3600 * 24));
+
+                    if (diffDays === 1) {
+                        newStreak += 1;
+                    } else if (diffDays > 1) {
+                        newStreak = 1;
+                    }
+                }
+
+                if (lastDate !== today) {
+                    await supabase
+                        .from('users')
+                        .update({ 
+                            streak_count: newStreak, 
+                            last_activity_date: today 
+                        })
+                        .eq('id', r.userId);
+                }
             }
         }
 

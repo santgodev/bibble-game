@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from '../../lib/supabase';
 
 export const ImpostorPassScreen = ({ navigation, route }: any) => {
     const { players, playerDetails, impostors, hintEnabled, duration, selectedCategories } = route.params;
@@ -92,29 +93,55 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
     };
 
     useEffect(() => {
-        // Pick random category logic
-        if (selectedCategories && selectedCategories.length > 0) {
-            const randomCat = selectedCategories[Math.floor(Math.random() * selectedCategories.length)];
-            const pool = randomCat.words;
-            if (pool && pool.length > 0) {
-                const randomItem = pool[Math.floor(Math.random() * pool.length)];
-                setSecretWord(typeof randomItem === 'string' ? randomItem : randomItem.word);
+        const setupGame = async () => {
+            if (selectedCategories && selectedCategories.length > 0) {
+                // Seleccionar categoría al azar
+                let randomCat = selectedCategories[Math.floor(Math.random() * selectedCategories.length)];
+                let pool = randomCat.words || [];
 
-                // Rich contextual hint for the impostor
-                const chapterTitle = randomCat.capitulo || randomCat.title;
-                const wordValue = typeof randomItem === 'string' ? randomItem : randomItem.word;
-                const richHint = getImpostorHint(randomCat.title, chapterTitle, pool, wordValue);
-                setSecretCategory(richHint);
-            } else {
-                setSecretWord("Error");
+                // Si el pool está vacío, intentamos cargar de Supabase (id es UUID)
+                if (pool.length === 0 && randomCat.id.length > 20) {
+                    try {
+                        const { data: ws } = await supabase
+                            .from('words')
+                            .select('*')
+                            .eq('category_id', randomCat.id);
+                        
+                        if (ws && ws.length > 0) {
+                            pool = ws.map((w: any) => ({
+                                id: w.id,
+                                word: w.word,
+                                difficulty: w.difficulty_level,
+                                impostorHints: w.impostor_hints
+                            }));
+                        }
+                    } catch (err) {
+                        console.error('Error fetching words for Impostor:', err);
+                    }
+                }
+
+                if (pool.length > 0) {
+                    const randomItem = pool[Math.floor(Math.random() * pool.length)];
+                    const wordStr = typeof randomItem === 'string' ? randomItem : randomItem.word;
+                    setSecretWord(wordStr);
+
+                    // Rich contextual hint for the impostor
+                    const chapterTitle = randomCat.capitulo || randomCat.title;
+                    const richHint = getImpostorHint(randomCat.title, chapterTitle, pool, wordStr);
+                    setSecretCategory(richHint);
+                } else {
+                    setSecretWord("Error: Sin Palabras");
+                }
             }
-        }
 
-        const impSet = new Set<number>();
-        while (impSet.size < impostors) {
-            impSet.add(Math.floor(Math.random() * players));
-        }
-        setImpostorList(Array.from(impSet));
+            const impSet = new Set<number>();
+            while (impSet.size < impostors) {
+                impSet.add(Math.floor(Math.random() * players));
+            }
+            setImpostorList(Array.from(impSet));
+        };
+
+        setupGame();
     }, []);
 
     const isCurrentImpostor = impostorList.includes(currentPlayer);
