@@ -199,14 +199,24 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
 
     const [accuseModalVisible, setAccuseModalVisible] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState({ index: -1, name: '' });
-    const [caughtImpostors, setCaughtImpostors] = useState<number[]>([]);
-    const [eliminatedInnocents, setEliminatedInnocents] = useState<number[]>([]);
+    const [caughtImpostors, setCaughtImpostors] = useState<number[]>(route.params.initialCaughtImpostors || []);
+    const [eliminatedInnocents, setEliminatedInnocents] = useState<number[]>(route.params.initialEliminatedInnocents || []);
 
     // Premium feedback modal state
     const [feedback, setFeedback] = useState<FeedbackState>({
         type: null, title: '', subtitle: '', body: '', accentColor: '#fff', icon: 'checkmark',
     });
     const [feedbackVisible, setFeedbackVisible] = useState(false);
+
+    // Synchronize initial state if params change while mounted
+    React.useEffect(() => {
+        if (route.params?.initialCaughtImpostors) {
+            setCaughtImpostors(route.params.initialCaughtImpostors);
+        }
+        if (route.params?.initialEliminatedInnocents) {
+            setEliminatedInnocents(route.params.initialEliminatedInnocents);
+        }
+    }, [route.params?.initialCaughtImpostors, route.params?.initialEliminatedInnocents]);
 
     useFocusEffect(
         useCallback(() => {
@@ -441,7 +451,15 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
                         </ScrollView>
 
                         <View style={styles.footerArea}>
-                            <TouchableOpacity style={styles.backDiscussBtn} onPress={() => navigation.goBack()} activeOpacity={0.85}>
+                            <TouchableOpacity
+                                style={styles.backDiscussBtn}
+                                onPress={() => navigation.navigate('ImpostorGame', {
+                                    ...route.params, // Mantener duración, palabra secreta, etc.
+                                    caughtImpostors,
+                                    eliminatedInnocents
+                                })}
+                                activeOpacity={0.85}
+                            >
                                 <Ionicons name="arrow-back" size={18} color="#fff" style={{ marginRight: 8 }} />
                                 <AppText style={styles.backDiscussText}>Volver a Debate</AppText>
                             </TouchableOpacity>

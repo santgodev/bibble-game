@@ -63,7 +63,20 @@ export const DEFAULT_CATEGORIES: Category[] = [
             'El Templo', 'Jerusalén', 'El Ángel', 'Juan',
             'El Samaritano', 'Hijo Pródigo', 'El Apocalipsis',
             'La Manzana', 'La Serpiente', 'La Corona',
-            'Zaqueo', 'Pablo', 'Miguel'
+            'Zaqueo', 'Pablo', 'Miguel', 'Ester', 'Gedeón',
+            'Noé', 'Abraham', 'Isaac', 'Jacob', 'José y su Túnica',
+            'La Torre de Babel', 'Sara', 'Rut', 'Samuel', 'Saúl',
+            'Jonás', 'Daniel', 'Ezequiel', 'Isaías', 'Jeremías',
+            'Mateo', 'Marcos', 'Lucas', 'Marta', 'María Magdalena',
+            'Zacarías', 'Isabel', 'Juan el Bautista', 'Herodes',
+            'Pilato', 'Barrabás', 'Río Jordán', 'Monte Sinaí',
+            'Belén', 'Nazaret', 'Egipto', 'Tierra Prometida',
+            'Muro de Jericó', 'La Zarza Ardiendo', 'Plagas de Egipto',
+            'Maná', 'Arca del Testimonio', 'Tabernáculo',
+            'Corona de Espinas', 'Los Clavos', 'La Resurrección',
+            'Pentecostés', 'La Fe', 'Amor Cristiano', 'Perdón',
+            'Oración', 'Alabanza', 'Diezmos', 'Ofrenda',
+            'Túnica de Colores', 'Hondilla de David', 'Lámpara a mis pies',
         ]
     },
     {

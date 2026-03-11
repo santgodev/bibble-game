@@ -8,10 +8,15 @@ import { useGameTimer } from '../../hooks';
 import { useSound } from '../../context/SoundContext';
 
 export const ImpostorGameScreen = ({ navigation, route }: any) => {
-    const { duration, impostorList, secretWord, secretCategory, players, playerDetails } = route.params;
+    // Robust parameter extraction with fallbacks to prevent NaN
+    const duration = route.params?.duration ? Number(route.params.duration) : 60;
+    const players = route.params?.players ? Number(route.params.players) : 3;
+    const { impostorList, secretWord, secretCategory, playerDetails } = route.params || {};
 
     const [isFinished, setIsFinished] = useState(false);
     const [starterPlayer, setStarterPlayer] = useState('');
+    const [caughtImpostors, setCaughtImpostors] = useState<number[]>(route.params?.caughtImpostors || []);
+    const [eliminatedInnocents, setEliminatedInnocents] = useState<number[]>(route.params?.eliminatedInnocents || []);
     const { pauseMusic, resumeMusic } = useSound();
 
     // Track whether the game has already been started
@@ -34,7 +39,7 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
         startPulse();
     };
 
-    const { timeLeft, startTimer, stopTimer, resetTimer } = useGameTimer(duration, onTimeEnd);
+    const { timeLeft, startTimer, stopTimer, resetTimer, setTimeLeft } = useGameTimer(duration, onTimeEnd);
 
     useFocusEffect(
         useCallback(() => {
@@ -45,19 +50,36 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
                 // ── First focus: full fresh start ──
                 alreadyStartedRef.current = true;
                 setIsFinished(false);
-                resetTimer();
 
+                // Si por alguna razón (remount) venimos ya con tiempo restante en params
+                if (route.params?.remainingTime !== undefined) {
+                    setTimeLeft(route.params.remainingTime);
+                } else {
+                    resetTimer();
+                }
+
+                // Select a random player from those NOT already eliminated
                 if (playerDetails && playerDetails.length > 0) {
                     const rIndex = Math.floor(Math.random() * playerDetails.length);
-                    setStarterPlayer(playerDetails[rIndex].username);
+                    setStarterPlayer(playerDetails[rIndex].username || playerDetails[rIndex].name || 'Jugador');
                 } else {
-                    setStarterPlayer(`Jugador ${Math.floor(Math.random() * players) + 1}`);
+                    const pCount = Number(players) || 3;
+                    setStarterPlayer(`Jugador ${Math.floor(Math.random() * pCount) + 1}`);
                 }
 
                 startTimer();
             } else {
-                // ── Returning from vote screen: just resume where we left off ──
-                if (!isFinished) startTimer();
+                // ── Returning from vote screen (already mounted) ──
+                // Sincronizamos el tiempo que venga de los resultados
+                if (route.params?.remainingTime !== undefined) {
+                    setTimeLeft(route.params.remainingTime);
+                }
+
+                if (timeLeft <= 0) {
+                    setIsFinished(true);
+                } else {
+                    startTimer();
+                }
             }
 
             return () => {
@@ -65,8 +87,16 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
                 stopTimer();
                 resumeMusic();
             };
-        }, [duration, playerDetails, players, isFinished])
+        }, [duration, playerDetails, players])
     );
+
+    // Un useEffect menos para evitar re-renders innecesarios, 
+    // ya lo inicializamos arriba en el useState.
+    // Solo escuchamos cambios si es que vinieran de fuera (poco probable)
+    useEffect(() => {
+        if (route.params?.caughtImpostors) setCaughtImpostors(route.params.caughtImpostors);
+        if (route.params?.eliminatedInnocents) setEliminatedInnocents(route.params.eliminatedInnocents);
+    }, [route.params?.caughtImpostors, route.params?.eliminatedInnocents]);
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
@@ -83,6 +113,8 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
         // Categorías básicas no dan trofeos — solo XP
         const canEarnTrophies = secretCategory !== 'biblia_basica';
         navigation.navigate('ImpostorResults', {
+            duration,
+            remainingTime: timeLeft, // Pasar el tiempo exacto actual
             impostorList,
             secretWord,
             secretCategory,
@@ -90,6 +122,8 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
             playerDetails,
             sessionId,
             canEarnTrophies,
+            initialCaughtImpostors: caughtImpostors,
+            initialEliminatedInnocents: eliminatedInnocents,
         });
     };
 

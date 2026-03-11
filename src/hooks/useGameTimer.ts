@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-export const useGameTimer = (initialTime: number = 60, onTimeEnd?: () => void) => {
+export const useGameTimer = (initialTime: number, onTimeEnd?: () => void) => {
     const [timeLeft, setTimeLeft] = useState(initialTime);
     const [isRunning, setIsRunning] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -47,5 +47,5 @@ export const useGameTimer = (initialTime: number = 60, onTimeEnd?: () => void) =
         };
     }, [isRunning, timeLeft]);
 
-    return { timeLeft, isRunning, startTimer, stopTimer, resetTimer };
+    return { timeLeft, isRunning, startTimer, stopTimer, resetTimer, setTimeLeft };
 };

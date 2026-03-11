@@ -48,6 +48,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
 
     const [phase, setPhase] = useState<Phase>('content');
     const [saving, setSaving] = useState(false);
+    const isClaiming = useRef(false);  // ← guarda síncrona anti-doble-tap
     const [showConfetti, setShowConfetti] = useState(false);
     const [alreadyDone, setAlreadyDone] = useState(false);
 
@@ -99,7 +100,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
         }).start(() => {
             setCardFlipped(true);
             setActivityDone(true);
-            playHaptic('light');
+            playHaptic('selection');
         });
     };
 
@@ -145,6 +146,10 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
             }
         }
 
+        // ── Guardia síncrona: bloquea ANTES de cualquier setState ──
+        if (isClaiming.current) return;
+        isClaiming.current = true;
+
         setSaving(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -164,18 +169,13 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                 });
 
                 if (!result.success && !result.alreadySubmitted) {
-                    throw new Error(result.error || 'No se pudo registrar la recompensa del devocional.');
+                    throw new Error(result.error || 'No se pudo registrar la recompensa.');
                 }
 
-                if (result.alreadySubmitted) {
-                    setAlreadyDone(true);
-                }
+                if (result.alreadySubmitted) setAlreadyDone(true);
             }
-        } catch (err: any) {
-            console.error('Error saving node', err);
-            Alert.alert('⚠️ Error de Guardado', err.message || 'No se pudo guardar el progreso. ¿Tienes internet?');
-        } finally {
-            setSaving(false);
+
+            // ── Éxito: reproducir sonido EXACTAMENTE UNA VEZ ──
             setPhase('result');
             playSound('win');
             playHaptic('victory');
@@ -194,6 +194,12 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                     Animated.timing(xpBadgeY, { toValue: 0, duration: 400, useNativeDriver: true }),
                 ]),
             ]).start();
+            setSaving(false);
+        } catch (err: any) {
+            console.error('Error saving node', err);
+            setSaving(false);
+            isClaiming.current = false;
+            Alert.alert('⚠️ Error de Guardado', err.message || 'No se pudo guardar el progreso. ¿Tienes internet?');
         }
     };
 

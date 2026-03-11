@@ -229,21 +229,12 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
                 await wrongSound.current.setVolumeAsync(sfxVolume * 0.6);
                 await wrongSound.current.replayAsync();
             } else if (type === 'win' && victorySound.current) {
-                // Play correct sound 3 times in rapid succession for a win fanfare
+                // Play correct sound once for a clean victory signal
                 await victorySound.current.setVolumeAsync(sfxVolume);
                 await victorySound.current.replayAsync();
-                setTimeout(async () => {
-                    try { await victorySound.current?.replayAsync(); } catch (e) { }
-                }, 250);
-                setTimeout(async () => {
-                    try { await victorySound.current?.replayAsync(); } catch (e) { }
-                }, 500);
             } else if (type === 'unlock' && unlockSound.current) {
                 await unlockSound.current.setVolumeAsync(sfxVolume * 0.9);
                 await unlockSound.current.replayAsync();
-                setTimeout(async () => {
-                    try { await unlockSound.current?.replayAsync(); } catch (e) { }
-                }, 300);
             }
         } catch (e) { }
     };
@@ -255,10 +246,7 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
             case 'impact': Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); break;
             case 'selection': Haptics.selectionAsync(); break;
             case 'victory':
-                // Triple-notification for victory
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 200);
-                setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 400);
                 break;
         }
     };

@@ -83,10 +83,9 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
     }, []);
 
     useEffect(() => {
-        // Solo se ejecuta en la carga inicial (cuando llegan las palabras del pool)
-        // Los cambios de duración son manejados directamente por el botón onPress
+        // Sync the word pool whenever words arrive OR duration changes
         shuffleAndPick(gameDuration);
-    }, [totalPool]);  // ← NO incluir gameDuration aquí o se sobreescribe con valor viejo
+    }, [totalPool, gameDuration]);
 
     const toggleMember = (id: string) => {
         setSelectedMembers(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
@@ -94,9 +93,9 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
 
     const getWordsCount = (dur: number) => {
         if (dur <= 60) return 15;
-        if (dur <= 90) return 20;
-        if (dur <= 120) return 25;
-        return 35;
+        if (dur <= 90) return 25;
+        if (dur <= 120) return 35;
+        return 50; // Increased to 50 for 3 mins
     };
 
     const shuffleAndPick = (dur?: number) => {
@@ -227,6 +226,14 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                             <AppText style={s.countBadgeText}>{displayedWords.length}</AppText>
                         </View>
                     </View>
+                    {totalPool.length < getWordsCount(gameDuration) && (
+                        <View style={s.limitWarning}>
+                            <Ionicons name="information-circle-outline" size={14} color="#666" />
+                            <AppText style={s.limitWarningText}>
+                                Esta categoría tiene pocas palabras ({totalPool.length}). Jugando con todas.
+                            </AppText>
+                        </View>
+                    )}
                     <View style={s.wordsGrid}>
                         {displayedWords.map((item, index) => {
                             const wordText = typeof item === 'string' ? item : item.word;
@@ -439,4 +446,13 @@ const s = StyleSheet.create({
     },
     startBtnText: { color: '#000', fontSize: 18, fontWeight: '900', letterSpacing: 1.5, includeFontPadding: false },
     startBtnSub: { color: 'rgba(0,0,0,0.55)', fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 2 },
+
+    // Warning
+    limitWarning: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: 'rgba(255,165,0,0.05)',
+        padding: 8, borderRadius: 10, marginBottom: 16,
+        borderWidth: 1, borderColor: 'rgba(255,165,0,0.15)',
+    },
+    limitWarningText: { color: '#888', fontSize: 11, fontWeight: '600' },
 });

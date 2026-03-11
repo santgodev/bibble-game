@@ -13,6 +13,7 @@ export interface CharadaWord {
     word: string;
     category: 'personaje' | 'concepto' | 'evento' | 'frase';
     difficulty: 'facil' | 'medio' | 'dificil';
+    hint?: string;
 }
 
 export type NodeType = 'intro' | 'devotional' | 'practice' | 'quiz';
@@ -137,11 +138,12 @@ export const JESUS_REAL_PATH: StudyPath = {
                     subtitle: 'Dinámica y Charadas',
                     reflection: 'Júntense y escriban en un papel una cosa que sientan "en tinieblas" (una batalla o duda). Oren juntos declarando Juan 1:5 y rompan los papeles.',
                     charadas: [
-                        { word: 'La Luz', category: 'concepto', difficulty: 'facil' },
-                        { word: 'Juan el Bautista', category: 'personaje', difficulty: 'facil' },
-                        { word: 'Hijos de Dios', category: 'concepto', difficulty: 'medio' },
-                        { word: 'El Verbo se hizo carne', category: 'frase', difficulty: 'dificil' },
-                        { word: 'La Creación', category: 'evento', difficulty: 'facil' },
+                        { word: 'La Luz', category: 'concepto', difficulty: 'facil', hint: 'Juan 1:5 • Luz • Tinieblas' },
+                        { word: 'Juan el Bautista', category: 'personaje', difficulty: 'facil', hint: 'Testigo • Desierto • Bautismo' },
+                        { word: 'Hijos de Dios', category: 'concepto', difficulty: 'medio', hint: 'Juan 1:12 • Derecho • Adopción' },
+                        { word: 'El Verbo', category: 'personaje', difficulty: 'dificil', hint: 'Palabra • Juan 1:1 • Eternidad' },
+                        { word: 'El Verbo se hizo carne', category: 'frase', difficulty: 'dificil', hint: 'Encarnación • Humano • Gracia' },
+                        { word: 'La Creación', category: 'evento', difficulty: 'facil', hint: 'Génesis • Origen • Dios Creador' },
                     ],
                     xpReward: 20,
                     trophyReward: 10,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, Animated, PanResponder } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, Animated, PanResponder, ScrollView } from 'react-native';
 import { Container, AppText } from '../../components';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -51,34 +51,41 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
         }, [])
     );
 
-    // Contextual hint generator for the impostor based on the chapter/category
-    const getImpostorHint = (catTitle: string, chapterTitle: string, wordPool: any[]): string => {
-        // Map of chapter keywords to contextual hints
-        const CHAPTER_HINTS: Record<string, string> = {
-            'Jesús es Dios': 'Juan 1 • Comienzo del Evangelio • El Verbo se hace carne',
-            'Jesús da vida': 'Juan 2-4 • Las bodas de Caná • El agua y el Espíritu',
-            'Jesús sana': 'Juan 5-6 • Milagros y sanidades • El pan de vida',
-            'Jesús revela': 'Juan 7-9 • La luz del mundo • El ciego de nacimiento',
-            'Jesús ressucita': 'Juan 11-12 • Lázaro • La resurrección y la vida',
+    // Contextual hint generator (Minimalist keywords as requested)
+    const getImpostorHint = (catTitle: string, chapterTitle: string, wordPool: any[], currentWord: string): string => {
+        // Find if the word already has a predefined hint
+        const wordObj = wordPool.find(w => (typeof w === 'string' ? w : w.word) === currentWord);
+        if (wordObj && typeof wordObj === 'object' && wordObj.hint) {
+            return wordObj.hint;
+        }
+
+        const CHAPTER_TAGS: Record<string, string> = {
+            'Jesús es Dios': 'Juan 1 • Verbo • Deidad • Origen',
+            'Jesús da vida': 'Juan 2-4 • Caná • Agua • Espíritu • Vino',
+            'Jesús sana': 'Juan 5-6 • Milagros • Pan • Estanque • Vida',
+            'Jesús revela': 'Juan 7-10 • Luz • Pastor • Puerta • Templo',
+            'Jesús ressucita': 'Juan 11-12 • Lázaro • Resurrección • Ungido',
+            'Pasión': 'Juan 13-19 • Cruz • Cena • Sacrificio • Sangre',
+            'Gloria': 'Juan 20-21 • Resucitado • Misión • Victoria',
         };
 
-        // Try to find a match by chapter title
-        for (const [key, hint] of Object.entries(CHAPTER_HINTS)) {
+        // Match by chapter
+        for (const [key, tag] of Object.entries(CHAPTER_TAGS)) {
             if (chapterTitle?.toLowerCase().includes(key.toLowerCase()) ||
                 catTitle?.toLowerCase().includes(key.toLowerCase())) {
-                return hint;
+                return `${tag} • ${catTitle.split(':')[0]}`;
             }
         }
 
-        // Fallback: build a hint from the word pool itself (pick 2 random words as "context")
-        const words = wordPool
+        // Fallback: Build short keywords from pool
+        const contextWords = wordPool
             .map(w => typeof w === 'string' ? w : w.word)
-            .filter(Boolean)
+            .filter(w => w && w !== currentWord)
             .sort(() => Math.random() - 0.5)
             .slice(0, 2);
 
-        if (words.length >= 2) {
-            return `${chapterTitle || catTitle} • Relacionado con: ${words.join(' y ')}`;
+        if (contextWords.length >= 2) {
+            return `${chapterTitle || catTitle} • ${contextWords.join(' • ')}`;
         }
 
         return chapterTitle || catTitle || 'Biblia';
@@ -95,7 +102,8 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
 
                 // Rich contextual hint for the impostor
                 const chapterTitle = randomCat.capitulo || randomCat.title;
-                const richHint = getImpostorHint(randomCat.title, chapterTitle, pool);
+                const wordValue = typeof randomItem === 'string' ? randomItem : randomItem.word;
+                const richHint = getImpostorHint(randomCat.title, chapterTitle, pool, wordValue);
                 setSecretCategory(richHint);
             } else {
                 setSecretWord("Error");
@@ -177,38 +185,43 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
 
             {/* Card Content */}
             <View style={styles.cardWrapper}>
-                <View style={{ width: 320, height: 320, alignSelf: 'center' }}>
+                <View style={{ width: 320, height: 410, alignSelf: 'center' }}>
 
                     {/* REVERSO de la Tarjeta (Rol Revelado, oculto debajo) */}
                     <View style={[styles.cardReverso, { zIndex: 1, position: 'absolute', top: 0, left: 0 }]}>
-                        {isCurrentImpostor ? (
-                            <View style={styles.impRoleBox}>
-                                <Ionicons name="glasses" size={80} color="#e74c3c" style={{ marginBottom: 10 }} />
-                                <AppText style={styles.roleTitleImp}>Tú eres el</AppText>
-                                <AppText variant="display" style={styles.roleValueImp}>IMPOSTOR</AppText>
-                                <AppText style={styles.detailText}>Siéntate en silencio. Analiza quién hace buenas preguntas.</AppText>
+                        <ScrollView
+                            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            {isCurrentImpostor ? (
+                                <View style={styles.impRoleBox}>
+                                    <Ionicons name="glasses" size={80} color="#e74c3c" style={{ marginBottom: 10 }} />
+                                    <AppText style={styles.roleTitleImp}>Tú eres el</AppText>
+                                    <AppText variant="display" style={styles.roleValueImp}>IMPOSTOR</AppText>
+                                    <AppText style={styles.detailText}>Escucha y analiza las preguntas.</AppText>
 
-                                {hintEnabled && (
-                                    <View style={styles.hintTag}>
-                                        <Ionicons name="bulb" size={16} color="#f39c12" style={{ marginBottom: 4 }} />
-                                        <AppText style={styles.hintLabel}>PISTA DEL IMÓSTOR</AppText>
-                                        <AppText style={styles.hintValue}>{secretCategory}</AppText>
-                                    </View>
-                                )}
-                            </View>
-                        ) : (
-                            <View style={styles.citRoleBox}>
-                                <Ionicons name="shield-checkmark" size={80} color="#2ecc71" style={{ marginBottom: 10 }} />
-                                <AppText style={styles.roleTitle}>Tú eres un</AppText>
-                                <AppText variant="display" style={styles.roleValue}>CIUDADANO</AppText>
-
-                                <View style={styles.wordPlate}>
-                                    <AppText style={styles.wordLabel}>PALABRA SECRETA</AppText>
-                                    <AppText style={styles.wordSecret} numberOfLines={2} adjustsFontSizeToFit>{secretWord}</AppText>
+                                    {hintEnabled && (
+                                        <View style={styles.hintTag}>
+                                            <Ionicons name="bulb" size={16} color="#f39c12" style={{ marginBottom: 4 }} />
+                                            <AppText style={styles.hintLabel}>PISTA DEL IMÓSTOR</AppText>
+                                            <AppText style={styles.hintValue} adjustsFontSizeToFit>{secretCategory}</AppText>
+                                        </View>
+                                    )}
                                 </View>
-                                <AppText style={styles.detailText}>Evita que el impostor descubra esta palabra.</AppText>
-                            </View>
-                        )}
+                            ) : (
+                                <View style={styles.citRoleBox}>
+                                    <Ionicons name="shield-checkmark" size={80} color="#2ecc71" style={{ marginBottom: 10 }} />
+                                    <AppText style={styles.roleTitle}>Tú eres un</AppText>
+                                    <AppText variant="display" style={styles.roleValue}>CIUDADANO</AppText>
+
+                                    <View style={styles.wordPlate}>
+                                        <AppText style={styles.wordLabel}>PALABRA SECRETA</AppText>
+                                        <AppText style={styles.wordSecret} numberOfLines={2} adjustsFontSizeToFit>{secretWord}</AppText>
+                                    </View>
+                                    <AppText style={styles.detailText}>Evita que el impostor descubra esta palabra.</AppText>
+                                </View>
+                            )}
+                        </ScrollView>
                     </View>
 
                     {/* FRENTE de la Tarjeta (Arrastrable con Spring) */}
@@ -308,7 +321,7 @@ const styles = StyleSheet.create({
     },
     card: {
         width: 320,
-        height: 320,
+        height: 410,
         backgroundColor: '#1E1E1E',
         borderRadius: 20,
         overflow: 'hidden',
@@ -344,7 +357,7 @@ const styles = StyleSheet.create({
     },
     cardReverso: {
         width: 320,
-        height: 320,
+        height: 410,
         backgroundColor: '#1E1E1E',
         borderRadius: 20,
         overflow: 'hidden',
@@ -352,7 +365,9 @@ const styles = StyleSheet.create({
         borderColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 20,
+        padding: 24,
+        paddingTop: 30,
+        paddingBottom: 30,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.5,
@@ -383,12 +398,12 @@ const styles = StyleSheet.create({
     roleValue: {
         fontSize: 38,
         color: '#2ecc71',
-        marginBottom: 20
+        marginBottom: 12
     },
     roleValueImp: {
         fontSize: 42,
         color: '#e74c3c',
-        marginBottom: 20
+        marginBottom: 12
     },
     detailText: {
         color: '#888',
