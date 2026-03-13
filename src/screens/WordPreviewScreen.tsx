@@ -12,28 +12,24 @@ import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { theme } from '../theme';
 
 const GOLD = '#D4AF37';
 const GOLD2 = '#F5D76E';
-const PURPLE = '#7C3AED';
-const PURPLE2 = '#A855F7';
-const BG = '#08081A';
 const SURFACE = 'rgba(255,255,255,0.05)';
 const BORDER = 'rgba(255,255,255,0.08)';
 
 const { width: SW } = Dimensions.get('window');
 
-// Chip color presets cycling through 3 styles
-const CHIP_STYLES = [
-    { bg: 'rgba(212,175,55,0.12)', border: 'rgba(212,175,55,0.35)', text: GOLD },
-    { bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.35)', text: PURPLE2 },
-    { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', text: '#ccc' },
-];
+// Chip style constants
+const CHIP_BG = 'rgba(255,255,255,0.05)';
+const CHIP_BORDER = 'rgba(255,255,255,0.12)';
+const CHIP_TEXT = '#FFFFFF';
 
 export const WordPreviewScreen = ({ navigation, route }: any) => {
     const { t } = useLanguage();
     const insets = useSafeAreaInsets();
-    const { category, categoryObj, totalPool } = route.params || { category: 'Mock', categoryObj: {}, totalPool: [] };
+    const { category, categoryObj, totalPool, difficulty } = route.params || { category: 'Mock', categoryObj: {}, totalPool: [], difficulty: null };
 
     useFocusEffect(
         React.useCallback(() => {
@@ -92,21 +88,34 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
     };
 
     const getWordsCount = (dur: number) => {
-        if (dur <= 60) return 15;
-        if (dur <= 90) return 25;
-        if (dur <= 120) return 35;
-        return 50; // Increased to 50 for 3 mins
+        if (dur <= 60) return 20;
+        if (dur <= 90) return 30;
+        if (dur <= 120) return 45;
+        return 65; // Increased significantly for 3 mins
     };
 
     const shuffleAndPick = (dur?: number) => {
         if (!totalPool || totalPool.length === 0) return;
         const activeDuration = dur ?? gameDuration;
-        const pool = [...totalPool];
+        
+        let pool = [...totalPool];
+
+        // Filter by difficulty if provided
+        if (difficulty) {
+            pool = pool.filter((item: any) => {
+                const itemDiff = typeof item === 'string' ? 1 : (item.difficulty || 1);
+                return itemDiff === difficulty;
+            });
+        }
+
         for (let i = pool.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [pool[i], pool[j]] = [pool[j], pool[i]];
         }
-        const target = Math.min(getWordsCount(activeDuration), pool.length);
+        
+        // Respect duration-based count even if difficulty is set, especially for Charadas
+        const targetCount = getWordsCount(activeDuration);
+        const target = Math.min(targetCount, pool.length);
         setDisplayedWords(pool.slice(0, target));
 
         // Spin shuffle icon
@@ -138,17 +147,23 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
     const formatDuration = (s: number) =>
         s >= 60 ? `${Math.floor(s / 60)}:${s % 60 === 0 ? '00' : String(s % 60).padStart(2, '0')}` : `${s}s`;
 
+    // Colorimetry
+    const themeGradients = categoryObj?.gradientColors || ['#0D0520', '#080818', '#0D0520'];
+    const primaryColor = categoryObj?.color || theme.colors.primary;
+
     return (
         <View style={s.root}>
             {/* ── Hero gradient background ── */}
             <LinearGradient
-                colors={['#0D0520', '#080818', BG]}
-                locations={[0, 0.5, 1]}
+                colors={themeGradients}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFillObject}
             />
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(5,5,10,0.7)' }]} />
 
             {/* Decorative glow orb */}
-            <Animated.View style={[s.glowOrb, { opacity: glowOpacity }]} />
+            <Animated.View style={[s.glowOrb, { opacity: glowOpacity, backgroundColor: primaryColor }]} />
 
             <ScrollView
                 contentContainerStyle={[s.scroll, { paddingTop: insets.top + 8 }]}
@@ -161,26 +176,20 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                     </TouchableOpacity>
 
                     <View style={s.heroCenter}>
-                        <LinearGradient
-                            colors={[PURPLE2, GOLD]}
-                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                            style={s.categoryGradientText}
-                        >
-                            <AppText style={s.categoryName} numberOfLines={1}>{category}</AppText>
-                        </LinearGradient>
-                        <View style={s.wordCountBadge}>
-                            <Ionicons name="layers" size={12} color={GOLD} />
-                            <AppText style={s.wordCountText}>{displayedWords.length} PALABRAS</AppText>
+                        <AppText style={[s.categoryName, { color: primaryColor }]} numberOfLines={1}>{category}</AppText>
+                        <View style={[s.wordCountBadge, { backgroundColor: primaryColor + '20' }]}>
+                            <Ionicons name="layers" size={12} color={primaryColor} />
+                            <AppText style={[s.wordCountText, { color: primaryColor }]}>{displayedWords.length} PALABRAS</AppText>
                         </View>
                     </View>
 
                     <TouchableOpacity
                         onPress={() => shuffleAndPick(gameDuration)}
-                        style={s.shuffleBtn}
+                        style={[s.shuffleBtn, { backgroundColor: primaryColor + '20' }]}
                         activeOpacity={0.8}
                     >
                         <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
-                            <Ionicons name="shuffle" size={20} color={GOLD} />
+                            <Ionicons name="shuffle" size={20} color={primaryColor} />
                         </Animated.View>
                     </TouchableOpacity>
                 </View>
@@ -188,7 +197,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                 {/* ── Duration selector ── */}
                 <View style={s.section}>
                     <View style={s.sectionHead}>
-                        <Ionicons name="timer" size={14} color={PURPLE2} />
+                        <Ionicons name="timer" size={14} color={primaryColor} />
                         <AppText style={s.sectionLabel}>DURACIÓN DEL JUEGO</AppText>
                     </View>
                     <View style={s.durationRow}>
@@ -205,8 +214,8 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                                     activeOpacity={0.75}
                                 >
                                     {active ? (
-                                        <LinearGradient colors={[GOLD, '#9B6F00']} style={s.durBtnGrad}>
-                                            <AppText style={s.durTextActive}>{label}</AppText>
+                                        <LinearGradient colors={[primaryColor, primaryColor]} style={s.durBtnGrad}>
+                                            <AppText style={[s.durTextActive, { color: '#000' }]}>{label}</AppText>
                                         </LinearGradient>
                                     ) : (
                                         <AppText style={s.durText}>{label}</AppText>
@@ -220,7 +229,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                 {/* ── Words grid ── */}
                 <View style={s.section}>
                     <View style={s.sectionHead}>
-                        <Ionicons name="game-controller" size={14} color={PURPLE2} />
+                        <Ionicons name="game-controller" size={14} color={primaryColor} />
                         <AppText style={s.sectionLabel}>PALABRAS DE ESTA RONDA</AppText>
                         <View style={s.countBadge}>
                             <AppText style={s.countBadgeText}>{displayedWords.length}</AppText>
@@ -237,13 +246,15 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                     <View style={s.wordsGrid}>
                         {displayedWords.map((item, index) => {
                             const wordText = typeof item === 'string' ? item : item.word;
-                            const cs = CHIP_STYLES[index % 3];
                             return (
                                 <View
                                     key={index}
-                                    style={[s.chip, { backgroundColor: cs.bg, borderColor: cs.border }]}
+                                    style={[s.chip, { 
+                                        backgroundColor: 'rgba(255,255,255,0.04)', 
+                                        borderColor: primaryColor + '40' 
+                                    }]}
                                 >
-                                    <AppText style={[s.chipText, { color: cs.text }]} numberOfLines={1}>
+                                    <AppText style={[s.chipText, { color: '#fff' }]} numberOfLines={1} adjustsFontSizeToFit>
                                         {wordText}
                                     </AppText>
                                 </View>
@@ -266,7 +277,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                             onPress={() => setShowMembers(!showMembers)}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name="people" size={14} color={PURPLE2} />
+                            <Ionicons name="people" size={14} color={primaryColor} />
                             <AppText style={[s.sectionLabel, { flex: 1 }]}>¿QUIÉN JUEGA?</AppText>
                             <Ionicons
                                 name={showMembers ? 'chevron-up' : 'chevron-down'}
@@ -309,14 +320,14 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                     disabled={hasStarted}
                 >
                     <LinearGradient
-                        colors={[GOLD2, GOLD, '#9B6F00']}
+                        colors={[primaryColor, primaryColor]}
                         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                         style={s.startBtnInner}
                     >
                         <Ionicons name="play-circle" size={26} color="#000" />
-                        <View>
-                            <AppText style={s.startBtnText}>JUGAR  {formatDuration(gameDuration)}</AppText>
-                            <AppText style={s.startBtnSub}>{displayedWords.length} palabras · ¡A actuar!</AppText>
+                        <View style={{ alignItems: 'center' }}>
+                            <AppText style={[s.startBtnText, { color: '#000' }]}>INICIAR JUEGO</AppText>
+                            <AppText style={[s.startBtnSub, { color: 'rgba(0,0,0,0.6)' }]}>{formatDuration(gameDuration)} · {displayedWords.length} palabras</AppText>
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -326,15 +337,14 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
 };
 
 const s = StyleSheet.create({
-    root: { flex: 1, backgroundColor: BG },
+    root: { flex: 1, backgroundColor: '#08081A' },
     scroll: { paddingHorizontal: 16, paddingBottom: 20 },
 
     // Glow orb
     glowOrb: {
         position: 'absolute', top: -80, left: SW / 2 - 150,
         width: 300, height: 300, borderRadius: 150,
-        backgroundColor: PURPLE,
-        // RN doesn't have blur, so we stack translucent layers for soft glow effect
+        // color is set dynamically in the component
         opacity: 0.18,
     },
 

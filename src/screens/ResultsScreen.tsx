@@ -1,16 +1,16 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, StyleSheet, BackHandler, Animated, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { AppText } from '../components';
 import { Confetti } from '../components/Confetti';
-import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 import { calculateCharadasRewards } from '../lib/gamification/pointsSystem';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSound } from '../context/SoundContext';
-import { submitGameResult } from '../lib/gamification/rewardService';
+import { LinearGradient } from 'expo-linear-gradient';
+import { DEFAULT_CATEGORIES } from '../data/categories';
 
 export const ResultsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -22,24 +22,20 @@ export const ResultsScreen = ({ navigation, route }: any) => {
         wordHistory,
         playingMembers = [],
         canEarnTrophies = true,
-        duration = 60,           // Duración de la partida en segundos
-        sessionId = null,        // ID único de sesión (idempotency key)
-        isTrivia = false,        // Flag desde TriviaGameScreen
+        duration = 60,
+        isTrivia = false,
     } = route.params || {};
 
-    // Usa lógica de Charadas por ahora, (luego creamos lógica de Trivia específica en pointsSystem params)
+    const categoryObj = DEFAULT_CATEGORIES.find(c => c.id === category || c.title === category);
+    const themeGradients = (categoryObj?.gradientColors && categoryObj.gradientColors.length >= 2) 
+        ? (categoryObj.gradientColors as [string, string, ...string[]]) 
+        : (['#1A1A2E', '#16213E'] as [string, string, ...string[]]);
+    const primaryColor = categoryObj?.color || theme.colors.primary;
+
     const rewards = calculateCharadasRewards(score, total, canEarnTrophies, duration);
     const { playSound, playHaptic } = useSound();
 
-    // ─── ANTI-DOBLE SUBMIT ───────────────────────────────────────────
-    // Garantiza que submitRanking() se ejecute exactamente UNA VEZ,
-    // incluso si el usuario navega fuera y regresa a la pantalla.
-    const hasSubmitted = useRef(false);
-
-    // Confetti state
     const [showConfetti, setShowConfetti] = useState(false);
-
-    // Animated values
     const scoreAnim = useRef(new Animated.Value(0)).current;
     const xpAnim = useRef(new Animated.Value(0)).current;
     const fadeIn = useRef(new Animated.Value(0)).current;
@@ -54,26 +50,17 @@ export const ResultsScreen = ({ navigation, route }: any) => {
     useFocusEffect(
         React.useCallback(() => {
             ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-
             const onBackPress = () => {
-                navigation.popToTop();
+                navigation.navigate('Home');
                 return true;
             };
             const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
 
-            // ✅ FIX BUG #1: Submit solo una vez, aunque el usuario navegue fuera y vuelva
-            if (!hasSubmitted.current) {
-                hasSubmitted.current = true;
-                submitRanking();
-            }
-
-            // Entrance animation
             Animated.parallel([
                 Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }),
                 Animated.spring(scaleIn, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
             ]).start();
 
-            // Victory moment: sound + haptic + confetti if accuracy >= 50%
             const accuracy = total > 0 ? score / total : 0;
             if (accuracy >= 0.5) {
                 setTimeout(() => {
@@ -83,7 +70,7 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                     setTimeout(() => setShowConfetti(false), 3000);
                 }, 600);
             }
-            // Animated score counter
+
             scoreAnim.addListener(({ value }) => setDisplayScore(Math.round(value)));
             Animated.timing(scoreAnim, {
                 toValue: score,
@@ -92,7 +79,6 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                 useNativeDriver: false,
             }).start();
 
-            // Delayed XP counter + badge pop
             setTimeout(() => {
                 setShowRewards(true);
                 xpAnim.addListener(({ value }) => setDisplayXP(Math.round(value)));
@@ -102,134 +88,90 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                     useNativeDriver: false,
                 }).start();
 
-                Animated.spring(xpBadgeScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: true }).start();
-                setTimeout(() => {
-                    Animated.spring(trophyBadgeScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: true }).start();
-                }, 200);
-            }, 1200);
+                Animated.spring(xpBadgeScale, { toValue: 1, friction: 5, useNativeDriver: true }).start();
+                if (rewards.trophies > 0) {
+                    setTimeout(() => {
+                        Animated.spring(trophyBadgeScale, { toValue: 1, friction: 5, useNativeDriver: true }).start();
+                    }, 200);
+                }
+            }, 1500);
 
             return () => {
                 subscription.remove();
                 scoreAnim.removeAllListeners();
                 xpAnim.removeAllListeners();
             };
-        }, [])
+        }, [score, total])
     );
 
-    const submitRanking = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const gameSessionId = sessionId || `${isTrivia ? 'TRIVIA' : 'CHARADAS'}_${user.id}_${Date.now()}`;
-            const candidateIds: string[] = playingMembers.length > 0 ? playingMembers : [user.id];
-
-            await submitGameResult(supabase, {
-                gameType: isTrivia ? 'TRIVIA' : 'CHARADAS',
-                sessionId: gameSessionId,
-                userIds: candidateIds,
-                payload: {
-                    score,
-                    total,
-                    category: category || 'General',
-                    duration,
-                    canEarnTrophies
-                } as any // Cast because TRIVIA shares CharadasPayload structure for now
-            });
-        } catch (err) {
-            console.log('[Results] Error:', err);
-        }
-    };
-
-    const accuracy = total > 0 ? Math.round((score / total) * 100) : 0;
-    const isExcellent = accuracy >= 80;
-    const isGood = accuracy >= 50 && accuracy < 80;
-
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            {/* Confetti celebration */}
-            <Confetti visible={showConfetti} duration={2800} />
-            {/* Background glow */}
-            <View style={[styles.bgGlow, { backgroundColor: isExcellent ? '#D4AF37' : isGood ? '#3498db' : '#e74c3c' }]} />
+        <View style={styles.container}>
+            <LinearGradient
+                colors={themeGradients}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+            />
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+
+            <Confetti visible={showConfetti} />
 
             <Animated.View style={[styles.inner, { opacity: fadeIn, transform: [{ scale: scaleIn }] }]}>
+                <AppText style={styles.finishedLabel}>Partida Finalizada</AppText>
 
-                {/* Header */}
-                <AppText style={styles.finishedLabel}>RESULTADO</AppText>
-
-                {/* Score circle */}
-                <View style={[styles.scoreCircle, {
-                    borderColor: isExcellent ? '#D4AF37' : isGood ? '#3498db' : '#e74c3c',
-                    shadowColor: isExcellent ? '#D4AF37' : isGood ? '#3498db' : '#e74c3c',
-                }]}>
+                <View style={[styles.scoreCircle, { borderColor: primaryColor + '60', backgroundColor: 'rgba(255,255,255,0.05)' }]}>
                     <AppText style={styles.scoreValue}>{displayScore}</AppText>
                     <View style={styles.scoreDivider} />
                     <AppText style={styles.scoreTotal}>{total}</AppText>
-                    <AppText style={styles.scoreLabel}>{isTrivia ? 'ACIERTOS' : 'PALABRAS'}</AppText>
+                    <AppText style={[styles.scoreLabel, { color: primaryColor }]}>ACIERTOS</AppText>
                 </View>
 
-                {/* Accuracy line */}
-                <AppText style={[styles.accuracyText, {
-                    color: isExcellent ? '#D4AF37' : isGood ? '#3498db' : '#e74c3c'
-                }]}>
-                    {isExcellent ? '¡EXCELENTE!' : isGood ? '¡BIEN HECHO!' : 'SIGUE PRACTICANDO'}
-                </AppText>
-
-                {/* Rewards row */}
-                {showRewards && (
-                    <View style={styles.rewardsRow}>
-                        <Animated.View style={[styles.rewardBadge, styles.xpBadge, { transform: [{ scale: xpBadgeScale }] }]}>
-                            <Ionicons name="flash" size={18} color="#D4AF37" />
-                            <AppText style={styles.rewardValue}>+{displayXP}</AppText>
-                            <AppText style={styles.rewardLabel}>XP</AppText>
-                        </Animated.View>
-
-                        {rewards.trophies > 0 && (
-                            <Animated.View style={[styles.rewardBadge, styles.trophyBadge, { transform: [{ scale: trophyBadgeScale }] }]}>
-                                <Ionicons name="trophy" size={18} color="#D4AF37" />
-                                <AppText style={styles.rewardValue}>+{rewards.trophies}</AppText>
-                                <AppText style={styles.rewardLabel}>TROFEOS</AppText>
+                <View style={styles.rewardsContainer}>
+                    {showRewards && (
+                        <>
+                            <Animated.View style={[styles.rewardBadge, { transform: [{ scale: xpBadgeScale }], backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                                <Ionicons name="flash" size={20} color="#FFD700" />
+                                <AppText style={styles.rewardValue}>+{displayXP} XP</AppText>
                             </Animated.View>
-                        )}
 
-                        {!canEarnTrophies && (
-                            <View style={styles.noTrophyNote}>
-                                <Ionicons name="information-circle" size={14} color="#888" />
-                                <AppText style={styles.noTrophyText}>Sin trofeos — completa tu misión semanal</AppText>
-                            </View>
-                        )}
-                    </View>
-                )}
+                            {rewards.trophies > 0 && (
+                                <Animated.View style={[styles.rewardBadge, { transform: [{ scale: trophyBadgeScale }], backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                                    <Ionicons name="trophy" size={20} color="#FFD700" />
+                                    <AppText style={styles.rewardValue}>+{rewards.trophies} Trofeos</AppText>
+                                </Animated.View>
+                            )}
+                        </>
+                    )}
+                </View>
 
-                {/* Actions */}
                 <View style={styles.actions}>
                     {videoUri && (
                         <TouchableOpacity
-                            style={[styles.btn, styles.btnSecondary]}
+                            style={[styles.btn, styles.btnSecondary, { borderColor: primaryColor + '40' }]}
                             onPress={() => navigation.navigate('VideoReview', { videoUri, category, score, total, wordHistory })}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name="videocam" size={18} color="#fff" style={{ marginRight: 8 }} />
-                            <AppText style={styles.btnSecondaryText}>Ver video</AppText>
+                            <Ionicons name="videocam" size={20} color="#fff" style={{ marginRight: 10 }} />
+                            <AppText style={styles.btnSecondaryText}>Revisar Video</AppText>
                         </TouchableOpacity>
                     )}
 
                     <TouchableOpacity
-                        style={[styles.btn, styles.btnPrimary, isTrivia && { backgroundColor: '#3498db' }]}
+                        style={[styles.btn, styles.btnPrimary, { backgroundColor: primaryColor }, isTrivia && { backgroundColor: '#3498db' }]}
                         onPress={() => navigation.navigate('CategorySelection', { targetGame: isTrivia ? 'trivia' : 'charadas' })}
                         activeOpacity={0.8}
                     >
-                        <Ionicons name="refresh" size={18} color="#000" style={{ marginRight: 8 }} />
+                        <Ionicons name="refresh" size={20} color="#000" style={{ marginRight: 10 }} />
                         <AppText style={styles.btnPrimaryText}>JUGAR OTRA VEZ</AppText>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[styles.btn, styles.btnOutline]}
-                        onPress={() => navigation.popToTop()}
+                        onPress={() => navigation.navigate('Home')}
                         activeOpacity={0.8}
                     >
-                        <Ionicons name="home" size={18} color="#aaa" style={{ marginRight: 8 }} />
-                        <AppText style={styles.btnOutlineText}>INICIO</AppText>
+                        <Ionicons name="home" size={20} color="#aaa" style={{ marginRight: 10 }} />
+                        <AppText style={styles.btnOutlineText}>VOLVER AL INICIO</AppText>
                     </TouchableOpacity>
                 </View>
             </Animated.View>
@@ -240,161 +182,117 @@ export const ResultsScreen = ({ navigation, route }: any) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#050505',
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    bgGlow: {
-        position: 'absolute',
-        width: 300,
-        height: 300,
-        borderRadius: 150,
-        top: -100,
-        opacity: 0.06,
-        alignSelf: 'center',
     },
     inner: {
         width: '100%',
-        paddingHorizontal: 30,
+        paddingHorizontal: 40,
         alignItems: 'center',
     },
     finishedLabel: {
-        fontSize: 11,
-        color: '#666',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.5)',
         letterSpacing: 4,
         textTransform: 'uppercase',
-        marginBottom: 30,
+        marginBottom: 40,
+        fontWeight: '800'
     },
     scoreCircle: {
-        width: 180,
-        height: 180,
-        borderRadius: 90,
-        borderWidth: 2,
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        borderWidth: 3,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 20,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
+        marginBottom: 30,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
         shadowRadius: 20,
         elevation: 10,
     },
     scoreValue: {
-        fontSize: 62,
+        fontSize: 72,
         fontWeight: '900',
         color: '#fff',
-        lineHeight: 70,
-        includeFontPadding: false,
+        lineHeight: 80,
     },
     scoreDivider: {
         width: 40,
-        height: 1,
-        backgroundColor: '#333',
+        height: 2,
+        backgroundColor: 'rgba(255,255,255,0.15)',
         marginVertical: 4,
     },
     scoreTotal: {
-        fontSize: 20,
-        color: '#888',
-        fontWeight: '300',
+        fontSize: 24,
+        color: 'rgba(255,255,255,0.4)',
+        fontWeight: '700',
     },
     scoreLabel: {
-        fontSize: 10,
-        color: '#555',
-        letterSpacing: 2,
-        marginTop: 2,
+        fontSize: 11,
+        fontWeight: '900',
+        marginTop: 5,
+        letterSpacing: 1
     },
-    accuracyText: {
-        fontSize: 15,
-        fontWeight: '700',
-        letterSpacing: 3,
-        marginBottom: 28,
-    },
-    rewardsRow: {
+    rewardsContainer: {
         flexDirection: 'row',
         gap: 12,
-        marginBottom: 36,
-        flexWrap: 'wrap',
-        justifyContent: 'center',
+        marginBottom: 40,
+        height: 50,
+        alignItems: 'center'
     },
     rewardBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 8,
-        paddingHorizontal: 14,
-        borderRadius: 30,
-        gap: 6,
-    },
-    xpBadge: {
-        backgroundColor: 'rgba(212, 175, 55, 0.12)',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        gap: 8,
         borderWidth: 1,
-        borderColor: 'rgba(212, 175, 55, 0.4)',
-    },
-    trophyBadge: {
-        backgroundColor: 'rgba(212, 175, 55, 0.08)',
-        borderWidth: 1,
-        borderColor: 'rgba(212, 175, 55, 0.2)',
+        borderColor: 'rgba(255,255,255,0.1)'
     },
     rewardValue: {
-        fontSize: 18,
-        fontWeight: '800',
         color: '#fff',
-    },
-    rewardLabel: {
-        fontSize: 10,
-        color: '#D4AF37',
-        letterSpacing: 1,
-        fontWeight: '600',
-    },
-    noTrophyNote: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 10,
-    },
-    noTrophyText: {
-        fontSize: 11,
-        color: '#666',
-        flex: 1,
+        fontSize: 16,
+        fontWeight: '900',
     },
     actions: {
         width: '100%',
         gap: 12,
     },
     btn: {
+        width: '100%',
+        height: 60,
+        borderRadius: 30,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 16,
-        borderRadius: 14,
-        width: '100%',
     },
     btnPrimary: {
-        backgroundColor: '#D4AF37',
+        backgroundColor: '#fff',
     },
     btnPrimaryText: {
         color: '#000',
-        fontWeight: '700',
-        letterSpacing: 2,
-        fontSize: 14,
+        fontSize: 18,
+        fontWeight: '900',
     },
     btnSecondary: {
         backgroundColor: 'rgba(255,255,255,0.08)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     btnSecondaryText: {
         color: '#fff',
-        fontWeight: '600',
-        fontSize: 14,
+        fontSize: 18,
+        fontWeight: '800',
     },
     btnOutline: {
-        backgroundColor: 'transparent',
-        borderWidth: 1,
-        borderColor: '#222',
+        height: 50,
     },
     btnOutlineText: {
-        color: '#aaa',
-        fontWeight: '600',
+        color: 'rgba(255,255,255,0.4)',
         fontSize: 14,
-        letterSpacing: 2,
+        fontWeight: '700',
     },
 });

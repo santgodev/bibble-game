@@ -18,7 +18,15 @@ export const getCategoryLockStatus = (
     completedMissions: string[]
 ): LockStatus => {
     // Free categories — always unlocked
-    if (category.id === 'biblia_basica' || category.id === 'promo_2026') {
+    const freeIds = [
+        'biblia_basica', 
+        'biblia_general', 
+        'personajes_biblicos', 
+        'antiguo_testamento', 
+        'nuevo_testamento', 
+        'promo_2026'
+    ];
+    if (freeIds.includes(category.id)) {
         return { locked: false, reason: null };
     }
 

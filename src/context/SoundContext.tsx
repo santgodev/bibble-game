@@ -12,7 +12,7 @@ export interface Track {
 }
 
 const BACKGROUND_TRACKS: Track[] = [
-    { id: 'main_screan', name: 'Main Screen', source: require('../../assets/sounds/main-screan.mp3') },
+    { id: 'ancient_arpeggios', name: 'Paz Biblica (Arpegios)', source: require('../../assets/sounds/main-screan.mp3') }, 
 ];
 
 interface SoundContextType {
@@ -57,8 +57,8 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     const [isTemporarilyPaused, setIsTemporarilyPaused] = useState(false);
     const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-    const [musicVolume, setMusicVolume] = useState(0.5);
-    const [sfxVolume, setSFXVolume] = useState(1.0);
+    const [musicVolume, setMusicVolume] = useState(1.0); // Máximo volumen equilibrado
+    const [sfxVolume, setSFXVolume] = useState(1.0); // Máximo volumen equilibrado
     const [volumeModifier, setVolumeModifier] = useState(1.0);
 
     const musicSound = useRef<Audio.Sound | null>(null);
@@ -94,7 +94,7 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
                 console.warn("Settings load timeout, forcing defaults");
                 setSettingsLoaded(true);
             }
-        }, 1500);
+        }, 5000); // Increased timeout to 5s for slower devices/loading
 
         return () => { clearTimeout(timeout); unloadAll(); };
     }, []);
@@ -156,8 +156,10 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
             if (sfx !== null) setEnableSFX(sfx === 'true');
             if (vib !== null) setEnableVibration(vib === 'true');
             if (rec !== null) setEnableMusicInVideo(rec === 'true');
-            if (musVol !== null) setMusicVolume(parseFloat(musVol));
-            if (sfxVol !== null) setSFXVolume(parseFloat(sfxVol));
+            
+            // Forzar volúmenes altos y equilibrados (1.0)
+            setMusicVolume(1.0);
+            setSFXVolume(1.0);
 
             loadSFX();
         } catch (e) { console.error("Error loading settings", e); }
@@ -223,10 +225,10 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
         if (!enableSFX) return;
         try {
             if (type === 'correct' && correctSound.current) {
-                await correctSound.current.setVolumeAsync(sfxVolume * 0.6);
+                await correctSound.current.setVolumeAsync(sfxVolume); // Volumen total equilibrado
                 await correctSound.current.replayAsync();
             } else if (type === 'wrong' && wrongSound.current) {
-                await wrongSound.current.setVolumeAsync(sfxVolume * 0.6);
+                await wrongSound.current.setVolumeAsync(sfxVolume); // Volumen total equilibrado
                 await wrongSound.current.replayAsync();
             } else if (type === 'win' && victorySound.current) {
                 // Play correct sound once for a clean victory signal

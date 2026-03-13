@@ -3,7 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import {
     View, StyleSheet, TouchableOpacity, Animated, Dimensions, Easing
 } from 'react-native';
-import { Container, AppText, CameraManager, CameraManagerHandle } from '../components';
+import { AppText, CameraManager, CameraManagerHandle } from '../components';
 import { useGameTimer, useAccelerometer } from '../hooks';
 import { useLanguage } from '../context/LanguageContext';
 import { useSound } from '../context/SoundContext';
@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CharadaCard } from '../data/categories';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { theme } from '../theme';
 
 const GOLD = '#D4AF37';
 const MOCK_WORDS = ['Error', 'No Data'];
@@ -45,7 +46,6 @@ export const GameScreen = ({ navigation, route }: any) => {
     // Animations
     const wordScale = useRef(new Animated.Value(1)).current;
     const tiltFlashOpacity = useRef(new Animated.Value(0)).current;
-    const tiltFlashColor = useRef('#27AE60'); // mutable ref
     const cardSlideX = useRef(new Animated.Value(0)).current;
     const readyPulse = useRef(new Animated.Value(1)).current;
     const timerArc = useRef(new Animated.Value(1)).current; // 1 → 0
@@ -112,7 +112,6 @@ export const GameScreen = ({ navigation, route }: any) => {
     const { timeLeft, startTimer, stopTimer, resetTimer } = useGameTimer(duration, onTimeEnd);
     const { tilt } = useAccelerometer(gameStatus === 'PLAYING');
 
-    // Start timer arc when playing starts
     useEffect(() => {
         if (gameStatus === 'PLAYING') {
             startTimer();
@@ -126,17 +125,6 @@ export const GameScreen = ({ navigation, route }: any) => {
             stopTimer();
         }
     }, [gameStatus]);
-
-    // Tilt edge flash
-    useEffect(() => {
-        if (gameStatus !== 'PLAYING' || !readyForAction) return;
-        if (tilt === 'UP' || tilt === 'DOWN') {
-            tiltFlashOpacity.setValue(0.9);
-            Animated.timing(tiltFlashOpacity, {
-                toValue: 0, duration: 400, useNativeDriver: true
-            }).start();
-        }
-    }, [tilt]);
 
     // Tilt → action
     useEffect(() => {
@@ -194,26 +182,7 @@ export const GameScreen = ({ navigation, route }: any) => {
 
     const getCurrentWordString = () => {
         const current = words[wordIndex];
-        return typeof current === 'string' ? current : current.word;
-    };
-
-    const animateWordChange = (correct: boolean) => {
-        // Slide out
-        Animated.sequence([
-            Animated.timing(cardSlideX, {
-                toValue: correct ? -30 : 30,
-                duration: 80, useNativeDriver: true
-            }),
-            Animated.timing(cardSlideX, {
-                toValue: 0,
-                duration: 120, useNativeDriver: true
-            }),
-        ]).start();
-        // Scale pop
-        Animated.sequence([
-            Animated.timing(wordScale, { toValue: 0.93, duration: 80, useNativeDriver: true }),
-            Animated.spring(wordScale, { toValue: 1, friction: 5, useNativeDriver: true }),
-        ]).start();
+        return typeof current === 'string' ? current : current?.word || '';
     };
 
     const handleNextWord = (correct: boolean) => {
@@ -237,7 +206,11 @@ export const GameScreen = ({ navigation, route }: any) => {
             playSound('wrong');
         }
 
-        animateWordChange(correct);
+        // Animation
+        Animated.sequence([
+            Animated.timing(cardSlideX, { toValue: correct ? -30 : 30, duration: 80, useNativeDriver: true }),
+            Animated.timing(cardSlideX, { toValue: 0, duration: 120, useNativeDriver: true }),
+        ]).start();
 
         if (nextAnsweredCount >= words.length) {
             finishGame(newScore, nextAnsweredCount);
@@ -279,352 +252,238 @@ export const GameScreen = ({ navigation, route }: any) => {
         navigation.navigate('Home');
     };
 
-    // Derived values
+    // Derived Visuals
+    const themeGradients = categoryObj?.gradientColors || ['#1A1A2E', '#16213E', '#1A1A2E'];
+    const primaryColor = categoryObj?.color || theme.colors.primary;
     const totalWords = words.length;
     const progressPercent = totalWords > 0 ? wordsAnswered / totalWords : 0;
-    const timerPercent = duration > 0 ? timeLeft / duration : 0;
     const timerColor = timeLeft <= 10 ? '#E74C3C' : timeLeft <= 20 ? '#F39C12' : '#27AE60';
 
     const tiltBgColor = tilt === 'DOWN'
-        ? 'rgba(46,204,113,0.55)'
+        ? 'rgba(46,204,113,0.35)'
         : tilt === 'UP'
-            ? 'rgba(231,76,60,0.55)'
-            : categoryObj?.hideCamera ? 'transparent' : 'rgba(0,0,0,0.25)';
+            ? 'rgba(231,76,60,0.35)'
+            : 'rgba(0,0,0,0.15)';
 
     const wordFontSize = (() => {
-        const word = words[wordIndex];
-        const str = typeof word === 'string' ? word : word?.word ?? '';
+        const str = getCurrentWordString();
         if (str.length > 20) return 44;
         if (str.length > 14) return 56;
         if (str.length > 8) return 66;
         return 78;
     })();
 
-    const renderContent = () => (
-        <View style={{ flex: 1, width: '100%', height: '100%' }}>
-            {/* Camera background */}
-            {!categoryObj?.hideCamera && (
-                <CameraManager ref={cameraRef} onRecordingFinished={onRecordingFinished} />
-            )}
-
-            {/* Tint overlay */}
-            <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor: tiltBgColor }]} />
-
-            {/* ── TILT EDGE INDICATORS ──────────────────── */}
-            {gameStatus === 'PLAYING' && (
-                <>
-                    {/* LEFT edge = PASS (tilt UP) */}
-                    <View style={[styles.edgeIndicator, styles.edgeLeft]}>
-                        <View style={styles.edgeIconWrap}>
-                            <Ionicons name="close" size={24} color="#E74C3C" />
-                        </View>
-                        <AppText style={styles.edgeLabel}>PASAR</AppText>
-                    </View>
-                    {/* RIGHT edge = CORRECT (tilt DOWN) */}
-                    <View style={[styles.edgeIndicator, styles.edgeRight]}>
-                        <View style={[styles.edgeIconWrap, { borderColor: 'rgba(46,204,113,0.4)', backgroundColor: 'rgba(46,204,113,0.1)' }]}>
-                            <Ionicons name="checkmark" size={24} color="#27AE60" />
-                        </View>
-                        <AppText style={[styles.edgeLabel, { color: '#27AE60' }]}>¡SÍ!</AppText>
-                    </View>
-                </>
-            )}
-
-            {/* ── HEADER BAR ────────────────────────────── */}
-            <View style={[styles.headerBar, { paddingTop: Math.max(insets.top, 12) + 4 }]}>
-                {/* Exit button */}
-                <TouchableOpacity style={styles.exitBtn} onPress={exitGame}>
-                    <Ionicons name="close" size={18} color="rgba(255,255,255,0.7)" />
-                </TouchableOpacity>
-
-                {/* Category name */}
-                <AppText style={styles.categoryPill} numberOfLines={1}>{category}</AppText>
-
-                {/* Timer box */}
-                {gameStatus === 'PLAYING' && (
-                    <View style={[styles.timerBox, { borderColor: timerColor + '80' }]}>
-                        <AppText style={[styles.timerText, { color: timerColor }]}>
-                            {timeLeft}s
-                        </AppText>
+    return (
+        <View style={styles.container}>
+            <LinearGradient 
+                colors={themeGradients} 
+                start={{ x: 0, y: 0 }} 
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+            >
+                {/* Camera Layer */}
+                {!categoryObj?.hideCamera && (
+                    <View style={StyleSheet.absoluteFillObject}>
+                        <CameraManager ref={cameraRef} onRecordingFinished={onRecordingFinished} />
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.3)' }]} />
                     </View>
                 )}
-                {gameStatus !== 'PLAYING' && <View style={{ width: 60 }} />}
-            </View>
 
-            {/* ── PROGRESS BAR (top) ─────────────────────── */}
-            {gameStatus === 'PLAYING' && (
-                <View style={styles.progressTrack}>
-                    <View style={[styles.progressFill, { width: `${progressPercent * 100}%` }]} />
-                </View>
-            )}
+                {/* Response Overlay */}
+                <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor: tiltBgColor }]} />
 
-            {/* ── SCORE BADGE (bottom-right) ────────────── */}
-            {gameStatus === 'PLAYING' && (
-                <View style={[styles.scoreBadge, { bottom: Math.max(insets.bottom, 12) + 12, right: Math.max(insets.right, 20) + 20 }]}>
-                    <AppText style={styles.scoreBadgeText}>✓ {score}</AppText>
-                    <AppText style={styles.scoreBadgeSub}>{wordsAnswered}/{totalWords}</AppText>
-                </View>
-            )}
-
-            {/* ── READY STATE ───────────────────────────── */}
-            {gameStatus === 'READY' && (
-                <View style={styles.centered}>
-                    <AppText style={styles.readyCategory}>{category}</AppText>
-                    <AppText style={styles.readyInfo}>{totalWords} palabras · {duration}s</AppText>
-
-                    <Animated.View style={{ transform: [{ scale: readyPulse }] }}>
-                        <TouchableOpacity
-                            style={styles.startBtn}
-                            onPress={startGame}
-                            activeOpacity={0.85}
-                        >
-                            <LinearGradient colors={[GOLD, '#B8860B']} style={styles.startBtnInner}>
-                                <Ionicons name="play" size={28} color="#000" />
-                                <AppText style={styles.startBtnText}>¡JUGAR!</AppText>
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </Animated.View>
-
-                    <AppText style={styles.readyHint}>
-                        📱 Inclina hacia abajo para ✅ · hacia arriba para ❌
-                    </AppText>
-                </View>
-            )}
-
-            {/* ── PLAYING STATE ─────────────────────────── */}
-            {gameStatus === 'PLAYING' && (
-                <View style={styles.centered}>
-                    <Animated.View
-                        style={[
-                            styles.wordCardWrap,
-                            {
-                                transform: [
-                                    { scale: wordScale },
-                                    { translateX: cardSlideX },
-                                ]
-                            }
-                        ]}
-                    >
-                        {/* Glass word card */}
-                        <View style={[
-                            styles.wordCard,
-                            tilt === 'DOWN' && styles.wordCardCorrect,
-                            tilt === 'UP' && styles.wordCardPass,
-                        ]}>
-                            <AppText
-                                style={[styles.wordText, { fontSize: wordFontSize, lineHeight: wordFontSize * 1.1 }]}
-                                numberOfLines={2}
-                            >
-                                {getCurrentWordString()}
-                            </AppText>
-
-                            {/* Rich content for special cards */}
-                            {typeof words[wordIndex] !== 'string' && (
-                                <View style={styles.richContent}>
-                                    {(words[wordIndex] as CharadaCard).verse && (
-                                        <AppText style={styles.verseText}>
-                                            {(words[wordIndex] as CharadaCard).verse}
-                                        </AppText>
-                                    )}
-                                    {(words[wordIndex] as CharadaCard).description && (
-                                        <AppText style={styles.descText} numberOfLines={4}>
-                                            {(words[wordIndex] as CharadaCard).description}
-                                        </AppText>
-                                    )}
-                                    {(words[wordIndex] as CharadaCard).mime && (
-                                        <AppText style={styles.mimeText} numberOfLines={2}>
-                                            🎭 {(words[wordIndex] as CharadaCard).mime}
-                                        </AppText>
-                                    )}
-                                </View>
-                            )}
+                {/* Indicators / Edge UI */}
+                {gameStatus === 'PLAYING' && (
+                    <>
+                        <View style={[styles.edgeIndicator, styles.edgeLeft]}>
+                            <View style={styles.edgeIconWrap}>
+                                <Ionicons name="close" size={24} color="#E74C3C" />
+                            </View>
+                            <AppText style={styles.edgeLabel}>PASAR</AppText>
                         </View>
-                    </Animated.View>
+                        <View style={[styles.edgeIndicator, styles.edgeRight]}>
+                            <View style={[styles.edgeIconWrap, { borderColor: '#27AE6080', backgroundColor: '#27AE6020' }]}>
+                                <Ionicons name="checkmark" size={24} color="#27AE60" />
+                            </View>
+                            <AppText style={[styles.edgeLabel, { color: '#27AE60' }]}>¡SÍ!</AppText>
+                        </View>
+                    </>
+                )}
 
-                    {/* Tilt nudge */}
-                    <AppText style={styles.tiltHint}>
-                        {!readyForAction
-                            ? '↕ Regresa al centro'
-                            : tilt === 'DOWN'
-                                ? '✅ ¡Correcto!'
-                                : tilt === 'UP'
-                                    ? '❌ Pasando...'
-                                    : 'Inclina el celular'}
-                    </AppText>
-                </View>
-            )}
+                {/* Header */}
+                <View style={[styles.headerBar, { paddingTop: Math.max(insets.top, 12) + 4 }]}>
+                    <TouchableOpacity style={styles.exitBtn} onPress={exitGame}>
+                        <Ionicons name="close" size={18} color="#FFF" />
+                    </TouchableOpacity>
 
-            {/* ── FINISHED STATE ────────────────────────── */}
-            {gameStatus === 'FINISHED' && (
-                <View style={styles.centered}>
-                    <View style={styles.finishedBox}>
-                        <Ionicons name="hourglass" size={40} color={GOLD} style={{ marginBottom: 12 }} />
-                        <AppText style={styles.finishedTitle}>¡TIEMPO!</AppText>
-                        <AppText style={styles.finishedSub}>Guardando tu resultado...</AppText>
+                    <AppText style={styles.categoryPill} numberOfLines={1}>{category}</AppText>
+
+                    <View style={[styles.timerBox, { borderColor: timerColor + '80' }]}>
+                        <AppText style={[styles.timerText, { color: timerColor }]}>{timeLeft}s</AppText>
                     </View>
                 </View>
-            )}
-        </View>
-    );
 
-    if (categoryObj?.gradientColors) {
-        return (
-            <LinearGradient colors={categoryObj.gradientColors} style={{ flex: 1 }}>
-                {renderContent()}
+                {/* Progress */}
+                {gameStatus === 'PLAYING' && (
+                    <View style={styles.progressTrack}>
+                        <View style={[styles.progressFill, { width: `${progressPercent * 100}%`, backgroundColor: primaryColor }]} />
+                    </View>
+                )}
+
+                {/* Game Logic Render */}
+                {gameStatus === 'READY' ? (
+                    <View style={styles.centered}>
+                        <View style={[styles.readyCard, { borderColor: primaryColor + '40' }]}>
+                            {categoryObj?.icon && (
+                                <View style={[styles.readyIconBox, { backgroundColor: primaryColor + '20' }]}>
+                                    <Ionicons name={categoryObj.icon as any} size={40} color={primaryColor} />
+                                </View>
+                            )}
+                            <AppText style={[styles.readyCategory, { color: primaryColor }]}>{category}</AppText>
+                            <AppText style={styles.readyInfo}>{totalWords} palabras · {duration}s</AppText>
+
+                            <Animated.View style={{ transform: [{ scale: readyPulse }], marginTop: 30 }}>
+                                <TouchableOpacity style={styles.startBtn} onPress={startGame} activeOpacity={0.85}>
+                                    <LinearGradient colors={[primaryColor, primaryColor]} style={styles.startBtnInner}>
+                                        <Ionicons name="play" size={28} color="#000" />
+                                        <AppText style={styles.startBtnText}>¡EMPEZAR!</AppText>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </Animated.View>
+
+                            <AppText style={styles.readyHint}>
+                                📱 Coloca el móvil en tu frente.{"\n"}Inclina hacia abajo para ✅ · hacia arriba para ❌
+                            </AppText>
+                        </View>
+                    </View>
+                ) : gameStatus === 'PLAYING' ? (
+                    <View style={styles.centered}>
+                        <Animated.View style={[styles.wordCardWrap, { transform: [{ scale: wordScale }, { translateX: cardSlideX }] }]}>
+                            <View style={[
+                                styles.wordCard,
+                                tilt === 'DOWN' && styles.wordCardCorrect,
+                                tilt === 'UP' && styles.wordCardPass,
+                            ]}>
+                                <AppText 
+                                    style={[styles.wordText, { fontSize: wordFontSize }]} 
+                                    numberOfLines={1} 
+                                    adjustsFontSizeToFit
+                                    minimumFontScale={0.5}
+                                >
+                                    {getCurrentWordString()}
+                                </AppText>
+
+                                {typeof words[wordIndex] !== 'string' && (
+                                    <View style={styles.richContent}>
+                                        {(words[wordIndex] as CharadaCard).verse && (
+                                            <AppText style={[styles.verseText, { color: primaryColor }]}>
+                                                {(words[wordIndex] as CharadaCard).verse}
+                                            </AppText>
+                                        )}
+                                        {(words[wordIndex] as CharadaCard).description && (
+                                            <AppText style={styles.descText} numberOfLines={3}>
+                                                {(words[wordIndex] as CharadaCard).description}
+                                            </AppText>
+                                        )}
+                                        {(words[wordIndex] as CharadaCard).mime && (
+                                            <View style={[styles.mimeBox, { borderColor: primaryColor + '40' }]}>
+                                                <AppText style={styles.mimeText}>
+                                                    🎭 {(words[wordIndex] as CharadaCard).mime}
+                                                </AppText>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                            </View>
+                        </Animated.View>
+
+                        <AppText style={styles.tiltHint}>
+                            {!readyForAction ? '↔ Regresa al centro' : tilt === 'DOWN' ? '✅ ¡Correcto!' : tilt === 'UP' ? '❌ Pasado' : '📱 Mantén en tu frente'}
+                        </AppText>
+
+                        {/* score badge */}
+                        <View style={[styles.scoreBadge, { bottom: Math.max(insets.bottom, 20), right: Math.max(insets.right, 20) }]}>
+                            <AppText style={[styles.scoreBadgeText, { color: primaryColor }]}>✓ {score}</AppText>
+                            <AppText style={styles.scoreBadgeSub}>{wordsAnswered}/{totalWords}</AppText>
+                        </View>
+                    </View>
+                ) : gameStatus === 'FINISHED' ? (
+                    <View style={styles.centered}>
+                        <View style={[styles.finishedBox, { borderColor: primaryColor + '40' }]}>
+                            <Ionicons name="hourglass" size={40} color={GOLD} style={{ marginBottom: 12 }} />
+                            <AppText style={styles.finishedTitle}>¡TIEMPO!</AppText>
+                            <AppText style={styles.finishedSub}>Guardando tu resultado...</AppText>
+                        </View>
+                    </View>
+                ) : null}
             </LinearGradient>
-        );
-    }
-
-    return (
-        <View style={{ flex: 1, backgroundColor: '#050505' }}>
-            {renderContent()}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    // Header
+    container: { flex: 1, backgroundColor: '#000' },
     headerBar: {
         position: 'absolute', top: 0, left: 0, right: 0,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 16, paddingBottom: 10, zIndex: 20,
+        paddingHorizontal: 20, zIndex: 20,
     },
     exitBtn: {
-        width: 36, height: 36, borderRadius: 18,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-        alignItems: 'center', justifyContent: 'center',
+        width: 38, height: 38, borderRadius: 19,
+        backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center',
     },
     categoryPill: {
-        color: 'rgba(255,255,255,0.9)',
-        fontSize: 13, fontWeight: '800', letterSpacing: 1.5,
-        textTransform: 'uppercase',
-        backgroundColor: 'rgba(0,0,0,0.35)',
-        paddingHorizontal: 14, paddingVertical: 6,
-        borderRadius: 20, overflow: 'hidden',
-        maxWidth: 240,
+        color: '#fff', fontSize: 14, fontWeight: '800', textTransform: 'uppercase',
+        backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20,
     },
     timerBox: {
-        width: 60, height: 36, borderRadius: 12,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        borderWidth: 1.5, alignItems: 'center', justifyContent: 'center',
+        width: 64, height: 38, borderRadius: 12,
+        backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: 1.5, alignItems: 'center', justifyContent: 'center',
     },
-    timerText: { fontSize: 18, fontWeight: '900' },
-
-    // Progress bar
+    timerText: { fontSize: 20, fontWeight: '900' },
     progressTrack: {
-        position: 'absolute', top: 72, left: 0, right: 0,
-        height: 3, backgroundColor: 'rgba(255,255,255,0.08)', zIndex: 10,
+        position: 'absolute', top: 76, left: 0, right: 0, height: 4, backgroundColor: 'rgba(255,255,255,0.1)',
     },
-    progressFill: {
-        height: 3, backgroundColor: GOLD,
-        borderTopRightRadius: 3, borderBottomRightRadius: 3,
-    },
-
-    // Edge indicators (left/right)
-    edgeIndicator: {
-        position: 'absolute', top: '50%',
-        marginTop: -40,
-        alignItems: 'center', gap: 4, zIndex: 5,
-    },
-    edgeLeft: { left: 14 },
-    edgeRight: { right: 14 },
+    progressFill: { height: 4 },
+    edgeIndicator: { position: 'absolute', top: '50%', marginTop: -40, alignItems: 'center', gap: 6 },
+    edgeLeft: { left: 24 },
+    edgeRight: { right: 24 },
     edgeIconWrap: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(231,76,60,0.12)',
-        borderWidth: 1, borderColor: 'rgba(231,76,60,0.35)',
-        alignItems: 'center', justifyContent: 'center',
+        width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(231,76,60,0.1)',
+        borderWidth: 1.5, borderColor: 'rgba(231,76,60,0.4)', alignItems: 'center', justifyContent: 'center',
     },
-    edgeLabel: {
-        color: '#E74C3C', fontSize: 9, fontWeight: '900',
-        letterSpacing: 1,
+    edgeLabel: { color: '#E74C3C', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+    centered: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 80 },
+    readyCard: {
+        backgroundColor: 'rgba(0,0,0,0.6)', padding: 32, borderRadius: 32,
+        alignItems: 'center', borderWidth: 1, width: '90%', maxWidth: 500
     },
-
-    // Score badge
-    scoreBadge: {
-        position: 'absolute', alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-        zIndex: 10,
-    },
-    scoreBadgeText: { color: '#27AE60', fontSize: 16, fontWeight: '900' },
-    scoreBadgeSub: { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '700' },
-
-    // Centered layout
-    centered: {
-        ...StyleSheet.absoluteFillObject,
-        alignItems: 'center', justifyContent: 'center',
-        paddingHorizontal: 60, // space for edge indicators
-    },
-
-    // Word card
+    readyIconBox: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+    readyCategory: { fontSize: 36, fontWeight: '900', textAlign: 'center', textTransform: 'uppercase' },
+    readyInfo: { fontSize: 18, color: '#ccc', marginTop: 8, fontWeight: '600' },
+    readyHint: { color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: 14, marginTop: 24, lineHeight: 20 },
+    startBtn: { minWidth: 220, height: 60, borderRadius: 30, overflow: 'hidden' },
+    startBtnInner: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+    startBtnText: { color: '#000', fontSize: 20, fontWeight: '900' },
     wordCardWrap: { width: '100%', alignItems: 'center' },
     wordCard: {
-        width: '100%', paddingVertical: 24, paddingHorizontal: 28,
-        borderRadius: 28, alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.55)',
-        borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)',
+        width: '100%', paddingVertical: 24, paddingHorizontal: 30, borderRadius: 32,
+        backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
     },
-    wordCardCorrect: {
-        borderColor: 'rgba(46,204,113,0.7)',
-        backgroundColor: 'rgba(46,204,113,0.18)',
-    },
-    wordCardPass: {
-        borderColor: 'rgba(231,76,60,0.7)',
-        backgroundColor: 'rgba(231,76,60,0.18)',
-    },
-    wordText: {
-        color: '#fff', fontWeight: '900', textAlign: 'center',
-        includeFontPadding: false,
-        textShadowColor: 'rgba(0,0,0,0.8)',
-        textShadowOffset: { width: 2, height: 2 },
-        textShadowRadius: 8,
-    },
-
-    // Rich content (special cards)
-    richContent: {
-        width: '100%', alignItems: 'center', marginTop: 10,
-        backgroundColor: 'rgba(0,0,0,0.3)', padding: 10, borderRadius: 14,
-    },
-    verseText: { fontSize: 22, fontWeight: '800', color: GOLD, marginBottom: 4, textAlign: 'center' },
-    descText: { fontSize: 15, color: '#f0f0f0', textAlign: 'center', marginBottom: 4, fontStyle: 'italic' },
-    mimeText: { fontSize: 14, color: '#ccc', textAlign: 'center' },
-
-    tiltHint: {
-        marginTop: 20, color: 'rgba(255,255,255,0.55)',
-        fontSize: 14, fontWeight: '700', letterSpacing: 0.5,
-        textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2,
-    },
-
-    // Ready state
-    readyCategory: {
-        color: '#fff', fontSize: 28, fontWeight: '900', letterSpacing: 1,
-        textAlign: 'center', marginBottom: 6,
-        lineHeight: 36, includeFontPadding: false, paddingTop: 4,
-        textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 6,
-    },
-    readyInfo: {
-        color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: '700',
-        letterSpacing: 1, marginBottom: 36,
-    },
-    startBtn: { borderRadius: 30, overflow: 'hidden', marginBottom: 28 },
-    startBtnInner: {
-        flexDirection: 'row', alignItems: 'center', gap: 12,
-        paddingVertical: 18, paddingHorizontal: 48,
-    },
-    startBtnText: { color: '#000', fontSize: 22, fontWeight: '900', letterSpacing: 2 },
-    readyHint: {
-        color: 'rgba(255,255,255,0.45)', fontSize: 13,
-        textAlign: 'center', fontWeight: '600', paddingHorizontal: 20,
-    },
-
-    // Finished state
-    finishedBox: {
-        alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)',
-        borderRadius: 28, padding: 36,
-        borderWidth: 1, borderColor: 'rgba(212,175,55,0.3)',
-    },
-    finishedTitle: { color: GOLD, fontSize: 36, fontWeight: '900', letterSpacing: 3 },
-    finishedSub: { color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: '600', marginTop: 8 },
+    wordCardCorrect: { borderColor: '#2ecc71', backgroundColor: 'rgba(46,204,113,0.3)' },
+    wordCardPass: { borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.3)' },
+    wordText: { color: '#fff', fontWeight: '900', textAlign: 'center', textShadowColor: '#000', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
+    richContent: { marginTop: 12, padding: 12, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.25)', width: '100%', alignItems: 'center' },
+    verseText: { fontSize: 22, fontWeight: '800', marginBottom: 6, textAlign: 'center' },
+    descText: { fontSize: 15, color: '#eee', textAlign: 'center', fontStyle: 'italic', marginBottom: 8 },
+    mimeBox: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.05)' },
+    mimeText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    tiltHint: { marginTop: 20, color: '#fff8', fontSize: 15, fontWeight: '700' },
+    scoreBadge: { position: 'absolute', padding: 12, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center' },
+    scoreBadgeText: { fontSize: 20, fontWeight: '900' },
+    scoreBadgeSub: { color: '#fff6', fontSize: 12, fontWeight: '700' },
+    finishedBox: { alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: 28, padding: 40, borderWidth: 1 },
+    finishedTitle: { color: GOLD, fontSize: 40, fontWeight: '900' },
+    finishedSub: { color: '#fff6', fontSize: 16, marginTop: 8 },
 });

@@ -387,7 +387,7 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
             />
 
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.popToTop()} style={styles.iconBtn}>
+                <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.iconBtn}>
                     <Ionicons name="close" size={26} color="#FFF" />
                 </TouchableOpacity>
                 <AppText style={styles.headerTitle}>VOTACIÓN</AppText>
@@ -555,7 +555,7 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
                             <Ionicons name="refresh" size={20} color="#fff" style={{ marginRight: 10 }} />
                             <AppText style={styles.playAgainBtnText}>Jugar de Nuevo</AppText>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.homeBtn} onPress={() => navigation.popToTop()} activeOpacity={0.85}>
+                        <TouchableOpacity style={styles.homeBtn} onPress={() => navigation.navigate('Home')} activeOpacity={0.85}>
                             <AppText style={[styles.playAgainBtnText, { color: '#888' }]}>← Inicio</AppText>
                         </TouchableOpacity>
                     </ScrollView>

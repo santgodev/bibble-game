@@ -14,7 +14,7 @@ export const CreateCategoryScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
 
     // Fixed asset for custom categories
-    const defaultImage = require('../../assets/cat_custom.png');
+    const defaultImage = require('../../assets/logo.png');
 
     const handleSave = async () => {
         if (!title.trim() || !description.trim() || !wordsText.trim()) {

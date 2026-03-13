@@ -88,7 +88,7 @@ const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
                             <Image
                                 source={{ uri: avatarUri }}
                                 style={card.avatar}
-                                defaultSource={require('../../assets/icon.png')}
+                                defaultSource={require('../../assets/logo.png')}
                             />
                         </View>
                     </LinearGradient>

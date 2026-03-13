@@ -78,6 +78,7 @@ export const AppNavigator = () => {
                 <Stack.Screen name="ImpostorCategories" component={ImpostorCategoriesScreen} />
                 <Stack.Screen name="ImpostorPass" component={ImpostorPassScreen} />
                 <Stack.Screen name="ImpostorGame" component={ImpostorGameScreen} />
+                <Stack.Screen name="ImpostorVote" component={ImpostorResultsScreen} />
                 <Stack.Screen name="ImpostorResults" component={ImpostorResultsScreen} />
             </Stack.Navigator>
         </NavigationContainer>

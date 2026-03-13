@@ -1,16 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Animated, TextInput } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Container, AppText, Button } from '../../components';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
 import { Category } from '../../data/categories';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEY_PLAYERS = '@impostor_players_v1';
+const STORAGE_KEY_ANON = '@impostor_anon_v1';
+const STORAGE_KEY_DURATION = '@impostor_duration_v1';
+const STORAGE_KEY_IMPOSTORS = '@impostor_count_v1';
+const STORAGE_KEY_HINTS = '@impostor_hints_v1';
+const STORAGE_KEY_DIFF = '@impostor_diff_v1';
+const STORAGE_KEY_CATEGORIES = '@impostor_cats_v1';
 
 export const ImpostorConfigScreen = ({ navigation, route }: any) => {
     const [impostors, setImpostors] = useState(1);
     const [hintEnabled, setHintEnabled] = useState(true);
     const [durationMinutes, setDurationMinutes] = useState(5);
+    const [difficulty, setDifficulty] = useState(1); // 1: Semilla, 2: Discípulo, 3: Apóstol
 
     // Church and Anonymous Players
     const [churchMembers, setChurchMembers] = useState<any[]>([]);
@@ -19,38 +30,104 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
 
     const totalPlayers = selectedMembers.length + anonPlayersList.length;
 
-    // The selected categories from the ImpostorCategoriesScreen
     const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+    const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
-    useEffect(() => {
-        const fetchMembers = async () => {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    const { data: userData } = await supabase.from('users').select('church_id').eq('id', user.id).single();
-                    if (userData?.church_id) {
-                        const { data: churchMembers } = await supabase.from('users')
-                            .select('id, username')
-                            .eq('church_id', userData.church_id)
-                            .order('username');
-                        if (churchMembers) {
-                            setChurchMembers(churchMembers);
-                        }
+    const loadConfig = async () => {
+        try {
+            // 1. Fetch Church members first
+            const { data: { user } } = await supabase.auth.getUser();
+            let membersData: any[] = [];
+            if (user) {
+                const { data: userData } = await supabase.from('users').select('church_id').eq('id', user.id).single();
+                if (userData?.church_id) {
+                    const { data: churchMembersRows } = await supabase.from('users')
+                        .select('id, username')
+                        .eq('church_id', userData.church_id)
+                        .order('username');
+                    if (churchMembersRows) {
+                        setChurchMembers(churchMembersRows);
+                        membersData = churchMembersRows;
                     }
                 }
-            } catch (error) {
-                console.error('Error fetching members', error);
             }
-        };
-        fetchMembers();
+
+            // 2. Load stored config
+            const [storedSelected, storedAnon, storedDur, storedImp, storedHints, storedDiff, storedCats] = await Promise.all([
+                AsyncStorage.getItem(STORAGE_KEY_PLAYERS),
+                AsyncStorage.getItem(STORAGE_KEY_ANON),
+                AsyncStorage.getItem(STORAGE_KEY_DURATION),
+                AsyncStorage.getItem(STORAGE_KEY_IMPOSTORS),
+                AsyncStorage.getItem(STORAGE_KEY_HINTS),
+                AsyncStorage.getItem(STORAGE_KEY_DIFF),
+                AsyncStorage.getItem(STORAGE_KEY_CATEGORIES)
+            ]);
+
+            if (storedSelected && membersData.length > 0) {
+                const parsed = JSON.parse(storedSelected);
+                const valid = parsed.filter((sm: any) => membersData.some(m => m.id === sm.id));
+                setSelectedMembers(valid);
+            }
+            if (storedAnon) setAnonPlayersList(JSON.parse(storedAnon));
+            if (storedDur) setDurationMinutes(parseInt(storedDur));
+            if (storedImp) setImpostors(parseInt(storedImp));
+            if (storedHints) setHintEnabled(storedHints === 'true');
+            if (storedDiff) setDifficulty(parseInt(storedDiff));
+            if (storedCats && !route.params?.selectedCategories) {
+                setSelectedCategories(JSON.parse(storedCats));
+            }
+
+            setIsConfigLoaded(true);
+        } catch (error) {
+            console.error('Error in loadConfig', error);
+            setIsConfigLoaded(true); // Allow saving even if load fails to avoid blocking the user
+        }
+    };
+
+    // Load only once on mount
+    useEffect(() => {
+        loadConfig();
     }, []);
 
-    // If categories were selected in the other screen and passed back
+    // Also handle category updates from navigation
     useEffect(() => {
         if (route.params?.selectedCategories) {
             setSelectedCategories(route.params.selectedCategories);
+            // Immediately save categories when they come back from selection
+            AsyncStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(route.params.selectedCategories));
         }
     }, [route.params?.selectedCategories]);
+
+    // Robust saving: Only save if initial load is finished
+    useEffect(() => {
+        if (!isConfigLoaded) return;
+        AsyncStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(selectedMembers));
+    }, [selectedMembers, isConfigLoaded]);
+
+    useEffect(() => {
+        if (!isConfigLoaded) return;
+        AsyncStorage.setItem(STORAGE_KEY_ANON, JSON.stringify(anonPlayersList));
+    }, [anonPlayersList, isConfigLoaded]);
+
+    useEffect(() => {
+        if (!isConfigLoaded) return;
+        AsyncStorage.setItem(STORAGE_KEY_DURATION, durationMinutes.toString());
+    }, [durationMinutes, isConfigLoaded]);
+
+    useEffect(() => {
+        if (!isConfigLoaded) return;
+        AsyncStorage.setItem(STORAGE_KEY_IMPOSTORS, impostors.toString());
+    }, [impostors, isConfigLoaded]);
+
+    useEffect(() => {
+        if (!isConfigLoaded) return;
+        AsyncStorage.setItem(STORAGE_KEY_HINTS, hintEnabled.toString());
+    }, [hintEnabled, isConfigLoaded]);
+
+    useEffect(() => {
+        if (!isConfigLoaded) return;
+        AsyncStorage.setItem(STORAGE_KEY_DIFF, difficulty.toString());
+    }, [difficulty, isConfigLoaded]);
 
     const toggleMember = (member: any) => {
         if (selectedMembers.some(m => m.id === member.id)) {
@@ -111,6 +188,7 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
             hintEnabled,
             duration: durationMinutes * 60,
             selectedCategories,
+            difficulty,
         });
     };
 
@@ -140,7 +218,7 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                         onPress={() => navigation.navigate('ImpostorCategories', { selectedIds: selectedCategories.map(c => c.id) })}
                     >
                         <View style={styles.rowLeft}>
-                            <Ionicons name="albums" size={24} color="#8e44ad" />
+                            <Ionicons name="albums" size={24} color="#e74c3c" />
                             <AppText style={styles.rowLabel}>Paquetes</AppText>
                         </View>
                         <View style={styles.rowRight}>
@@ -154,7 +232,7 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                     {/* Players config */}
                     <View style={styles.menuRowCol}>
                         <View style={styles.rowLeft}>
-                            <Ionicons name="people" size={24} color="#3498db" />
+                            <Ionicons name="people" size={24} color="#e74c3c" />
                             <AppText style={styles.rowLabel}>Participantes</AppText>
                         </View>
                         <AppText style={styles.helpText}>Selecciona quiénes van a jugar de tu iglesia:</AppText>
@@ -181,7 +259,7 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                         <View style={styles.anonHeaderRow}>
                             <AppText style={styles.anonLabel}>Compañeros Anónimos</AppText>
                             <TouchableOpacity style={styles.addAnonBtn} onPress={addAnonPlayer}>
-                                <Ionicons name="person-add" size={16} color="#000" />
+                                <Ionicons name="person-add" size={16} color="#fff" />
                                 <AppText style={styles.addAnonText}>Agregar</AppText>
                             </TouchableOpacity>
                         </View>
@@ -217,11 +295,11 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                         </View>
                         <View style={styles.stepper}>
                             <TouchableOpacity onPress={() => setImpostors(Math.max(1, impostors - 1))}>
-                                <Ionicons name="remove-circle" size={30} color={impostors <= 1 ? '#555' : '#2ecc71'} />
+                                <Ionicons name="remove-circle" size={30} color={impostors <= 1 ? '#333' : '#e74c3c'} />
                             </TouchableOpacity>
                             <AppText style={styles.stepperValue}>{impostors}</AppText>
                             <TouchableOpacity onPress={() => setImpostors(Math.min(Math.floor(Math.max(3, totalPlayers) / 2), impostors + 1))}>
-                                <Ionicons name="add-circle" size={30} color={impostors >= Math.floor(Math.max(3, totalPlayers) / 2) ? '#555' : '#2ecc71'} />
+                                <Ionicons name="add-circle" size={30} color={impostors >= Math.floor(Math.max(3, totalPlayers) / 2) ? '#333' : '#e74c3c'} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -236,7 +314,7 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                             style={[styles.toggle, hintEnabled ? styles.toggleOn : styles.toggleOff]}
                             onPress={() => setHintEnabled(!hintEnabled)}
                         >
-                            <View style={[styles.toggleThumb, hintEnabled ? styles.thumbOn : styles.thumbOff]} />
+                            <View style={[styles.toggleThumb, hintEnabled ? styles.thumbOn : styles.thumbOff, { backgroundColor: '#fff' }]} />
                         </TouchableOpacity>
                     </View>
 
@@ -248,11 +326,39 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                         </View>
                         <View style={styles.stepper}>
                             <TouchableOpacity onPress={() => setDurationMinutes(Math.max(1, durationMinutes - 1))}>
-                                <Ionicons name="remove-circle" size={30} color={durationMinutes <= 1 ? '#555' : '#2ecc71'} />
+                                <Ionicons name="remove-circle" size={30} color={durationMinutes <= 1 ? '#333' : '#e74c3c'} />
                             </TouchableOpacity>
                             <AppText style={styles.stepperValue}>{durationMinutes} min</AppText>
                             <TouchableOpacity onPress={() => setDurationMinutes(Math.min(15, durationMinutes + 1))}>
-                                <Ionicons name="add-circle" size={30} color={durationMinutes >= 15 ? '#555' : '#2ecc71'} />
+                                <Ionicons name="add-circle" size={30} color={durationMinutes >= 15 ? '#333' : '#e74c3c'} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Dificultad */}
+                    <View style={styles.menuRowCol}>
+                        <View style={styles.rowLeft}>
+                            <Ionicons name="ribbon" size={24} color="#f1c40f" />
+                            <AppText style={styles.rowLabel}>Dificultad</AppText>
+                        </View>
+                        <View style={styles.difficultyContainer}>
+                            <TouchableOpacity 
+                                style={[styles.diffTab, difficulty === 1 && styles.diffTabActive]} 
+                                onPress={() => setDifficulty(1)}
+                            >
+                                <AppText style={[styles.diffTabText, difficulty === 1 && styles.diffTabTextActive]}>Semilla</AppText>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.diffTab, difficulty === 2 && styles.diffTabActive]} 
+                                onPress={() => setDifficulty(2)}
+                            >
+                                <AppText style={[styles.diffTabText, difficulty === 2 && styles.diffTabTextActive]}>Discípulo</AppText>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.diffTab, difficulty === 3 && styles.diffTabActive]} 
+                                onPress={() => setDifficulty(3)}
+                            >
+                                <AppText style={[styles.diffTabText, difficulty === 3 && styles.diffTabTextActive]}>Apóstol</AppText>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -261,8 +367,14 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                 {/* Footer Button */}
                 <View style={styles.footer}>
                     <TouchableOpacity style={styles.startButton} onPress={handleStartGame}>
-                        <Ionicons name="play" size={20} color="#000" style={{ marginRight: 10 }} />
-                        <AppText style={styles.startButtonText}>Iniciar Juego</AppText>
+                        <LinearGradient
+                            colors={['#ff6b6b', '#e74c3c', '#9b1c1c']}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                            style={styles.startButtonInner}
+                        >
+                            <Ionicons name="play-circle" size={24} color="#fff" style={{ marginRight: 10 }} />
+                            <AppText style={styles.startButtonText}>Iniciar Juego</AppText>
+                        </LinearGradient>
                     </TouchableOpacity>
                 </View>
 
@@ -280,8 +392,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        marginBottom: 20,
+        paddingHorizontal: 30,
+        marginBottom: 25,
     },
     backBtn: {
         padding: 5,
@@ -296,31 +408,35 @@ const styles = StyleSheet.create({
     },
     mainTitle: {
         color: '#ff4d4d',
-        fontSize: 32,
-        fontWeight: 'bold',
+        fontSize: 36,
+        fontWeight: '900',
         textTransform: 'uppercase',
         letterSpacing: 2,
     },
     scrollContent: {
-        paddingHorizontal: 15,
-        paddingBottom: 100
+        paddingHorizontal: 20,
+        paddingBottom: 140
     },
     menuRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#16161c',
-        padding: 16,
-        borderRadius: 15,
-        marginBottom: 10,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        padding: 18,
+        borderRadius: 22,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)'
     },
     menuRowCol: {
         flexDirection: 'column',
         alignItems: 'stretch',
-        backgroundColor: '#16161c',
-        padding: 16,
-        borderRadius: 15,
-        marginBottom: 10,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        padding: 18,
+        borderRadius: 22,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)'
     },
     rowLeft: {
         flexDirection: 'row',
@@ -359,8 +475,8 @@ const styles = StyleSheet.create({
         borderColor: '#555',
     },
     memberTagSelected: {
-        backgroundColor: 'rgba(46, 204, 113, 0.2)',
-        borderColor: '#2ecc71',
+        backgroundColor: 'rgba(231, 76, 60, 0.2)',
+        borderColor: '#e74c3c',
     },
     memberText: {
         color: '#ccc',
@@ -368,7 +484,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     memberTextSelected: {
-        color: '#2ecc71',
+        color: '#ff6b6b',
     },
     noMembers: {
         color: '#555',
@@ -392,15 +508,17 @@ const styles = StyleSheet.create({
     },
     addAnonBtn: {
         flexDirection: 'row',
-        backgroundColor: '#2ecc71',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
         borderRadius: 15,
         alignItems: 'center',
-        gap: 5
+        gap: 5,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)'
     },
     addAnonText: {
-        color: '#000',
+        color: '#fff',
         fontWeight: 'bold',
         fontSize: 12
     },
@@ -439,7 +557,7 @@ const styles = StyleSheet.create({
         padding: 5
     },
     totalPlayersLabel: {
-        color: '#2ecc71',
+        color: '#e74c3c',
         fontSize: 14,
         fontWeight: 'bold',
         marginTop: 15,
@@ -464,7 +582,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     toggleOn: {
-        backgroundColor: '#2ecc71',
+        backgroundColor: '#e74c3c',
     },
     toggleOff: {
         backgroundColor: '#555',
@@ -490,26 +608,44 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(10, 10, 15, 0.9)'
     },
     startButton: {
+        borderRadius: 30,
+        overflow: 'hidden',
+    },
+    startButtonInner: {
         flexDirection: 'row',
         justifyContent: 'center',
-        backgroundColor: '#2ecc71',
         paddingVertical: 18,
-        borderRadius: 30,
         alignItems: 'center',
-        shadowColor: "#2ecc71",
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.30,
-        shadowRadius: 4.65,
-        elevation: 8,
     },
     startButtonText: {
-        color: '#000',
+        color: '#fff',
         fontSize: 18,
         fontWeight: '900',
         textTransform: 'uppercase',
-        letterSpacing: 1
+        letterSpacing: 2
+    },
+    difficultyContainer: {
+        flexDirection: 'row',
+        marginTop: 15,
+        backgroundColor: '#0a0a0f',
+        borderRadius: 12,
+        padding: 4,
+    },
+    diffTab: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 10,
+    },
+    diffTabActive: {
+        backgroundColor: '#e74c3c',
+    },
+    diffTabText: {
+        color: '#666',
+        fontSize: 13,
+        fontWeight: 'bold',
+    },
+    diffTabTextActive: {
+        color: '#fff',
     }
 });

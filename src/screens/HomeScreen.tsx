@@ -98,18 +98,44 @@ export const HomeScreen = ({ navigation }: any) => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+            <StatusBar barStyle="light-content" backgroundColor="#050505" />
 
-            {/* Background Glow Effect */}
+            <LinearGradient
+                colors={['#050505', '#0A0A1F', '#050505']}
+                style={StyleSheet.absoluteFillObject}
+            />
+
+            {/* Background Glow Effects */}
             <View style={styles.glowContainer}>
-                <View style={[styles.glow, {
+                <Animated.View style={[styles.glow, {
                     backgroundColor: theme.colors.primary,
-                    opacity: 0.05,
-                    width: width * 1.5,
-                    height: width * 1.5,
+                    opacity: 0.08,
+                    width: width * 1.2,
+                    height: width * 1.2,
                     borderRadius: width,
-                    top: -width * 0.5,
-                    left: -width * 0.25,
+                    top: -width * 0.4,
+                    right: -width * 0.4,
+                    transform: [{ scale: goldPulse }]
+                }]} />
+                <Animated.View style={[styles.glow, {
+                    backgroundColor: '#E74C3C',
+                    opacity: 0.06,
+                    width: width * 0.8,
+                    height: width * 0.8,
+                    borderRadius: width,
+                    bottom: height * 0.1,
+                    left: -width * 0.2,
+                    transform: [{ scale: redPulse }]
+                }]} />
+                <Animated.View style={[styles.glow, {
+                    backgroundColor: '#3498DB',
+                    opacity: 0.05,
+                    width: width * 1.0,
+                    height: width * 1.0,
+                    borderRadius: width,
+                    bottom: -width * 0.5,
+                    right: -width * 0.2,
+                    transform: [{ scale: bluePulseValue }]
                 }]} />
             </View>
 

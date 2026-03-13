@@ -6,25 +6,27 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useGameTimer } from '../../hooks';
 import { useSound } from '../../context/SoundContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export const ImpostorGameScreen = ({ navigation, route }: any) => {
-    // Robust parameter extraction with fallbacks to prevent NaN
     const duration = route.params?.duration ? Number(route.params.duration) : 60;
     const players = route.params?.players ? Number(route.params.players) : 3;
-    const { impostorList, secretWord, secretCategory, playerDetails } = route.params || {};
+    const { impostorList, secretWord, secretCategory, playerDetails, selectedCategories } = route.params || {};
+
+    // Theme values from first selected category
+    const mainCategory = selectedCategories?.[0];
+    const themeGradients = mainCategory?.gradientColors || ['#2D1457', '#5E16B5', '#8E44AD'];
+    const primaryColor = mainCategory?.color || '#9b59b6';
 
     const [isFinished, setIsFinished] = useState(false);
     const [starterPlayer, setStarterPlayer] = useState('');
     const [caughtImpostors, setCaughtImpostors] = useState<number[]>(route.params?.caughtImpostors || []);
     const [eliminatedInnocents, setEliminatedInnocents] = useState<number[]>(route.params?.eliminatedInnocents || []);
-    const { pauseMusic, resumeMusic } = useSound();
+    const { pauseMusic, resumeMusic, playSound } = useSound();
 
-    // Track whether the game has already been started
-    // so that coming back from the vote screen does NOT reset the timer
     const alreadyStartedRef = useRef(false);
-
-    // Animate pulse ring on timer when low
     const pulseAnim = useRef(new Animated.Value(1)).current;
+
     const startPulse = () => {
         Animated.loop(
             Animated.sequence([
@@ -34,9 +36,15 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
         ).start();
     };
 
+    const stopPulse = () => {
+        pulseAnim.stopAnimation();
+        pulseAnim.setValue(1);
+    };
+
     const onTimeEnd = () => {
         setIsFinished(true);
         startPulse();
+        playSound('wrong');
     };
 
     const { timeLeft, startTimer, stopTimer, resetTimer, setTimeLeft } = useGameTimer(duration, onTimeEnd);
@@ -47,18 +55,13 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
             pauseMusic();
 
             if (!alreadyStartedRef.current) {
-                // ── First focus: full fresh start ──
                 alreadyStartedRef.current = true;
                 setIsFinished(false);
-
-                // Si por alguna razón (remount) venimos ya con tiempo restante en params
                 if (route.params?.remainingTime !== undefined) {
                     setTimeLeft(route.params.remainingTime);
                 } else {
                     resetTimer();
                 }
-
-                // Select a random player from those NOT already eliminated
                 if (playerDetails && playerDetails.length > 0) {
                     const rIndex = Math.floor(Math.random() * playerDetails.length);
                     setStarterPlayer(playerDetails[rIndex].username || playerDetails[rIndex].name || 'Jugador');
@@ -66,98 +69,89 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
                     const pCount = Number(players) || 3;
                     setStarterPlayer(`Jugador ${Math.floor(Math.random() * pCount) + 1}`);
                 }
-
                 startTimer();
             } else {
-                // ── Returning from vote screen (already mounted) ──
-                // Sincronizamos el tiempo que venga de los resultados
                 if (route.params?.remainingTime !== undefined) {
                     setTimeLeft(route.params.remainingTime);
                 }
-
                 if (timeLeft <= 0) {
                     setIsFinished(true);
+                    startPulse();
                 } else {
                     startTimer();
                 }
             }
-
             return () => {
-                // Pause (not reset) when losing focus so the counter freezes
                 stopTimer();
                 resumeMusic();
+                stopPulse();
             };
         }, [duration, playerDetails, players])
     );
 
-    // Un useEffect menos para evitar re-renders innecesarios, 
-    // ya lo inicializamos arriba en el useState.
-    // Solo escuchamos cambios si es que vinieran de fuera (poco probable)
     useEffect(() => {
         if (route.params?.caughtImpostors) setCaughtImpostors(route.params.caughtImpostors);
         if (route.params?.eliminatedInnocents) setEliminatedInnocents(route.params.eliminatedInnocents);
     }, [route.params?.caughtImpostors, route.params?.eliminatedInnocents]);
 
-    const formatTime = (seconds: number) => {
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    const formatTime = (s: number) => {
+        const mins = Math.floor(s / 60);
+        const secs = s % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
-
-    const isLow = timeLeft <= 15;
 
     const handleVote = () => {
         stopTimer();
-        // Genera session única por partida para anti-farming
-        const sessionId = `IMPOSTOR_${secretWord}_${Date.now()}`;
-        // Categorías básicas no dan trofeos — solo XP
-        const canEarnTrophies = secretCategory !== 'biblia_basica';
-        navigation.navigate('ImpostorResults', {
-            duration,
-            remainingTime: timeLeft, // Pasar el tiempo exacto actual
-            impostorList,
-            secretWord,
-            secretCategory,
-            players,
-            playerDetails,
-            sessionId,
-            canEarnTrophies,
-            initialCaughtImpostors: caughtImpostors,
-            initialEliminatedInnocents: eliminatedInnocents,
+        navigation.navigate('ImpostorVote', {
+            timeLeft, players, impostorList, secretWord, secretCategory, playerDetails,
+            caughtImpostors, eliminatedInnocents, selectedCategories
         });
     };
 
+    const isLow = timeLeft <= 10;
+
     return (
         <View style={styles.container}>
+            <LinearGradient
+                colors={themeGradients}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+            />
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)' }]} />
+
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.iconBtn}>
-                    <Ionicons name="close" size={28} color="#FFF" />
+                    <Ionicons name="close" size={24} color="#FFF" />
                 </TouchableOpacity>
+                <View style={[styles.badge, { backgroundColor: primaryColor + '40' }]}>
+                    <AppText style={[styles.badgeText, { color: primaryColor }]}>{secretCategory}</AppText>
+                </View>
                 <TouchableOpacity style={styles.iconBtn}>
-                    <Ionicons name="help" size={28} color="#FFF" />
+                    <Ionicons name="help-circle" size={24} color="#FFF" />
                 </TouchableOpacity>
             </View>
 
-            <Container centered style={{ backgroundColor: 'transparent', flex: 1, paddingHorizontal: 20 }}>
-                <View style={styles.chatIconWrapper}>
-                    <Ionicons name="chatbubble-ellipses" size={45} color="#fff" />
+            <Container centered>
+                <View style={[styles.chatIconWrapper, { backgroundColor: primaryColor + '20', borderColor: primaryColor + '40' }]}>
+                    <Ionicons name="chatbubbles" size={40} color={primaryColor} />
                 </View>
 
-                <AppText style={styles.title}>Debate</AppText>
-
+                <AppText variant="display" style={styles.title}>Tiempo de Debate</AppText>
+                
                 <AppText style={styles.instruction}>
-                    Uno por uno, los jugadores dicen una palabra o frase relacionada con la palabra secreta.
+                    Hagan preguntas estratégicas para encontrar al impostor.
                 </AppText>
 
                 <AppText style={styles.starterText}>
-                    {starterPlayer} empieza.
+                    <AppText style={{ color: '#fff' }}>Empieza: </AppText>{starterPlayer}
                 </AppText>
 
                 <View style={styles.timerWrapper}>
                     <Animated.View style={[
                         styles.timerCircle,
                         isLow && styles.timerCircleLow,
-                        { transform: [{ scale: isLow ? pulseAnim : 1 }] }
+                        { transform: [{ scale: isLow ? pulseAnim : 1 }], borderColor: isLow ? '#ff4d4d' : primaryColor + '40' }
                     ]}>
                         <AppText variant="display" style={[styles.timer, isLow && { color: '#ff4d4d' }]}>
                             {formatTime(timeLeft)}
@@ -174,11 +168,12 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
 
             <View style={styles.footerArea}>
                 <TouchableOpacity
-                    style={[styles.voteBtn, isFinished && { backgroundColor: '#e74c3c', borderColor: '#c0392b' }]}
+                    style={[styles.voteBtn, { backgroundColor: primaryColor }, isFinished && { backgroundColor: '#e74c3c' }]}
                     onPress={handleVote}
+                    activeOpacity={0.8}
                 >
-                    <Ionicons name="hand-right" size={20} color="#fff" style={{ marginRight: 10 }} />
-                    <AppText style={styles.voteBtnText}>Votar</AppText>
+                    <Ionicons name="checkmark-circle" size={24} color="#000" style={{ marginRight: 10 }} />
+                    <AppText style={styles.voteBtnText}>VOTAR AHORA</AppText>
                 </TouchableOpacity>
             </View>
         </View>
@@ -188,7 +183,6 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0a0a14',
         paddingTop: 50,
         paddingBottom: 40
     },
@@ -197,106 +191,55 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
+        zIndex: 10
     },
     iconBtn: {
-        padding: 5,
+        width: 44, height: 44, borderRadius: 22,
         backgroundColor: 'rgba(255,255,255,0.1)',
-        borderRadius: 20
+        alignItems: 'center', justifyContent: 'center'
     },
+    badge: {
+        paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20,
+    },
+    badgeText: { fontSize: 13, fontWeight: '900', textTransform: 'uppercase' },
     chatIconWrapper: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: 'rgba(78,22,181,0.5)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 15,
+        width: 90, height: 90, borderRadius: 45,
+        borderWidth: 2, justifyContent: 'center', alignItems: 'center', marginBottom: 20,
     },
     title: {
-        fontSize: 32,
-        color: '#fff',
-        fontWeight: 'bold',
-        marginBottom: 15,
-        lineHeight: 40,
-        includeFontPadding: false
+        fontSize: 36, color: '#fff', fontWeight: '900', marginBottom: 10, textAlign: 'center'
     },
     instruction: {
-        fontSize: 17,
-        color: 'rgba(255,255,255,0.7)',
-        textAlign: 'center',
-        paddingHorizontal: 10,
-        marginBottom: 10,
-        lineHeight: 26,
-        fontWeight: '500',
-        includeFontPadding: false
+        fontSize: 16, color: 'rgba(255,255,255,0.6)', textAlign: 'center', paddingHorizontal: 30, marginBottom: 20, lineHeight: 24
     },
     starterText: {
-        fontSize: 22,
-        color: '#FFD700',
-        fontWeight: 'bold',
-        marginBottom: 40,
-        textAlign: 'center',
-        lineHeight: 30,
-        includeFontPadding: false
+        fontSize: 24, color: '#FFD700', fontWeight: '900', marginBottom: 30, textAlign: 'center'
     },
     timerWrapper: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 30
+        alignItems: 'center', justifyContent: 'center', marginBottom: 30
     },
     timerCircle: {
-        width: 250,
-        height: 250,
-        borderRadius: 125,
-        borderWidth: 6,
-        borderColor: 'rgba(255,255,255,0.1)',
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        justifyContent: 'center',
-        alignItems: 'center'
+        width: 240, height: 240, borderRadius: 120,
+        borderWidth: 8, backgroundColor: 'rgba(255,255,255,0.05)',
+        justifyContent: 'center', alignItems: 'center'
     },
     timerCircleLow: {
-        borderColor: 'rgba(231,76,60,0.5)',
-        backgroundColor: 'rgba(231,76,60,0.06)',
+        backgroundColor: 'rgba(231,76,60,0.1)',
     },
     timer: {
-        fontSize: 72,
-        color: '#fff',
-        fontWeight: '900',
-        lineHeight: 85,
-        includeFontPadding: false
+        fontSize: 80, color: '#fff', fontWeight: '900',
+        lineHeight: 90, textAlign: 'center', includeFontPadding: false,
+        paddingVertical: 10
     },
     bottomInstruction: {
-        fontSize: 15,
-        color: 'rgba(255,255,255,0.6)',
-        textAlign: 'center',
-        paddingHorizontal: 30,
-        fontWeight: '600',
-        marginBottom: 10,
-        lineHeight: 22,
-        includeFontPadding: false
+        fontSize: 14, color: 'rgba(255,255,255,0.4)', textAlign: 'center', paddingHorizontal: 40, fontWeight: '600'
     },
     footerArea: {
-        paddingHorizontal: 20,
-        width: '100%',
-        alignItems: 'center'
+        paddingHorizontal: 30, width: '100%', alignItems: 'center'
     },
     voteBtn: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#5e16b5',
-        paddingVertical: 18,
-        borderRadius: 20,
-        width: '100%',
-        borderBottomWidth: 4,
-        borderColor: '#4a0e95'
+        flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+        height: 64, borderRadius: 32, width: '100%',
     },
-    voteBtnText: {
-        color: '#fff',
-        fontSize: 20,
-        fontWeight: 'bold',
-        textTransform: 'none'
-    }
+    voteBtnText: { color: '#000', fontSize: 20, fontWeight: '900' }
 });

@@ -33,6 +33,10 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
     const [currentQuizCategory, setCurrentQuizCategory] = React.useState<Category | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [quizMistakes, setQuizMistakes] = React.useState(0);
+    
+    // Trivia Difficulty Selection
+    const [difficultyModalVisible, setDifficultyModalVisible] = React.useState(false);
+    const [categoryForTrivia, setCategoryForTrivia] = React.useState<Category | null>(null);
 
     const loadCategoriesAndProgress = async () => {
         if (subcategories) {
@@ -138,6 +142,77 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
     const renderItem = ({ item }: { item: Category }) => {
         const locked = isCategoryLocked(item);
 
+        const proceedToGame = async (categoryWithData: Category) => {
+            if (targetGame === 'trivia' || targetGame === 'charadas') {
+                setCategoryForTrivia(categoryWithData);
+                setDifficultyModalVisible(true);
+            } else {
+                navigation.navigate('WordPreview', {
+                    category: categoryWithData.title,
+                    categoryObj: categoryWithData,
+                    totalPool: categoryWithData.words,
+                    canEarnTrophies: true
+                });
+            }
+        };
+
+        const loadContentAndStart = async () => {
+            // Si ya tiene datos (Local/Offline), ir directo
+            if (targetGame === 'trivia' && item.trivia && item.trivia.length > 0) {
+                proceedToGame(item);
+                return;
+            }
+            if (targetGame === 'charadas' && item.words && item.words.length > 0) {
+                proceedToGame(item);
+                return;
+            }
+
+            // Si no tiene datos, intentar bajar de Supabase
+            try {
+                if (targetGame === 'trivia') {
+                    const { data: qs } = await supabase
+                        .from('trivia_questions')
+                        .select('*')
+                        .eq('category_id', item.id);
+                    
+                    if (qs && qs.length > 0) {
+                        const mappedQs: TriviaQuestion[] = qs.map((q: any) => ({
+                            id: q.id,
+                            question: q.question,
+                            options: q.options,
+                            correctIndex: q.correct_index,
+                            difficulty: q.difficulty_level,
+                            explanation: q.explanation,
+                            verseSupport: q.verse_support
+                        }));
+                        proceedToGame({ ...item, trivia: mappedQs });
+                    } else {
+                        Alert.alert('Próximamente 🚧', 'Esta categoría de Trivia no tiene preguntas aún.');
+                    }
+                } else {
+                    const { data: ws } = await supabase
+                        .from('words')
+                        .select('*')
+                        .eq('category_id', item.id);
+
+                    if (ws && ws.length > 0) {
+                        const mappedWords: WordItem[] = ws.map((w: any) => ({
+                            id: w.id,
+                            word: w.word,
+                            difficulty: w.difficulty_level,
+                            impostorHints: w.impostor_hints
+                        }));
+                        proceedToGame({ ...item, words: mappedWords });
+                    } else {
+                        Alert.alert('Próximamente 🚧', 'Esta categoría de Charadas no tiene palabras aún.');
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching dynamic content:', err);
+                Alert.alert('Error', 'No se pudo cargar el contenido de esta categoría.');
+            }
+        };
+
         return (
             <TouchableOpacity
                 style={[styles.card, styles.gridCard, locked && { borderColor: '#333', borderWidth: 1 }]}
@@ -170,83 +245,6 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                         }
                     }
 
-                    // --- CARGA DINÁMICA DE CONTENIDO DESDE SUPABASE ---
-                    const proceedToGame = async (categoryWithData: Category) => {
-                        if (targetGame === 'trivia') {
-                            navigation.navigate('TriviaGame', {
-                                categoryObj: categoryWithData,
-                                questions: categoryWithData.trivia,
-                                duration: 60,
-                                difficulty: 1,
-                                canEarnTrophies: true
-                            });
-                        } else {
-                            navigation.navigate('WordPreview', {
-                                category: categoryWithData.title,
-                                categoryObj: categoryWithData,
-                                totalPool: categoryWithData.words,
-                                canEarnTrophies: true
-                            });
-                        }
-                    };
-
-                    const loadContentAndStart = async () => {
-                        // Si ya tiene datos (Local/Offline), ir directo
-                        if (targetGame === 'trivia' && item.trivia && item.trivia.length > 0) {
-                            proceedToGame(item);
-                            return;
-                        }
-                        if (targetGame === 'charadas' && item.words && item.words.length > 0) {
-                            proceedToGame(item);
-                            return;
-                        }
-
-                        // Si no tiene datos, intentar bajar de Supabase
-                        try {
-                            if (targetGame === 'trivia') {
-                                const { data: qs } = await supabase
-                                    .from('trivia_questions')
-                                    .select('*')
-                                    .eq('category_id', item.id);
-                                
-                                if (qs && qs.length > 0) {
-                                    const mappedQs: TriviaQuestion[] = qs.map((q: any) => ({
-                                        id: q.id,
-                                        question: q.question,
-                                        options: q.options,
-                                        correctIndex: q.correct_index,
-                                        difficulty: q.difficulty_level,
-                                        explanation: q.explanation,
-                                        verseSupport: q.verse_support
-                                    }));
-                                    proceedToGame({ ...item, trivia: mappedQs });
-                                } else {
-                                    Alert.alert('Próximamente 🚧', 'Esta categoría de Trivia no tiene preguntas aún.');
-                                }
-                            } else {
-                                const { data: ws } = await supabase
-                                    .from('words')
-                                    .select('*')
-                                    .eq('category_id', item.id);
-
-                                if (ws && ws.length > 0) {
-                                    const mappedWords: WordItem[] = ws.map((w: any) => ({
-                                        id: w.id,
-                                        word: w.word,
-                                        difficulty: w.difficulty_level,
-                                        impostorHints: w.impostor_hints
-                                    }));
-                                    proceedToGame({ ...item, words: mappedWords });
-                                } else {
-                                    Alert.alert('Próximamente 🚧', 'Esta categoría de Charadas no tiene palabras aún.');
-                                }
-                            }
-                        } catch (err) {
-                            console.error('Error fetching dynamic content:', err);
-                            Alert.alert('Error', 'No se pudo cargar el contenido de esta categoría.');
-                        }
-                    };
-
                     if (item.subcategories && item.subcategories.length > 0) {
                         navigation.push('CategorySelection', { subcategories: item.subcategories, parentTitle: item.title });
                     } else {
@@ -264,24 +262,50 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                 ) : (
                     <LinearGradient
                         colors={(item.gradientColors as any) || [item.color || '#1A1A1A', '#000']}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                         style={[styles.minimalistCover, locked && { opacity: 0.3 }]}
                     >
+                        {/* Glass reflect effect */}
+                        <LinearGradient 
+                            colors={['rgba(255,255,255,0.15)', 'transparent']}
+                            start={{ x: 0, y: 0 }} end={{ x: 0.5, y: 0.5 }}
+                            style={styles.glassReflect}
+                        />
+
+                        {/* Top Accent Line */}
+                        <View style={[styles.topAccent, { backgroundColor: item.color }]} />
+
                         {item.icon && !locked && (
                             <Ionicons 
                                 name={item.icon as any} 
-                                size={44} 
-                                color="rgba(255,255,255,0.15)" 
-                                style={{ position: 'absolute', top: 10, right: 10 }} 
+                                size={60} 
+                                color="rgba(255,255,255,0.08)" 
+                                style={styles.watermarkIcon} 
                             />
                         )}
-                        <AppText style={[styles.minimalistTitle, locked && { color: '#555' }]}>{item.title.toUpperCase()}</AppText>
-                        {item.capitulo ? (
-                            <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]}>{item.capitulo}</AppText>
-                        ) : (
-                            <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]}>
-                                {item.difficulty === 'Fácil' ? '🌱 SEMILLA' : item.difficulty === 'Medio' ? '👣 DISCÍPULO' : '🕊️ MAESTRO'}
+
+                        <View style={styles.cardInfoContainer}>
+                            <AppText 
+                                style={[styles.minimalistTitle, locked && { color: '#555' }]} 
+                                numberOfLines={2} 
+                                adjustsFontSizeToFit
+                            >
+                                {item.title.toUpperCase()}
                             </AppText>
-                        )}
+                            
+                            <View style={[styles.divider, { backgroundColor: item.color + '40' }]} />
+
+                            {item.capitulo ? (
+                                <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]} numberOfLines={1}>{item.capitulo}</AppText>
+                            ) : (
+                                <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]} numberOfLines={1}>
+                                    {item.difficulty === 'Fácil' ? '🌱 SEMILLA' : item.difficulty === 'Medio' ? '👣 DISCÍPULO' : '🕊️ MAESTRO'}
+                                </AppText>
+                            )}
+                        </View>
+
+                        {/* Bottom Glow */}
+                        <View style={[styles.bottomGlow, { backgroundColor: item.color + '20' }]} />
                     </LinearGradient>
                 )}
 
@@ -359,8 +383,88 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         );
     };
 
+    const renderDifficultyModal = () => {
+        if (!categoryForTrivia) return null;
+
+        const startTrivia = (diff: number) => {
+            setDifficultyModalVisible(false);
+            if (targetGame === 'trivia') {
+                navigation.navigate('TriviaGame', {
+                    categoryObj: categoryForTrivia,
+                    questions: categoryForTrivia.trivia,
+                    duration: 90, // Un poco más de tiempo para preguntas más profundas
+                    difficulty: diff,
+                    canEarnTrophies: true
+                });
+            } else {
+                // Charadas Flow
+                navigation.navigate('WordPreview', {
+                    category: categoryForTrivia.title,
+                    categoryObj: categoryForTrivia,
+                    totalPool: categoryForTrivia.words,
+                    difficulty: diff,
+                    canEarnTrophies: true
+                });
+            }
+        };
+
+        return (
+            <Modal visible={difficultyModalVisible} animationType="fade" transparent>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <View style={{ flex: 1 }}>
+                                <AppText style={{ color: '#aaa', fontSize: 11, letterSpacing: 2 }}>SELECCIONA NIVEL</AppText>
+                                <AppText variant="subheader" style={{ color: '#fff', fontSize: 17 }}>{categoryForTrivia.title}</AppText>
+                            </View>
+                            <TouchableOpacity onPress={() => setDifficultyModalVisible(false)} style={{ padding: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                                <Ionicons name="close" size={20} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{ padding: 20, gap: 12 }}>
+                            <TouchableOpacity style={[styles.modalOptionBtn, { borderColor: '#27AE60' }]} onPress={() => startTrivia(1)}>
+                                <View style={[styles.modalOptionLetter, { backgroundColor: '#27AE60' }]}>
+                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>🌱</AppText>
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>Nivel Semilla</AppText>
+                                    <AppText style={{ color: '#aaa', fontSize: 12 }}>Principios básicos y fundamentales.</AppText>
+                                </View>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={[styles.modalOptionBtn, { borderColor: '#3498DB' }]} onPress={() => startTrivia(2)}>
+                                <View style={[styles.modalOptionLetter, { backgroundColor: '#3498DB' }]}>
+                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>⚔️</AppText>
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>Nivel Discípulo</AppText>
+                                    <AppText style={{ color: '#aaa', fontSize: 12 }}>Conocimiento intermedio y reflexivo.</AppText>
+                                </View>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={[styles.modalOptionBtn, { borderColor: '#D4AF37' }]} onPress={() => startTrivia(3)}>
+                                <View style={[styles.modalOptionLetter, { backgroundColor: '#D4AF37' }]}>
+                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>👑</AppText>
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>Nivel Apóstol</AppText>
+                                    <AppText style={{ color: '#aaa', fontSize: 12 }}>Desafíos avanzados de sabiduría bíblica.</AppText>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        );
+    };
+
     return (
         <View style={styles.container}>
+            <LinearGradient
+                colors={['#050505', '#101018', '#050505']}
+                style={StyleSheet.absoluteFillObject}
+            />
             <Container style={styles.innerContainer} noPadding>
                 <View style={[styles.headerRow, { paddingHorizontal: 20, paddingTop: 20, justifyContent: 'space-between' }]}>
                     {subcategories ? (
@@ -389,6 +493,7 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                 />
 
                 {renderUnleashModal()}
+                {renderDifficultyModal()}
             </Container>
         </View>
     );
@@ -487,78 +592,122 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         marginBottom: 24,
     },
+    modalOptionLetter: {
+        width: 30, height: 30, borderRadius: 15,
+        backgroundColor: '#D4AF37',
+        justifyContent: 'center', alignItems: 'center',
+    },
     minimalistCover: {
         width: CARD_SIZE,
         height: CARD_SIZE,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 10,
-        backgroundColor: '#111', // Default dark
+        backgroundColor: '#111',
     },
     minimalistTitle: {
         color: '#FFFFFF',
-        fontSize: 22,
-        fontWeight: '300', // Light font for elegance
-        letterSpacing: 4, // Spacing for "CINEMATIC" look
+        fontSize: 18, // Slightly smaller to fit better with adjustsFontSizeToFit
+        fontWeight: '900', // Bolder for more identity
+        letterSpacing: 2, 
         textAlign: 'center',
-        fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-light', // Attempt to use a lighter font
-        marginBottom: 4,
+        marginBottom: 2,
     },
     minimalistSubtitle: {
-        color: 'rgba(255,255,255,0.6)',
-        fontSize: 12,
-        letterSpacing: 2,
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 10,
+        letterSpacing: 1.5,
         textTransform: 'uppercase',
-        marginTop: 4,
     },
     lockOverlayAbsolute: {
         ...StyleSheet.absoluteFillObject as any,
-        backgroundColor: 'rgba(5,5,5,0.7)',
+        backgroundColor: 'rgba(5,5,5,0.8)',
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 10,
     },
     lockCircle: {
-        width: 50, height: 50, borderRadius: 25,
-        backgroundColor: '#1E1E1E', borderWidth: 1, borderColor: '#333',
+        width: 60, height: 60, borderRadius: 30,
+        backgroundColor: '#0A0A0A', borderWidth: 2, borderColor: '#333',
         justifyContent: 'center', alignItems: 'center',
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.85)',
+        backgroundColor: 'rgba(0,0,0,0.9)',
         justifyContent: 'center',
         padding: 20,
     },
     modalContent: {
-        backgroundColor: '#0f0f1a',
-        borderRadius: 20,
+        backgroundColor: '#0A0A14',
+        borderRadius: 30,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(212, 175, 55, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
     },
     modalHeader: {
-        backgroundColor: '#0a0a14',
-        padding: 20,
+        backgroundColor: '#05050A',
+        padding: 24,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(212, 175, 55, 0.2)',
+        borderBottomColor: 'rgba(255, 255, 255, 0.05)',
     },
     modalOptionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 15,
-        borderRadius: 12,
-        marginBottom: 10,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        padding: 18,
+        borderRadius: 20,
+        marginBottom: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        gap: 12,
+        borderColor: 'rgba(255,255,255,0.08)',
     },
-    modalOptionLetter: {
-        width: 30, height: 30, borderRadius: 15,
-        backgroundColor: '#D4AF37',
-        justifyContent: 'center', alignItems: 'center',
+    // New Styles for Premium Cards
+    glassReflect: {
+        ...StyleSheet.absoluteFillObject as any,
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+    },
+    topAccent: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 3,
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+    },
+    watermarkIcon: {
+        position: 'absolute',
+        top: -10,
+        right: -10,
+        opacity: 0.5,
+    },
+    cardInfoContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        zIndex: 2,
+    },
+    divider: {
+        width: 30,
+        height: 1,
+        marginVertical: 10,
+        borderRadius: 1,
+    },
+    bottomGlow: {
+        position: 'absolute',
+        bottom: -20,
+        width: '80%',
+        height: 40,
+        borderRadius: 20,
+        opacity: 0.4,
     }
 });
 
