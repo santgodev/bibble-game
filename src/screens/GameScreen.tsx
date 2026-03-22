@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CharadaCard } from '../data/categories';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../theme';
 
 const GOLD = '#D4AF37';
@@ -52,12 +53,43 @@ export const GameScreen = ({ navigation, route }: any) => {
 
     // ─── Init ───────────────────────────────────────────────
     useEffect(() => {
-        const list = initialWords && initialWords.length > 0 ? [...initialWords] : MOCK_WORDS;
-        for (let i = list.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [list[i], list[j]] = [list[j], list[i]];
-        }
-        setWords(list);
+        const initWords = async () => {
+            let list = initialWords && initialWords.length > 0 ? [...initialWords] : MOCK_WORDS;
+            
+            // --- ALGORITMO DE NO REPETICIÓN (CHARADAS) ---
+            try {
+                const seenStr = await AsyncStorage.getItem('seen_charada_words');
+                let seenWords: string[] = seenStr ? JSON.parse(seenStr) : [];
+                
+                // Filtrar las que NO se han visto
+                let available = list.filter((w: any) => {
+                    const wordText = typeof w === 'string' ? w : w.word;
+                    return !seenWords.includes(wordText);
+                });
+
+                // Si quedan muy pocas (ej: < 10), reiniciamos el historial localmente
+                if (available.length < 10 && list.length >= 10) {
+                    available = list;
+                    const textsInPool = list.map((w: any) => typeof w === 'string' ? w : w.word);
+                    seenWords = seenWords.filter(sw => !textsInPool.includes(sw));
+                    await AsyncStorage.setItem('seen_charada_words', JSON.stringify(seenWords));
+                }
+
+                // Barajar (Fisher-Yates)
+                for (let i = available.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [available[i], available[j]] = [available[j], available[i]];
+                }
+                
+                setWords(available);
+            } catch (e) {
+                console.error("Error loading charada history", e);
+                // Fallback a shuffle simple
+                setWords([...list].sort(() => Math.random() - 0.5));
+            }
+        };
+
+        initWords();
     }, [initialWords]);
 
     // Promo card sounds
@@ -137,7 +169,15 @@ export const GameScreen = ({ navigation, route }: any) => {
         }
     }, [tilt, readyForAction, gameStatus]);
 
-    function onTimeEnd() {
+    async function onTimeEnd() {
+        const playedWords = words.slice(0, wordsAnswered).map((w: any) => typeof w === 'string' ? w : w.word);
+        try {
+            const seenStr = await AsyncStorage.getItem('seen_charada_words');
+            let seenWords: string[] = seenStr ? JSON.parse(seenStr) : [];
+            const updated = Array.from(new Set([...seenWords, ...playedWords])).slice(-200);
+            await AsyncStorage.setItem('seen_charada_words', JSON.stringify(updated));
+        } catch (e) { console.error("Error saving charada history", e); }
+
         finishGame(score, wordsAnswered);
     }
 
@@ -459,7 +499,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', borderWidth: 1, width: '90%', maxWidth: 500
     },
     readyIconBox: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-    readyCategory: { fontSize: 36, fontWeight: '900', textAlign: 'center', textTransform: 'uppercase' },
+    readyCategory: { fontSize: 36, fontWeight: '900', textAlign: 'center', textTransform: 'uppercase', lineHeight: undefined },
     readyInfo: { fontSize: 18, color: '#ccc', marginTop: 8, fontWeight: '600' },
     readyHint: { color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: 14, marginTop: 24, lineHeight: 20 },
     startBtn: { minWidth: 220, height: 60, borderRadius: 30, overflow: 'hidden' },
@@ -473,7 +513,15 @@ const styles = StyleSheet.create({
     },
     wordCardCorrect: { borderColor: '#2ecc71', backgroundColor: 'rgba(46,204,113,0.3)' },
     wordCardPass: { borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.3)' },
-    wordText: { color: '#fff', fontWeight: '900', textAlign: 'center', textShadowColor: '#000', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
+    wordText: { 
+        color: '#fff', 
+        fontWeight: '900', 
+        textAlign: 'center', 
+        textShadowColor: '#000', 
+        textShadowOffset: { width: 0, height: 2 }, 
+        textShadowRadius: 6,
+        lineHeight: undefined,
+    },
     richContent: { marginTop: 12, padding: 12, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.25)', width: '100%', alignItems: 'center' },
     verseText: { fontSize: 22, fontWeight: '800', marginBottom: 6, textAlign: 'center' },
     descText: { fontSize: 15, color: '#eee', textAlign: 'center', fontStyle: 'italic', marginBottom: 8 },
@@ -484,6 +532,6 @@ const styles = StyleSheet.create({
     scoreBadgeText: { fontSize: 20, fontWeight: '900' },
     scoreBadgeSub: { color: '#fff6', fontSize: 12, fontWeight: '700' },
     finishedBox: { alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: 28, padding: 40, borderWidth: 1 },
-    finishedTitle: { color: GOLD, fontSize: 40, fontWeight: '900' },
+    finishedTitle: { color: GOLD, fontSize: 40, fontWeight: '900', lineHeight: undefined },
     finishedSub: { color: '#fff6', fontSize: 16, marginTop: 8 },
 });

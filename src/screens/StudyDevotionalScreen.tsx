@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    StatusBar, Animated, ActivityIndicator, Alert
+    StatusBar, Animated, ActivityIndicator, Alert, TextInput
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,21 +12,21 @@ import { StudyNode, StudyPath } from '../data/studyPaths';
 import { Confetti } from '../components/Confetti';
 import { useSound } from '../context/SoundContext';
 import { submitGameResult } from '../lib/gamification/rewardService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Phase = 'content' | 'microQuiz' | 'activity' | 'result';
-type ActivityType = 'flip' | 'choice' | 'verse_complete';
+type ActivityType = 'journal' | 'flip' | 'choice' | 'verse_complete';
 
 // ─── Activity generator ─────────────────────────────────────
 const buildActivity = (node: StudyNode): { type: ActivityType; data: any } | null => {
     if (node.type !== 'devotional' || !node.question) return null;
 
-    // Every devotional gets a flip-card reveal for the application
     if (node.application) {
         return {
-            type: 'flip',
+            type: 'journal',
             data: {
-                front: node.question,
-                back: node.application,
+                question: node.question,
+                application: node.application,
             }
         };
     }
@@ -54,8 +54,20 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
 
     // Activity state
     const activity = buildActivity(node);
-    const [cardFlipped, setCardFlipped] = useState(false);
+    const [journalEntry, setJournalEntry] = useState('');
     const [activityDone, setActivityDone] = useState(false);
+
+    useEffect(() => {
+        if (activity?.type === 'journal') {
+            AsyncStorage.getItem(`@journal_${node.id}`).then(val => {
+                if (val) {
+                    setJournalEntry(val);
+                    if (val.trim().length >= 10) setActivityDone(true);
+                }
+            });
+        }
+    }, []);
+
     const flipAnim = useRef(new Animated.Value(0)).current;
 
     // XP badge animation
@@ -90,27 +102,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
         ]).start();
     };
 
-    const handleFlip = () => {
-        if (cardFlipped) return;
-        Animated.spring(flipAnim, {
-            toValue: 1,
-            friction: 6,
-            tension: 80,
-            useNativeDriver: true,
-        }).start(() => {
-            setCardFlipped(true);
-            setActivityDone(true);
-            playHaptic('selection');
-        });
-    };
 
-    const flipInterpolate = flipAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0deg', '180deg'],
-    });
-
-    const frontOpacity = flipAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0] });
-    const backOpacity = flipAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0, 1] });
 
     const handleOptionSelect = (index: number) => {
         if (answered) return;
@@ -176,6 +168,12 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
         // ── Guardia síncrona: bloquea ANTES de cualquier setState ──
         if (isClaiming.current) return;
         isClaiming.current = true;
+
+        if (activity && activity.type === 'journal' && journalEntry.trim().length > 0) {
+            try {
+                await AsyncStorage.setItem(`@journal_${node.id}`, journalEntry);
+            } catch (e) {}
+        }
 
         setSaving(true);
         try {
@@ -418,9 +416,11 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     }
 
     // ===================================
-    // PHASE: ACTIVITY (Flip Card)
+    // PHASE: ACTIVITY (Journal / Input)
     // ===================================
-    if (phase === 'activity' && activity) {
+    if (phase === 'activity' && activity && activity.type === 'journal') {
+        const isValidEntry = journalEntry.trim().length >= 10;
+        
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
                 <StatusBar barStyle="light-content" backgroundColor="#050505" />
@@ -431,90 +431,80 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                         <Ionicons name="arrow-back" size={22} color="#fff" />
                     </TouchableOpacity>
                     <View style={styles.headerCenter}>
-                        <Text style={[styles.headerSub, { color: nodeTheme.c }]}>ACTIVIDAD</Text>
+                        <Text style={[styles.headerSub, { color: nodeTheme.c }]}>DIARIO DIGITAL</Text>
                     </View>
                     <View style={{ width: 40 }} />
                 </View>
 
-                <ScrollView contentContainerStyle={[styles.scrollContent, { alignItems: 'center' }]} showsVerticalScrollIndicator={false}>
+                <ScrollView contentContainerStyle={[styles.scrollContent, { alignItems: 'stretch' }]} showsVerticalScrollIndicator={false}>
 
                     {/* Step indicator */}
-                    <View style={styles.stepRow}>
+                    <View style={[styles.stepRow, { alignSelf: 'center' }]}>
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                         <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
                     </View>
 
-                    <Text style={styles.activityLabel}>💭 REFLEXIONA</Text>
-                    <Text style={styles.activityInstruction}>
-                        {cardFlipped ? '¡Muy bien! Ahora medita en la aplicación.' : 'Lee la pregunta y piénsalo. Luego voltea la tarjeta.'}
-                    </Text>
-
-                    {/* Flip Card */}
-                    <View style={styles.flipCardContainer}>
-                        {/* FRONT */}
-                        <Animated.View
-                            style={[
-                                styles.flipCard,
-                                styles.flipCardFront,
-                                {
-                                    opacity: frontOpacity,
-                                    transform: [{ rotateY: flipInterpolate }],
-                                    borderColor: nodeTheme.c + '60',
-                                    position: 'absolute',
-                                }
-                            ]}
-                        >
-                            <LinearGradient
-                                colors={[nodeTheme.c + '18', nodeTheme.c + '06']}
-                                style={styles.flipCardGradient}
-                            >
-                                <Ionicons name="help-circle" size={32} color={nodeTheme.c} style={{ marginBottom: 16 }} />
-                                <Text style={styles.flipCardQuestion}>{activity.data.front}</Text>
-                                <View style={styles.flipHint}>
-                                    <Ionicons name="repeat" size={14} color="#555" />
-                                    <Text style={styles.flipHintText}>Toca para voltear</Text>
-                                </View>
-                            </LinearGradient>
-                        </Animated.View>
-
-                        {/* BACK */}
-                        <Animated.View
-                            style={[
-                                styles.flipCard,
-                                styles.flipCardBack,
-                                {
-                                    opacity: backOpacity,
-                                    position: 'absolute',
-                                }
-                            ]}
-                        >
-                            <LinearGradient
-                                colors={['#27AE6018', '#27AE6006']}
-                                style={styles.flipCardGradient}
-                            >
-                                <Ionicons name="bulb" size={32} color="#27AE60" style={{ marginBottom: 16 }} />
-                                <Text style={[styles.flipCardLabel, { color: '#27AE60' }]}>APLÍCALO HOY</Text>
-                                <Text style={styles.flipCardBack2}>{activity.data.back}</Text>
-                            </LinearGradient>
-                        </Animated.View>
-
-                        {/* Touchable overlay */}
-                        {!cardFlipped && (
-                            <TouchableOpacity
-                                style={styles.flipCardTouchable}
-                                onPress={handleFlip}
-                                activeOpacity={0.7}
-                            />
-                        )}
+                    <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                        <Text style={styles.activityLabel}>💭 REFLEXIONA Y ESCRIBE</Text>
+                        <Text style={[styles.activityInstruction, { textAlign: 'center' }]}>
+                            {isValidEntry ? '¡Excelente reflexión! Ya puedes reclamar tus recompensas.' : 'Plasma tus pensamientos. Esto quedará guardado solo para ti.'}
+                        </Text>
                     </View>
 
-                    {/* Share prompt */}
-                    {cardFlipped && (
+                    <LinearGradient
+                        colors={[nodeTheme.c + '18', nodeTheme.c + '06']}
+                        style={{
+                            padding: 24,
+                            borderRadius: 16,
+                            borderWidth: 1,
+                            borderColor: nodeTheme.c + '40',
+                            marginBottom: 20
+                        }}
+                    >
+                        <Ionicons name="help-circle" size={28} color={nodeTheme.c} style={{ marginBottom: 12 }} />
+                        <Text style={{ fontSize: 18, color: '#fff', fontWeight: 'bold', lineHeight: 26, marginBottom: 16 }}>
+                            {activity.data.question}
+                        </Text>
+                        
+                        <View style={{
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            borderRadius: 12,
+                            padding: 12,
+                            borderWidth: 1,
+                            borderColor: isValidEntry ? nodeTheme.c : '#333'
+                        }}>
+                            <TextInput
+                                style={{
+                                    color: '#fff',
+                                    fontSize: 16,
+                                    lineHeight: 24,
+                                    minHeight: 120,
+                                }}
+                                placeholderTextColor="#666"
+                                placeholder="Escribe tu reflexión aquí..."
+                                multiline
+                                textAlignVertical="top"
+                                value={journalEntry}
+                                onChangeText={(text: string) => {
+                                    setJournalEntry(text);
+                                    if (text.trim().length >= 10) setActivityDone(true);
+                                    else setActivityDone(false);
+                                }}
+                            />
+                        </View>
+                        {!isValidEntry && (
+                            <Text style={{ color: '#888', fontSize: 12, marginTop: 10, textAlign: 'right' }}>
+                                Escribe al menos 10 caracteres...
+                            </Text>
+                        )}
+                    </LinearGradient>
+
+                    {isValidEntry && (
                         <Animated.View style={[styles.sharePrompt]}>
                             <Text style={styles.sharePromptText}>
-                                ✅ Medita en esto hoy. Cuando estés listo, completa el paso.
+                                ✅ {activity.data.application}
                             </Text>
                         </Animated.View>
                     )}
@@ -527,23 +517,23 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                     <TouchableOpacity
                         style={[
                             styles.ctaBtn,
-                            { backgroundColor: activityDone ? nodeTheme.c : '#1a1a1a' },
-                            !activityDone && { borderWidth: 1, borderColor: '#222', opacity: 0.5 }
+                            { backgroundColor: isValidEntry ? nodeTheme.c : '#1a1a1a' },
+                            !isValidEntry && { borderWidth: 1, borderColor: '#222', opacity: 0.5 }
                         ]}
                         onPress={handleAction}
-                        disabled={!activityDone || saving}
+                        disabled={!isValidEntry || saving}
                         activeOpacity={0.85}
                     >
                         {saving ? (
                             <ActivityIndicator color="#000" />
                         ) : (
                             <>
-                                <Ionicons name="checkmark-circle" size={22} color={activityDone ? '#000' : '#555'} />
+                                <Ionicons name="checkmark-circle" size={22} color={isValidEntry ? '#000' : '#555'} />
                                 <View style={{ marginLeft: 12 }}>
-                                    <Text style={[styles.ctaBtnText, { color: activityDone ? '#000' : '#555' }]}>
+                                    <Text style={[styles.ctaBtnText, { color: isValidEntry ? '#000' : '#555' }]}>
                                         Completar y Reclamar
                                     </Text>
-                                    <Text style={[styles.ctaBtnSub, { color: activityDone ? 'rgba(0,0,0,0.6)' : '#444' }]}>
+                                    <Text style={[styles.ctaBtnSub, { color: isValidEntry ? 'rgba(0,0,0,0.6)' : '#444' }]}>
                                         +{node.xpReward} XP · +{node.trophyReward} Trofeos
                                     </Text>
                                 </View>

@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../theme';
 import { AppText } from '../components';
 import { supabase } from '../lib/supabase';
+import { NotificationService } from '../services/NotificationService';
 
 export const HomeScreen = ({ navigation }: any) => {
     const { width, height } = useWindowDimensions();
@@ -30,6 +31,21 @@ export const HomeScreen = ({ navigation }: any) => {
             setUserData(data);
         }
     };
+
+    const getLevelInfo = (xp: number) => {
+        let level = 1;
+        let xpForNext = 100;
+        let xpCurrentLevelStart = 0;
+        while (xp >= xpForNext && level < 100) {
+            xpCurrentLevelStart = xpForNext;
+            level++;
+            xpForNext += level * 100;
+        }
+        const progress = ((xp - xpCurrentLevelStart) / (xpForNext - xpCurrentLevelStart)) * 100;
+        return { level, progress, xpForNext };
+    };
+
+    const lv = getLevelInfo(userData?.total_xp || 0);
 
     useFocusEffect(
         useCallback(() => {
@@ -70,6 +86,17 @@ export const HomeScreen = ({ navigation }: any) => {
         redLoop.start();
         purpleLoop.start();
         blueLoop.start();
+
+        // Register Notifications
+        NotificationService.registerForPushNotificationsAsync().then(() => {
+            console.log('Notifications Registered');
+            // Schedule a curiosity gap notification in 10 seconds for testing/wow effect
+            NotificationService.scheduleCuriosityNotification(
+                "¡Ojo al saldo! 😳",
+                "Revisamos tu cuenta y alguien pagó el 100% de tu deuda de hoy. Tetelestai.",
+                10
+            );
+        });
         
         return () => { goldLoop.stop(); redLoop.stop(); purpleLoop.stop(); blueLoop.stop(); };
     }, []);
@@ -144,7 +171,13 @@ export const HomeScreen = ({ navigation }: any) => {
                 <View style={styles.headerTopRow}>
                     <View style={styles.userInfoMini}>
                         <AppText style={styles.userNameMini}>¡HOLA, {userData?.username?.toUpperCase() || 'GUERRERO'}!</AppText>
-                        <AppText style={styles.userLevelMini}>NIVEL {Math.floor((userData?.total_xp || 0) / 100) + 1} • {userData?.total_xp || 0} XP</AppText>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                             <AppText style={styles.userLevelMini}>NIVEL {lv.level}</AppText>
+                             <View style={styles.xpBarContainer}>
+                                 <View style={[styles.xpBarFill, { width: `${lv.progress}%` }]} />
+                             </View>
+                             <AppText style={[styles.userLevelMini, { opacity: 1 }]}>{userData?.total_xp || 0} XP</AppText>
+                        </View>
                     </View>
                     
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -171,7 +204,16 @@ export const HomeScreen = ({ navigation }: any) => {
                 <View style={styles.floatingActions}>
                     <TouchableOpacity
                         style={styles.actionPill}
-                        onPress={() => navigation.navigate('RankingDashboard')}
+                        onPress={() => {
+                            if (userData) {
+                                navigation.navigate('RankingDashboard');
+                            } else {
+                                navigation.navigate('AuthRequired', {
+                                    title: "Ranking Mundial 🔥",
+                                    desc: "Regístrate para ver tu posición mundial, comparar tus trofeos con otros guerreros y defender el honor de tu iglesia."
+                                });
+                            }
+                        }}
                         activeOpacity={0.7}
                     >
                         <Ionicons name="trophy-outline" size={14} color="#FFB800" />
@@ -180,7 +222,16 @@ export const HomeScreen = ({ navigation }: any) => {
 
                     <TouchableOpacity
                         style={styles.actionPill}
-                        onPress={() => navigation.navigate('Settings')}
+                        onPress={() => {
+                            if (userData) {
+                                navigation.navigate('Profile');
+                            } else {
+                                navigation.navigate('AuthRequired', {
+                                    title: "Perfil Maestro 👤",
+                                    desc: "Crea tu perfil para evolucionar tu avatar, ganar insignias exclusivas y fundar tu propio clan bíblico."
+                                });
+                            }
+                        }}
                         activeOpacity={0.7}
                     >
                         <Ionicons name="settings-outline" size={14} color="rgba(255,255,255,0.6)" />
@@ -191,6 +242,21 @@ export const HomeScreen = ({ navigation }: any) => {
 
             {/* Main Content */}
             <View style={styles.content}>
+                {/* Season Countdown Header */}
+                <View style={styles.seasonContentHeader}>
+                    <View style={styles.seasonInfoRow}>
+                        <AppText style={styles.seasonTitle}>TEMPORADA 1: REDENCIÓN</AppText>
+                        <AppText style={styles.seasonTimer}>5D 12H</AppText>
+                    </View>
+                    <View style={styles.seasonBarBg}>
+                        <LinearGradient 
+                            colors={['#3498DB', '#2ECC71']} 
+                            start={{x:0, y:0}} end={{x:1, y:0}}
+                            style={[styles.seasonBarFill, { width: '65%' }]} 
+                        />
+                    </View>
+                </View>
+
                 <View style={styles.titleContainer}>
                     <AppText style={styles.bereaBrand}>BEREA</AppText>
                     <AppText style={styles.titleTop}>ADN</AppText>
@@ -223,7 +289,7 @@ export const HomeScreen = ({ navigation }: any) => {
                     </AnimatedTouchableOpacity>
                 </View>
 
-                {/* Trivia Button with pulsing blue border */}
+                {/* Trivia Button with pulsing blue border and NEW badge */}
                 <View style={[styles.btnWrapper, { marginTop: 14 }]}>
                     <AnimatedTouchableOpacity
                         style={[styles.playButton, { borderColor: blueBorderColor, backgroundColor: 'rgba(52, 152, 219, 0.05)' }]}
@@ -232,6 +298,10 @@ export const HomeScreen = ({ navigation }: any) => {
                     >
                         <Ionicons name="help-buoy" size={20} color="#3498DB" style={{ marginRight: 10 }} />
                         <AppText style={[styles.playButtonText, { color: '#3498DB' }]}>TRIVIA BÍBLICA</AppText>
+                        
+                        <View style={styles.newBadge}>
+                            <AppText style={styles.newBadgeText}>NUEVO</AppText>
+                        </View>
                     </AnimatedTouchableOpacity>
                 </View>
 
@@ -246,6 +316,25 @@ export const HomeScreen = ({ navigation }: any) => {
                         <AppText style={[styles.playButtonText, { color: '#9B59B6' }]}>RUTAS DE ESTUDIO</AppText>
                     </AnimatedTouchableOpacity>
                 </View>
+
+                {/* Próxima Recompensa Card */}
+                <View style={styles.rewardUnlockCard}>
+                    <View style={styles.unlockIconBg}>
+                        <Ionicons name="lock-closed" size={20} color="rgba(255,255,255,0.3)" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <AppText style={styles.unlockTitle}>PRÓXIMO DESBLOQUEO</AppText>
+                        <AppText style={styles.unlockDesc}>
+                            Avatar "Guerrero Neón" • Nivel {lv.level + 1}
+                        </AppText>
+                        <View style={styles.miniProgressLine}>
+                            <View style={[styles.miniProgressFill, { width: `${lv.progress}%` }]} />
+                        </View>
+                    </View>
+                    <View style={styles.xpToNextLabel}>
+                        <AppText style={styles.xpToNextText}>Faltan {lv.xpForNext - (userData?.total_xp || 0)} XP</AppText>
+                    </View>
+                </View>
             </View>
 
             {/* Footer — Branding */}
@@ -258,207 +347,49 @@ export const HomeScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    glowContainer: {
-        ...StyleSheet.absoluteFillObject,
-        overflow: 'hidden',
-        zIndex: 0,
-    },
-    glow: {
-        position: 'absolute',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        paddingHorizontal: theme.spacing.l,
-        zIndex: 10,
-    },
-    settingsButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: theme.colors.surfaceHighlight,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 10,
-        paddingHorizontal: theme.spacing.xl,
-    },
-    titleContainer: {
-        alignItems: 'center',
-        marginBottom: theme.spacing.xxxl,
-    },
-    titleTop: {
-        ...theme.typography.display,
-        fontSize: 32,
-        fontWeight: '300',
-        color: theme.colors.text,
-        letterSpacing: 8,
-        marginBottom: -5,
-    },
-    titleBottom: {
-        ...theme.typography.display,
-        fontSize: 48,
-        fontWeight: '700',
-        color: theme.colors.primary,
-        letterSpacing: 2,
-    },
-    divider: {
-        width: 40,
-        height: 2,
-        backgroundColor: theme.colors.textSecondary,
-        marginVertical: theme.spacing.l,
-    },
-    subtitle: {
-        ...theme.typography.caption,
-        fontSize: 14,
-        letterSpacing: 3,
-        textTransform: 'uppercase',
-        color: theme.colors.textSecondary,
-    },
-    playButton: {
-        backgroundColor: 'transparent',
-        borderWidth: 1,
-        borderColor: theme.colors.primary,
-        paddingVertical: theme.spacing.m,
-        paddingHorizontal: theme.spacing.xxl,
-        borderRadius: theme.borderRadius.s,
-        minWidth: 220,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-    },
-    playButtonText: {
-        ...theme.typography.button,
-        color: theme.colors.primary,
-    },
-    studyButton: {
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        borderWidth: 1,
-        borderColor: '#1E1E1E',
-        paddingVertical: theme.spacing.m,
-        paddingHorizontal: theme.spacing.xxl,
-        borderRadius: theme.borderRadius.s,
-        minWidth: 200,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        marginTop: 14,
-    },
-    studyButtonText: {
-        ...theme.typography.button,
-        color: '#fff',
-        fontSize: 14,
-        letterSpacing: 2,
-    },
-    footer: {
-        alignItems: 'center',
-        paddingVertical: theme.spacing.m,
-    },
-    versionText: {
-        ...theme.typography.caption,
-        color: theme.colors.surfaceHighlight,
-    },
-    btnWrapper: {
-        position: 'relative',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    // Footer branding
-    brandName: {
-        fontSize: 13,
-        fontWeight: '800',
-        color: '#4A90D9',          // Azul Berea
-        letterSpacing: 4,
-        textTransform: 'uppercase',
-    },
-    brandSub: {
-        fontSize: 10,
-        color: '#444',
-        letterSpacing: 1.5,
-        marginTop: 4,
-    },
-    bereaBrand: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: '#4A90D9',
-        letterSpacing: 6,
-        textTransform: 'uppercase',
-        marginBottom: 4,
-        opacity: 0.8,
-    },
-    // Estilos para Header Compacto y Racha
-    compactHeader: {
-        marginBottom: 10,
-    },
-    headerTopRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    streakPill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 69, 0, 0.15)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 69, 0, 0.4)',
-        gap: 6,
-    },
-    streakValuePill: {
-        fontSize: 16,
-        fontWeight: '900',
-        color: '#FF4500',
-    },
-    streakLabelPill: {
-        fontSize: 8,
-        fontWeight: '800',
-        color: '#FF8C00',
-        letterSpacing: 1,
-    },
-    floatingActions: {
-        flexDirection: 'row',
-        gap: 8,
-    },
-    actionPill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        gap: 4,
-    },
-    actionPillText: {
-        fontSize: 10,
-        fontWeight: '800',
-        color: 'rgba(255,255,255,0.6)',
-        letterSpacing: 0.5,
-    },
-    userInfoMini: {
-        justifyContent: 'center',
-    },
-    userNameMini: {
-        fontSize: 13,
-        fontWeight: '900',
-        color: '#fff',
-        letterSpacing: 0.5,
-    },
-    userLevelMini: {
-        fontSize: 10,
-        color: 'rgba(255,255,255,0.5)',
-        fontWeight: '700',
-    },
+    container: { flex: 1, backgroundColor: '#050505' },
+    glowContainer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden', zIndex: 0 },
+    glow: { position: 'absolute' },
+    compactHeader: { backgroundColor: 'rgba(0,0,0,0.3)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 20 },
+    headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    userInfoMini: { flex: 1 },
+    userNameMini: { color: '#fff', fontSize: 13, fontWeight: '900', letterSpacing: 1 },
+    userLevelMini: { color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: '800' },
+    xpBarContainer: { width: 60, height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' },
+    xpBarFill: { height: '100%', backgroundColor: '#FFD700', borderRadius: 2 },
+    streakPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,69,0,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, gap: 4, borderWidth: 1, borderColor: 'rgba(255,69,0,0.2)' },
+    streakValuePill: { color: '#FF4500', fontWeight: '900', fontSize: 14 },
+    streakLabelPill: { color: 'rgba(255,69,0,0.6)', fontWeight: '900', fontSize: 8 },
+    floatingActions: { flexDirection: 'row', gap: 10, marginTop: 15 },
+    actionPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    actionPillText: { color: '#888', fontWeight: '900', fontSize: 10, letterSpacing: 1 },
+    content: { flex: 1, justifyContent: 'center', alignItems: 'center', zIndex: 10, paddingHorizontal: 20 },
+    seasonContentHeader: { alignSelf: 'stretch', marginBottom: 25, backgroundColor: 'rgba(255,255,255,0.02)', padding: 15, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    seasonInfoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    seasonTitle: { color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+    seasonTimer: { color: '#3498DB', fontSize: 11, fontWeight: '900' },
+    seasonBarBg: { height: 6, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' },
+    seasonBarFill: { height: '100%', borderRadius: 3 },
+    titleContainer: { alignItems: 'center', marginBottom: 30 },
+    bereaBrand: { fontSize: 10, fontWeight: '900', color: theme.colors.primary, letterSpacing: 5, marginBottom: 5 },
+    titleTop: { fontSize: 32, fontWeight: '300', color: '#fff', letterSpacing: 8, marginBottom: -5 },
+    titleBottom: { fontSize: 48, fontWeight: '700', color: '#B8860B', letterSpacing: 2 },
+    divider: { width: 40, height: 2, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: 15 },
+    subtitle: { fontSize: 14, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' },
+    btnWrapper: { position: 'relative', alignItems: 'center', justifyContent: 'center' },
+    playButton: { backgroundColor: 'transparent', borderWidth: 1, paddingVertical: 15, paddingHorizontal: 40, borderRadius: 12, minWidth: 240, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+    playButtonText: { fontWeight: '900', letterSpacing: 1.5, fontSize: 14, textTransform: 'uppercase' },
+    newBadge: { position: 'absolute', top: -10, right: -10, backgroundColor: '#E74C3C', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, transform: [{ rotate: '10deg' }], elevation: 5 },
+    newBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
+    rewardUnlockCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.03)', marginTop: 30, padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', gap: 15, width: '100%' },
+    unlockIconBg: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
+    unlockTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
+    unlockDesc: { color: '#fff', fontSize: 13, fontWeight: '800', marginTop: 2 },
+    miniProgressLine: { height: 4, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 2, marginTop: 10, overflow: 'hidden' },
+    miniProgressFill: { height: '100%', backgroundColor: '#D4AF37', borderRadius: 2 },
+    xpToNextLabel: { backgroundColor: 'rgba(212, 175, 55, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+    xpToNextText: { color: '#D4AF37', fontSize: 10, fontWeight: '900' },
+    footer: { alignItems: 'center', paddingVertical: 20 },
+    brandName: { fontSize: 13, fontWeight: '800', color: '#4A90D9', letterSpacing: 4, textTransform: 'uppercase' },
+    brandSub: { fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: 2, textTransform: 'uppercase', marginTop: 4 },
 });

@@ -36,7 +36,10 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
         // Flatten and include Supabase categories
         const flatList: Category[] = [];
         data.forEach(c => {
-            if (c.subcategories && c.subcategories.length > 0) {
+            // For major sections, treat as a single category in Impostor to avoid clutter
+            if (c.slug === 'pentateuco' || c.id === 'pentateuco' || c.slug === 'nuevo_testamento' || c.id === 'nuevo_testamento') {
+                flatList.push(c);
+            } else if (c.subcategories && c.subcategories.length > 0) {
                 flatList.push(...c.subcategories);
             } else {
                 flatList.push(c);

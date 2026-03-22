@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import { getEvolutionaryAvatar } from '../utils/avatarUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -175,7 +176,7 @@ export const ProfileScreen = ({ navigation }: any) => {
     }
 
     const { level, title, progress, xpForNext } = getLevelInfo(userStats?.total_xp || 0);
-    const avatarUri = `https://api.dicebear.com/7.x/bottts/png?seed=${userStats?.username || 'berea'}`;
+    const avatarUri = getEvolutionaryAvatar(userStats?.username || 'berea', userStats?.total_xp || 0);
 
     const headerOpacity = scrollY.interpolate({
         inputRange: [0, 80],
@@ -285,50 +286,57 @@ export const ProfileScreen = ({ navigation }: any) => {
                     <Text style={s.sectionHeader}>MI CLAN / IGLESIA</Text>
                     {!church ? (
                         <View style={s.glassCard}>
-                            <Text style={s.cardHeadline}>Únete a un equipo</Text>
-                            <Text style={s.cardBody}>No estás en ninguna iglesia. Crea una nueva para que otros jugadores de tu grupo se unan a ti.</Text>
+                            <View style={s.guildEmptyHead}>
+                                <Ionicons name="shield-outline" size={40} color="rgba(255,255,255,0.1)" />
+                                <Text style={s.cardHeadline}>Fundar Clan Bíblico</Text>
+                            </View>
+                            <Text style={s.cardBody}>No perteneces a ninguna iglesia o grupo. Lidera el tuyo y compite en el ranking mundial.</Text>
                             
-                            <LabelInput label="Nombre del Clan" icon="shield-outline" value={churchName} onChangeText={setChurchName} placeholder="Ej. El Ejercito de David" />
-                            <LabelInput label="Ubicación" icon="location-outline" value={churchCity} onChangeText={setChurchCity} placeholder="Ciudad" />
+                            <LabelInput label="Nombre del Clan" icon="shield-checkmark-outline" value={churchName} onChangeText={setChurchName} placeholder="Ej. Guerreros de Sión" />
+                            <LabelInput label="Ubicación" icon="location-outline" value={churchCity} onChangeText={setChurchCity} placeholder="Ciudad / Región" />
 
                             <TouchableOpacity style={s.actionBtn} onPress={handleCreateChurch} disabled={actionLoading}>
                                 <LinearGradient colors={[ACCENT, '#2980B9']} style={s.actionBtnInner}>
-                                    {actionLoading ? <ActivityIndicator color="#fff" /> : <Text style={s.actionBtnText}>FUNDAR CLAN</Text>}
+                                    {actionLoading ? <ActivityIndicator color="#fff" /> : <Text style={s.actionBtnText}>CREAR CLAN</Text>}
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        <View style={s.glassCard}>
+                        <LinearGradient colors={['#1F1F3D', '#0F0F25']} style={s.guildCardPremium}>
                             <View style={s.guildHeader}>
-                                <View style={s.guildAvatar}>
+                                <View style={s.guildAvatarPremium}>
                                     <Ionicons name="home" size={24} color={GOLD} />
+                                    <View style={s.guildGlow} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={s.guildName}>{church.name}</Text>
-                                    <Text style={s.guildMeta}>{church.city || 'Ubicación desconocida'}</Text>
+                                    <Text style={s.guildName}>{church.name.toUpperCase()}</Text>
+                                    <View style={s.churchStatsMini}>
+                                        <Ionicons name="location" size={12} color="#888" />
+                                        <Text style={s.guildMeta}>{church.city || 'Ubicación'}</Text>
+                                    </View>
                                 </View>
                                 <View style={s.rankPill}>
                                     <Text style={s.rankPillText}>LÍDER</Text>
                                 </View>
                             </View>
 
-                            <View style={s.divider} />
+                            <View style={s.guildDivider} />
                             
-                            <Text style={s.subLabel}>AÑADIR GUERRERO</Text>
+                            <Text style={s.subLabel}>INVITAR NUEVO MIEMBRO</Text>
                             <View style={s.inviteRow}>
                                 <TextInput 
                                     style={s.minimalInput}
-                                    placeholder="@gamertag..."
+                                    placeholder="Nombre de usuario..."
                                     placeholderTextColor="#555"
                                     value={inviteUsername}
                                     onChangeText={setInviteUsername}
                                     autoCapitalize="none"
                                 />
                                 <TouchableOpacity style={s.miniBtn} onPress={handleInviteUser}>
-                                    <Ionicons name="add" size={24} color="#000" />
+                                    <Ionicons name="paper-plane" size={18} color="#000" />
                                 </TouchableOpacity>
                             </View>
-                        </View>
+                        </LinearGradient>
                     )}
                 </View>
 
@@ -449,4 +457,10 @@ const s = StyleSheet.create({
         borderWidth: 1, borderColor: 'rgba(231,76,60,0.2)', borderRadius: 20, gap: 10
     },
     logoutText: { color: '#e74c3c', fontWeight: '900', letterSpacing: 1 },
+    guildEmptyHead: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 15 },
+    guildCardPremium: { borderRadius: 28, padding: 22, borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.2)' },
+    guildAvatarPremium: { width: 50, height: 50, borderRadius: 15, backgroundColor: 'rgba(243, 198, 35, 0.1)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+    guildGlow: { position: 'absolute', top: -10, left: -10, right: -10, bottom: -10, backgroundColor: 'rgba(243, 198, 35, 0.05)', borderRadius: 25 },
+    churchStatsMini: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+    guildDivider: { height: 1, backgroundColor: BORDER, marginVertical: 20 },
 });

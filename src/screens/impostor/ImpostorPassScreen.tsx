@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const ImpostorPassScreen = ({ navigation, route }: any) => {
     const { players, playerDetails, impostors, hintEnabled, duration, selectedCategories, difficulty } = route.params;
@@ -66,9 +67,39 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
                     });
                     if (filteredPool.length === 0) filteredPool = pool;
 
-                    let wordObj = filteredPool[Math.floor(Math.random() * filteredPool.length)];
-                    setSecretWord(typeof wordObj === 'string' ? wordObj : wordObj.word);
-                    setSecretCategory(randomCat.title);
+                    // --- ALGORITMO DE NO REPETICIÓN (IMPOSTOR) ---
+                    try {
+                        const seenStr = await AsyncStorage.getItem('seen_impostor_words');
+                        let seenWords: string[] = seenStr ? JSON.parse(seenStr) : [];
+                        
+                        // Obtener solo el texto de la palabra para comparar
+                        let available = filteredPool.filter((w: any) => {
+                            const wordText = typeof w === 'string' ? w : w.word;
+                            return !seenWords.includes(wordText);
+                        });
+
+                        if (available.length < 2) {
+                            available = filteredPool;
+                            // Limpiar historial de este subgrupo
+                            const textsInPool = filteredPool.map((w: any) => typeof w === 'string' ? w : w.word);
+                            seenWords = seenWords.filter(sw => !textsInPool.includes(sw));
+                        }
+
+                        let wordObj = available[Math.floor(Math.random() * available.length)];
+                        const selectedWord = typeof wordObj === 'string' ? wordObj : wordObj.word;
+                        
+                        setSecretWord(selectedWord);
+                        setSecretCategory(randomCat.title);
+
+                        // Guardar en historial
+                        const updatedSeen = Array.from(new Set([...seenWords, selectedWord])).slice(-100);
+                        await AsyncStorage.setItem('seen_impostor_words', JSON.stringify(updatedSeen));
+                    } catch (e) {
+                        console.error("Error with word history", e);
+                        let wordObj = filteredPool[Math.floor(Math.random() * filteredPool.length)];
+                        setSecretWord(typeof wordObj === 'string' ? wordObj : wordObj.word);
+                        setSecretCategory(randomCat.title);
+                    }
                 }
             }
             const impSet = new Set<number>();

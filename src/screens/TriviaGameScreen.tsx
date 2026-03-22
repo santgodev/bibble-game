@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Easing, useWindowDimensions, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Easing, useWindowDimensions, ScrollView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { useGameTimer } from '../hooks';
 import { useSound } from '../context/SoundContext';
 import { TriviaQuestion } from '../data/categories';
 import { theme } from '../theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CORRECT_COLOR = '#27AE60';
 const WRONG_COLOR = '#E74C3C';
@@ -21,7 +22,8 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
         categoryObj, 
         questions: initialQuestions, 
         duration = 60,
-        difficulty = 1
+        difficulty = 1,
+        limit = 15
     } = route.params || {};
 
     const primaryColor = categoryObj?.color || theme.colors.primary;
@@ -43,12 +45,46 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
     const { timeLeft, startTimer, stopTimer, resetTimer } = useGameTimer(duration, onTimeEnd);
 
     useEffect(() => {
-        if (initialQuestions && initialQuestions.length > 0) {
-            let filtered = initialQuestions.filter((q: TriviaQuestion) => q.difficulty === difficulty);
-            if (filtered.length === 0) filtered = initialQuestions;
-            const shuffled = [...filtered].sort(() => Math.random() - 0.5).slice(0, 10);
-            setQuestions(shuffled);
-        }
+        const initializeQuestions = async () => {
+            if (initialQuestions && initialQuestions.length > 0) {
+                // Filtrar por dificultad
+                let filtered = initialQuestions.filter((q: TriviaQuestion) => q.difficulty === difficulty);
+                if (filtered.length === 0) filtered = initialQuestions;
+
+                // --- ALGORITMO DE NO REPETICIÓN ---
+                try {
+                    const seenStr = await AsyncStorage.getItem('seen_trivia_ids');
+                    let seenIds: string[] = seenStr ? JSON.parse(seenStr) : [];
+                    
+                    // Filtrar las que NO se han visto
+                    let available = filtered.filter((q: TriviaQuestion) => !seenIds.includes(q.id!));
+                    
+                    // Si quedan muy pocas (ej: < 5), reiniciamos el historial para que el juego siga fluyendo
+                    if (available.length < 5) {
+                        available = filtered;
+                        // Opcional: Limpiar solo este subgrupo del historial
+                        seenIds = seenIds.filter(id => !filtered.some((q: TriviaQuestion) => q.id === id));
+                        await AsyncStorage.setItem('seen_trivia_ids', JSON.stringify(seenIds));
+                    }
+
+                    // Barajar disponibles (Fisher-Yates)
+                    for (let i = available.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [available[i], available[j]] = [available[j], available[i]];
+                    }
+
+                    // Seleccionar cantidad definida
+                    const selected = available.slice(0, limit);
+                    setQuestions(selected);
+                } catch (error) {
+                    console.error("Error loading trivia history:", error);
+                    // Fallback a shuffle simple si falla storage
+                    setQuestions(filtered.sort(() => Math.random() - 0.5).slice(0, limit));
+                }
+            }
+        };
+
+        initializeQuestions();
     }, [initialQuestions, difficulty]);
 
     useEffect(() => {
@@ -72,21 +108,30 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
         ]).start();
     };
 
-    const startGame = () => {
-        setScore(0);
-        setCurrentQIndex(0);
-        setSelectedOption(null);
-        resetTimer();
-        setGameStatus('PLAYING');
-        startTimer();
-        animateNextQuestion();
-    };
+    useEffect(() => {
+        const startGame = () => {
+            setScore(0);
+            setCurrentQIndex(0);
+            setSelectedOption(null);
+            resetTimer();
+            setGameStatus('PLAYING');
+            startTimer();
+            animateNextQuestion();
+        };
+
+        if (questions.length > 0 && gameStatus === 'READY') {
+            startGame();
+        }
+    }, [questions]);
 
     const handleAnswer = (optionIdx: number) => {
         if (gameStatus !== 'PLAYING') return;
         
         setSelectedOption(optionIdx);
-        const correct = optionIdx === questions[currentQIndex].correctIndex;
+        const q = questions[currentQIndex];
+        if (!q) return;
+
+        const correct = optionIdx === q.correctIndex;
         setIsCorrect(correct);
         setGameStatus('FEEDBACK');
         stopTimer();
@@ -114,52 +159,44 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
         }
     };
 
-    const handleGameFinish = (finalScore: number, totalQuestions: number) => {
+    const handleGameFinish = async (finalScore: number, totalQuestions: number) => {
         setGameStatus('FINISHED');
         stopTimer();
+
+        // --- GUARDAR HISTORIAL ---
+        try {
+            const playedIds = questions.slice(0, currentQIndex + 1).map(q => q.id);
+            const seenStr = await AsyncStorage.getItem('seen_trivia_ids');
+            let seenIds: string[] = seenStr ? JSON.parse(seenStr) : [];
+            
+            // Combinar y guardar unívocamente (últimas 200 para no sobrecargar)
+            const updatedSeenIds = Array.from(new Set([...seenIds, ...playedIds])).slice(-200);
+            await AsyncStorage.setItem('seen_trivia_ids', JSON.stringify(updatedSeenIds));
+        } catch (e) {
+            console.error("Error saving played ids", e);
+        }
+
         setTimeout(() => {
+            // STANDARD: Scoring always out of 15 (limit)
             navigation.replace('Results', {
                 score: finalScore,
-                total: totalQuestions,
+                total: limit, // MANDATORY: 15
                 category: categoryObj.title,
                 isTrivia: true,
                 canEarnTrophies: true,
-                duration
+                duration: 90
             });
         }, 1200);
     };
 
-    if (gameStatus === 'READY') {
+    if (gameStatus === 'READY' || questions.length === 0) {
         return (
             <View style={s.container}>
                 <LinearGradient colors={themeGradients} style={StyleSheet.absoluteFillObject} />
                 <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-                
                 <View style={s.centered}>
-                    <View style={[s.readyIconBox, { backgroundColor: primaryColor + '20', borderColor: primaryColor + '40', borderWidth: 1 }]}>
-                        <Ionicons name={categoryObj?.icon || 'book'} size={60} color={primaryColor} />
-                    </View>
-                    
-                    <View style={s.titleContainer}>
-                        <AppText variant="header" style={[s.title, { color: primaryColor }]} numberOfLines={1} adjustsFontSizeToFit>
-                            {categoryObj?.title}
-                        </AppText>
-                    </View>
-                    
-                    <AppText style={s.subtitle}>{questions.length} PREGUNTAS · {duration}s</AppText>
-                    
-                    <View style={s.readyDivider} />
-                    
-                    <Animated.View style={{ transform: [{ scale: readyPulse }] }}>
-                        <TouchableOpacity style={[s.startBtn, { backgroundColor: primaryColor }]} onPress={startGame} activeOpacity={0.85}>
-                            <Ionicons name="play" size={24} color="#000" style={{ marginRight: 10 }} />
-                            <AppText style={s.startBtnText}>EMPEZAR TRIVIA</AppText>
-                        </TouchableOpacity>
-                    </Animated.View>
-                    
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-                        <AppText style={s.backBtnText}>Cancelar</AppText>
-                    </TouchableOpacity>
+                    <ActivityIndicator size="large" color={primaryColor} />
+                    <AppText style={{ color: '#fff', marginTop: 20 }}>Preparando Trivia...</AppText>
                 </View>
             </View>
         );

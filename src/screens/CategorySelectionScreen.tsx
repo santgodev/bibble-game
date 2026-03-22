@@ -162,7 +162,7 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                 proceedToGame(item);
                 return;
             }
-            if (targetGame === 'charadas' && item.words && item.words.length > 0) {
+            if ((targetGame === 'charadas' || targetGame === 'impostor') && item.words && item.words.length > 0) {
                 proceedToGame(item);
                 return;
             }
@@ -245,8 +245,12 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                         }
                     }
 
-                    if (item.subcategories && item.subcategories.length > 0) {
-                        navigation.push('CategorySelection', { subcategories: item.subcategories, parentTitle: item.title });
+                    if (item.subcategories && item.subcategories.length > 0 && targetGame === 'trivia') {
+                        navigation.push('CategorySelection', { 
+                            subcategories: item.subcategories, 
+                            parentTitle: item.title,
+                            targetGame: targetGame
+                        });
                     } else {
                         loadContentAndStart();
                     }
@@ -389,11 +393,15 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         const startTrivia = (diff: number) => {
             setDifficultyModalVisible(false);
             if (targetGame === 'trivia') {
+                const durationByLevel = 90; // Standardized: 90 seconds
+                const limitByLevel = 15;    // Standardized: 15 questions
+
                 navigation.navigate('TriviaGame', {
                     categoryObj: categoryForTrivia,
                     questions: categoryForTrivia.trivia,
-                    duration: 90, // Un poco más de tiempo para preguntas más profundas
+                    duration: durationByLevel,
                     difficulty: diff,
+                    limit: limitByLevel,
                     canEarnTrophies: true
                 });
             } else {

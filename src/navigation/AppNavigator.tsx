@@ -16,6 +16,7 @@ import { StudyPathsScreen } from '../screens/StudyPathsScreen';
 import { StudyMissionsScreen } from '../screens/StudyMissionsScreen';
 import { StudyDevotionalScreen } from '../screens/StudyDevotionalScreen';
 import { SystemGuideScreen } from '../screens/SystemGuideScreen';
+import { AuthRequiredScreen } from '../screens/AuthRequiredScreen';
 import { useTheme } from '../context/ThemeContext';
 
 // Trivia
@@ -58,6 +59,7 @@ export const AppNavigator = () => {
                 <Stack.Screen name="Auth" component={AuthScreen} />
                 <Stack.Screen name="RankingDashboard" component={RankingDashboardScreen} />
                 <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen name="AuthRequired" component={AuthRequiredScreen} />
                 <Stack.Screen name="CategorySelection" component={CategorySelectionScreen} />
                 <Stack.Screen name="WordPreview" component={WordPreviewScreen} />
                 <Stack.Screen name="Game" component={GameScreen} />

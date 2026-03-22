@@ -546,4 +546,463 @@ export const TRIVIA_NUEVO: TriviaQuestion[] = [
         explanation: 'Apocalipsis cierra con esta bendición apostólica.',
         verseSupport: 'Apocalipsis 22:21'
     },
+    // --- NUEVAS PREGUNTAS: LOS 4 EVANGELIOS (80+) ---
+    
+    // NIVEL SEMILLA (Básico)
+    {
+        id: 'mat_gen_001',
+        question: '¿En qué ciudad nació Jesús?',
+        options: ['Nazaret', 'Jerusalén', 'Belén', 'Capernaúm'],
+        correctIndex: 2,
+        difficulty: 1,
+        explanation: 'Jesús nació en Belén de Judea, cumpliendo la profecía de Miqueas.',
+        verseSupport: 'Mateo 2:1'
+    },
+    {
+        id: 'nt_gen_002',
+        question: '¿Qué regalo NO llevaron los magos de oriente al niño Jesús?',
+        options: ['Oro', 'Plata', 'Incienso', 'Mirra'],
+        correctIndex: 1,
+        difficulty: 1,
+        explanation: 'Los magos ofrecieron oro, incienso y mirra.',
+        verseSupport: 'Mateo 2:11'
+    },
+    {
+        id: 'mat_gen_003',
+        question: '¿Cuál era el oficio de Pedro antes de seguir a Jesús?',
+        options: ['Carpintero', 'Médico', 'Pescador', 'Recaudador'],
+        correctIndex: 2,
+        difficulty: 1,
+        explanation: 'Pedro y su hermano Andrés eran pescadores en el Mar de Galilea.',
+        verseSupport: 'Mateo 4:18'
+    },
+    {
+        id: 'nt_gen_001', // Keep some as general NT
+        question: '¿Cuántos discípulos principales eligió Jesús?',
+        options: ['7', '10', '12', '40'],
+        correctIndex: 2,
+        difficulty: 1,
+        explanation: 'Jesús eligió a doce apóstoles para estar con Él y enviarlos a predicar.',
+        verseSupport: 'Mateo 10:1'
+    },
+    {
+        id: 'mat_gen_002',
+        question: '¿Cómo llamó Jesús a los pescadores que le siguieron?',
+        options: ['Pastores de almas', 'Pescadores de hombres', 'Guías del pueblo', 'Luz del mundo'],
+        correctIndex: 1,
+        difficulty: 1,
+        explanation: 'Jesús les dijo: "Venid en pos de mí, y os haré pescadores de hombres".',
+        verseSupport: 'Mateo 4:19'
+    },
+    {
+        id: 'jua_gen_001',
+        question: '¿Con qué alimentó Jesús a los 5,000 hombres?',
+        options: ['Carne y vino', 'Maná del cielo', '5 panes y 2 peces', 'Frutas y miel'],
+        correctIndex: 2,
+        difficulty: 1,
+        explanation: 'Jesús multiplicó cinco panes de cebada y dos pececillos.',
+        verseSupport: 'Juan 6:9'
+    },
+    {
+        id: 'mat_gen_004',
+        question: '¿Qué hizo Jesús para salvar a los discípulos en medio de la tormenta en el mar?',
+        options: ['Nadó hasta ellos', 'Reprendió al viento y al mar', 'Mandó un ángel', 'Hizo un puente'],
+        correctIndex: 1,
+        difficulty: 1,
+        explanation: 'Jesús se levantó y reprendió a los vientos y al mar, y se hizo grande bonanza.',
+        verseSupport: 'Mateo 8:26'
+    },
+    {
+        id: 'luc_gen_001',
+        question: '¿Quién fue el hombre bajito que se subió a un árbol para ver a Jesús?',
+        options: ['Zaqueo', 'Nicodemo', 'Bartimeo', 'Lázaro'],
+        correctIndex: 0,
+        difficulty: 1,
+        explanation: 'Zaqueo era un jefe de publicanos que se subió a un sicómoro.',
+        verseSupport: 'Lucas 19:1-4'
+    },
+    {
+        id: 'nt_gen_009',
+        question: '¿Cuál es el mandamiento más grande según Jesús?',
+        options: ['No matarás', 'Honra a tus padres', 'Amar a Dios sobre todas las cosas', 'No dirás mentiras'],
+        correctIndex: 2,
+        difficulty: 1,
+        explanation: 'Jesús dijo que el primero es amar a Dios con todo el corazón, alma y mente.',
+        verseSupport: 'Mateo 22:37'
+    },
+    {
+        id: 'nt_gen_010',
+        question: '¿Cómo se llama la oración que Jesús enseñó a sus discípulos?',
+        options: ['Salmo 23', 'Padre Nuestro', 'Magníficat', 'Credo'],
+        correctIndex: 1,
+        difficulty: 1,
+        explanation: 'Jesús les enseñó el Padre Nuestro como modelo de oración.',
+        verseSupport: 'Mateo 6:9'
+    },
+
+    // NIVEL DISCÍPULO (Intermedio)
+    {
+        id: 'jua_dis_001',
+        question: '¿Qué milagro hizo Jesús en las bodas de Caná?',
+        options: ['Multiplicó panes', 'Sanó a un ciego', 'Convirtió el agua en vino', 'Caminó sobre el agua'],
+        correctIndex: 2,
+        difficulty: 2,
+        explanation: 'Fue el primer milagro (señal) de Jesús grabado en el evangelio de Juan.',
+        verseSupport: 'Juan 2:1-11'
+    },
+    {
+        id: 'jua_dis_002',
+        question: '¿A quién le dijo Jesús que era necesario "nacer de nuevo"?',
+        options: ['Pedro', 'Nicodemo', 'Pilato', 'Zaqueo'],
+        correctIndex: 1,
+        difficulty: 2,
+        explanation: 'Nicodemo era un principal de los judíos que vino a Jesús de noche.',
+        verseSupport: 'Juan 3:3'
+    },
+    {
+        id: 'luc_dis_001',
+        question: '¿Qué parábola cuenta la historia de un hijo que malgaztó su herencia?',
+        options: ['El Sembrador', 'El Hijo Pródigo', 'La Moneda Perdida', 'El Buen Samaritano'],
+        correctIndex: 1,
+        difficulty: 2,
+        explanation: 'Muestra el amor y perdón incondicional del Padre hacia el pecador arrepentido.',
+        verseSupport: 'Lucas 15:11-32'
+    },
+    {
+        id: 'jua_dis_003',
+        question: '¿Cómo se llamaban las hermanas de Lázaro?',
+        options: ['María y Elizabeth', 'Marta y María', 'Raquel y Lea', 'Sara y Rebeca'],
+        correctIndex: 1,
+        difficulty: 2,
+        explanation: 'Lázaro vivía con sus hermanas Marta y María en Betania.',
+        verseSupport: 'Juan 11:1'
+    },
+    {
+        id: 'nt_dis_005',
+        question: '¿En qué monte se transfiguró Jesús delante de Pedro, Jacobo y Juan?',
+        options: ['Monte de los Olivos', 'Monte Sinaí', 'Un monte alto (tradicionalmente Tabor)', 'Monte Carmelo'],
+        correctIndex: 2,
+        difficulty: 2,
+        explanation: 'Su rostro resplandeció como el sol y sus vestidos blancos como la luz.',
+        verseSupport: 'Mateo 17:1-2'
+    },
+    {
+        id: 'nt_dis_006',
+        question: '¿Quién reconoció a Jesús como "el Cristo, el Hijo del Dios viviente"?',
+        options: ['Juan el Bautista', 'Simón Pedro', 'Mateo', 'Tomás'],
+        correctIndex: 1,
+        difficulty: 2,
+        explanation: 'Jesús le dijo que eso no se lo reveló carne ni sangre, sino el Padre.',
+        verseSupport: 'Mateo 16:16'
+    },
+    {
+        id: 'mat_dis_003',
+        question: '¿Cuántas bienaventuranzas principales mencionó Jesús en el Sermón del Monte?',
+        options: ['7', '8', '10', '12'],
+        correctIndex: 1,
+        difficulty: 2,
+        explanation: 'Aunque hay variaciones en el conteo, Mateo 5 lista 8 principales seguidas por una explicación.',
+        verseSupport: 'Mateo 5:3-11'
+    },
+    {
+        id: 'nt_dis_008',
+        question: '¿Qué animal usó Jesús para entrar en Jerusalén antes de ser crucificado?',
+        options: ['Un caballo blanco', 'Un pollino de asna', 'Un buey', 'Ninguno, entró a pie'],
+        correctIndex: 1,
+        difficulty: 2,
+        explanation: 'Entró humildemente sentado sobre un pollino, cumpliendo la profecía de Zacarías.',
+        verseSupport: 'Mateo 21:5'
+    },
+    {
+        id: 'nt_dis_009',
+        question: '¿Cuál fue el primer discípulo que llamó a su hermano para conocer a Jesús?',
+        options: ['Juan a Santiago', 'Felipe a Natanael', 'Andrés a Simón Pedro', 'Pedro a Andrés'],
+        correctIndex: 2,
+        difficulty: 2,
+        explanation: 'Andrés halló primero a su hermano Simón y le dijo: "Hemos hallado al Mesías".',
+        verseSupport: 'Juan 1:41'
+    },
+    {
+        id: 'mar_dis_001',
+        question: '¿Cómo se llamaba el ciego que gritaba "¡Hijo de David, ten misericordia de mí!"?',
+        options: ['Zaqueo', 'Bernabé', 'Bartimeo', 'Malco'],
+        correctIndex: 2,
+        difficulty: 2,
+        explanation: 'Era el hijo de Timeo y mendigaba junto al camino de Jericó.',
+        verseSupport: 'Marcos 10:46'
+    },
+
+    // NIVEL APÓSTOL (Avanzado)
+    {
+        id: 'nt_apo_001',
+        question: '¿Qué título puso Pilato en la cruz de Jesús y en qué idiomas?',
+        options: ['Jesús el Salvador (Hebreo y Latín)', 'Rey de los Judíos (Hebreo, Griego y Latín)', 'Cristo el Señor (Hebreo)', 'Mesías (Arameo)'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'El título era: JESÚS NAZARENO, REY DE LOS JUDÍOS, escrito en tres lenguas.',
+        verseSupport: 'Juan 19:19-20'
+    },
+    {
+        id: 'nt_apo_002',
+        question: '¿Cómo se llamaba el hombre que ayudó a Jesús a cargar la cruz?',
+        options: ['José de Arimatea', 'Simón de Cirene', 'Simón el Leproso', 'Nicodemo'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Simón de Cirene venía del campo y le obligaron a llevar la cruz en pos de Jesús.',
+        verseSupport: 'Lucas 23:26'
+    },
+    {
+        id: 'mar_apo_001',
+        question: '¿A qué dos discípulos se les llamó "Boanerges" (Hijos del Trueno)?',
+        options: ['Pedro y Andrés', 'Jacobo y Juan', 'Felipe y Bartolomé', 'Mateo y Tomás'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Jesús les dio este nombre probablemente por su temperamento impetuoso.',
+        verseSupport: 'Marcos 3:17'
+    },
+    {
+        id: 'jua_apo_001',
+        question: '¿Cuál de los evangelios enfatiza a Jesús como el Verbo eterno de Dios?',
+        options: ['Mateo', 'Marcos', 'Lucas', 'Juan'],
+        correctIndex: 3,
+        difficulty: 3,
+        explanation: 'Juan comienza con un prólogo teológico: "En el principio era el Verbo".',
+        verseSupport: 'Juan 1:1'
+    },
+    {
+        id: 'jua_apo_002',
+        question: '¿Quién era el sumo sacerdote que profetizó que conviene que un hombre muera por el pueblo?',
+        options: ['Anás', 'Caifás', 'Galamiel', 'Ananías'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Caifás profetizó esto no por sí mismo, sino por su cargo ese año.',
+        verseSupport: 'Juan 11:49-51'
+    },
+    {
+        id: 'luc_apo_001',
+        question: '¿En qué lugar sudó Jesús como grandes gotas de sangre mientras oraba?',
+        options: ['Gólgota', 'Getsemaní', 'Betania', 'Capernaúm'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Sucedió en el huerto de Getsemaní, al pie del monte de los Olivos.',
+        verseSupport: 'Lucas 22:44'
+    },
+    {
+        id: 'nt_apo_007',
+        question: '¿Qué discípulo dudó de la resurrección hasta que tocó las heridas de Jesús?',
+        options: ['Pedro', 'Juan', 'Tomás', 'Bartolomé'],
+        correctIndex: 2,
+        difficulty: 3,
+        explanation: 'Tomás (llamado Dídimo) dijo que no creería hasta ver la señal de los clavos.',
+        verseSupport: 'Juan 20:25'
+    },
+    {
+        id: 'nt_apo_008',
+        question: '¿Quién pidió el cuerpo de Jesús a Pilato para enterrarlo en su propio sepulcro?',
+        options: ['Nicodemo', 'José de Arimatea', 'Simón de Cirene', 'Juan el apóstol'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'José de Arimatea era un discípulo secreto por miedo a los judíos.',
+        verseSupport: 'Mateo 27:57'
+    },
+    {
+        id: 'jua_apo_003',
+        question: '¿Cuántas tinajas de piedra mandó llenar Jesús en las bodas de Caná?',
+        options: ['3', '6', '12', '7'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Eran seis tinajas de piedra, conforme al rito de la purificación de los judíos.',
+        verseSupport: 'Juan 2:6'
+    },
+    {
+        id: 'nt_apo_010',
+        question: '¿Qué palabras gritó Jesús en la cruz: "Eloi, Eloi, ¿lama sabactani?"?',
+        options: ['Te alabo Padre', 'Padre, perdónalos', 'Dios mío, Dios mío, ¿por qué me has desamparado?', 'Consumado es'],
+        correctIndex: 2,
+        difficulty: 3,
+        explanation: 'Palabras de angustia extrema citando el Salmo 22.',
+        verseSupport: 'Marcos 15:34'
+    },
+    {
+        id: 'nt_apo_011',
+        question: '¿Cómo se llamaba el padre de Juan el Bautista?',
+        options: ['Zacarías', 'Simeón', 'José', 'Heli'],
+        correctIndex: 0,
+        difficulty: 3,
+        explanation: 'Zacarías era un sacerdote de la clase de Abías.',
+        verseSupport: 'Lucas 1:5'
+    },
+    {
+        id: 'nt_apo_012',
+        question: '¿Qué apóstol era apodado "El Cananista" o "Zelote"?',
+        options: ['Judas', 'Simón', 'Tadeo', 'Felipe'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Simón el Zelote pertenecía probablemente a un grupo político-religioso ardiente.',
+        verseSupport: 'Lucas 6:15'
+    },
+    {
+        id: 'nt_apo_013',
+        question: '¿Quién fue el primer apóstol en ser martirizado (muerto por su fe)?',
+        options: ['Pedro', 'Jacobo (hijo de Zebedeo)', 'Andrés', 'Esteban (aunque era diácono)'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Herodes Agripa mató a espada a Jacobo, hermano de Juan.',
+        verseSupport: 'Hechos 12:2'
+    },
+    {
+        id: 'nt_apo_014',
+        question: '¿En qué río bautizaba Juan el Bautista debido a que había "muchas aguas"?',
+        options: ['Río Jordán', 'Enón junto a Salim', 'Río Éufrates', 'Mar Rojo'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Juan 3 menciona este lugar específico por su abundancia de agua.',
+        verseSupport: 'Juan 3:23'
+    },
+    {
+        id: 'nt_apo_015',
+        question: '¿A qué emperador romano se refiere Lucas al datar el ministerio de Juan el Bautista?',
+        options: ['César Augusto', 'Tiberio César', 'Nerón', 'Calígula'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Ocurrió en el año decimoquinto del imperio de Tiberio César.',
+        verseSupport: 'Lucas 3:1'
+    },
+    {
+        id: 'jua_dis_004',
+        question: '¿Qué discípulo era conocido como "el discípulo al que Jesús amaba"?',
+        options: ['Pedro', 'Juan', 'Santiago', 'Andrés'],
+        correctIndex: 1,
+        difficulty: 2,
+        explanation: 'Juan se describe a sí mismo de esta manera en su evangelio.',
+        verseSupport: 'Juan 21:20'
+    },
+    {
+        id: 'jua_apo_004',
+        question: '¿Cuántos días llevaba muerto Lázaro cuando Jesús llegó a Betania?',
+        options: ['1 día', '2 días', '3 días', '4 días'],
+        correctIndex: 3,
+        difficulty: 3,
+        explanation: 'Marta dijo: "Señor, hiede ya, porque es de cuatro días".',
+        verseSupport: 'Juan 11:39'
+    },
+    {
+        id: 'jua_gen_002',
+        question: '¿Qué dijo Jesús a la mujer samaritana que él le daría?',
+        options: ['Oro y plata', 'Agua viva', 'Pan del cielo', 'Un milagro'],
+        correctIndex: 1,
+        difficulty: 1,
+        explanation: 'Jesús le ofreció agua de la cual no volvería a tener sed.',
+        verseSupport: 'Juan 4:10'
+    },
+    {
+        id: 'hch_gen_001',
+        question: '¿En qué ciudad nació Saulo de Tarso (Pablo)?',
+        options: ['Damasco', 'Tarso', 'Antioquía', 'Jerusalén'],
+        correctIndex: 1,
+        difficulty: 1,
+        explanation: 'Pablo era un ciudadano romano nacido en Tarso de Cilicia.',
+        verseSupport: 'Hechos 22:3'
+    },
+    {
+        id: 'hch_dis_001',
+        question: '¿Quién fue elegido para reemplazar a Judas Iscariote como apóstol?',
+        options: ['Matías', 'Bernabé', 'Silas', 'Esteban'],
+        correctIndex: 0,
+        difficulty: 2,
+        explanation: 'Echaron suertes y la suerte cayó sobre Matías.',
+        verseSupport: 'Hechos 1:26'
+    },
+    {
+        id: 'hch_apo_001',
+        question: '¿Cómo se llamaba la pareja que murió por mentir al Espíritu Santo sobre su ofrenda?',
+        options: ['Aquila y Priscila', 'Ananías y Safira', 'Félix y Drusila', 'Andrónico y Junias'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Mintieron sobre el precio de la propiedad que vendieron.',
+        verseSupport: 'Hechos 5:1-10'
+    },
+    {
+        id: 'hch_dis_002',
+        question: '¿Qué diácono explicó las escrituras al etíope eunuco en su carro?',
+        options: ['Esteban', 'Felipe', 'Procoro', 'Nicolás'],
+        correctIndex: 1,
+        difficulty: 2,
+        explanation: 'Felipe se acercó al carro y le anunció el evangelio de Jesús.',
+        verseSupport: 'Hechos 8:35'
+    },
+    {
+        id: 'hch_apo_002',
+        question: '¿A qué mujer resucitó Pedro en la ciudad de Jope?',
+        options: ['Lidia', 'Tabita (Dorcas)', 'Priscila', 'Febe'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Ella abundaba en buenas obras y limosnas.',
+        verseSupport: 'Hechos 9:36-40'
+    },
+    {
+        id: 'hch_dis_003',
+        question: '¿En qué ciudad llamaron a Pablo "Hermes" y a Bernabé "Júpiter"?',
+        options: ['Listra', 'Iconio', 'Derbe', 'Pafos'],
+        correctIndex: 0,
+        difficulty: 2,
+        explanation: 'Después de que Pablo sanó a un cojo, la multitud pensó que eran dioses.',
+        verseSupport: 'Hechos 14:11-12'
+    },
+    {
+        id: 'hch_gen_002',
+        question: '¿Quién escribió la mayoría de las epístolas del Nuevo Testamento?',
+        options: ['Pedro', 'Juan', 'Santiago', 'Pablo'],
+        correctIndex: 3,
+        difficulty: 1,
+        explanation: 'El apóstol Pablo escribió 13 o 14 libros del Nuevo Testamento.',
+        verseSupport: '-'
+    },
+    {
+        id: 'hch_dis_004',
+        question: '¿Qué joven cayó de una ventana mientras Pablo predicaba un largo discurso?',
+        options: ['Eutico', 'Timoteo', 'Tito', 'Onésimo'],
+        correctIndex: 0,
+        difficulty: 2,
+        explanation: 'Eutico se durmió y cayó del tercer piso, pero fue levantado vivo.',
+        verseSupport: 'Hechos 20:9-12'
+    },
+    {
+        id: 'jua_dis_005',
+        question: '¿Cuántas veces le preguntó Jesús a Pedro "¿Me amas?" después de resucitar?',
+        options: ['1 vez', '2 veces', '3 veces', '7 veces'],
+        correctIndex: 2,
+        difficulty: 2,
+        explanation: 'Jesús lo restauró tras sus tres negaciones antes de la crucifixión.',
+        verseSupport: 'Juan 21:17'
+    },
+    {
+        id: 'hch_dis_005',
+        question: '¿A qué ciudad se dirigía Saulo cuando vio la luz brillante del cielo?',
+        options: ['Jerusalén', 'Damasco', 'Roma', 'Éfeso'],
+        correctIndex: 1,
+        difficulty: 2,
+        explanation: 'Saulo iba a Damasco con cartas para arrestar cristianos.',
+        verseSupport: 'Hechos 9:3'
+    },
+    {
+        id: 'jua_apo_005',
+        question: '¿Qué líquido salió del costado de Jesús cuando el soldado le abrió con la lanza?',
+        options: ['Solo Sangre', 'Solo Agua', 'Sangre y Agua', 'Aceite'],
+        correctIndex: 2,
+        difficulty: 3,
+        explanation: 'Al instante salió sangre y agua del costado de Jesús.',
+        verseSupport: 'Juan 19:34'
+    },
+    {
+        id: 'mat_apo_011',
+        question: '¿Qué nombre recibió el campo comprado con las 30 piezas de plata de Judas?',
+        options: ['Campo de Paz', 'Acéldama (Campo de Sangre)', 'Valle de Cedrón', 'Campo del Alfarero'],
+        correctIndex: 1,
+        difficulty: 3,
+        explanation: 'Acéldama en su propia lengua quiere decir Campo de Sangre.',
+        verseSupport: 'Hechos 1:19'
+    }
 ];
+
+

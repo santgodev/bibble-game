@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import { getEvolutionaryAvatar } from '../utils/avatarUtils';
 
 // ─── Design tokens ────────────────────────────────────────
 const GOLD = '#D4AF37';
@@ -69,8 +70,7 @@ const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
         }).start();
     }, [progress]);
 
-    const avatarSeed = userStats?.username || 'default';
-    const avatarUri = `https://api.dicebear.com/7.x/bottts/png?seed=${avatarSeed}&backgroundColor=transparent`;
+    const avatarUri = getEvolutionaryAvatar(userStats?.username || 'jugador', userStats?.total_xp || 0);
 
     return (
         <LinearGradient
@@ -248,10 +248,8 @@ const RankRow = ({ item, index, isMe, isGlobal }: any) => {
     const sub = isGlobal && item.city ? item.city : (isGlobal ? '' : '');
     const score = isGlobal ? (item.total_church_trophies || 0) : (item.total_trophies || 0);
     const xp = !isGlobal ? (item.total_xp || 0) : null;
-    const level = !isGlobal ? getLevel(item.total_xp || 0) : null;
-
-    const avatarSeed = isGlobal ? item.church_name : item.username;
-    const avatarUri = `https://api.dicebear.com/7.x/bottts/png?seed=${avatarSeed}`;
+    const level = !isGlobal ? Math.floor(Math.sqrt((item.total_xp || 0) / 50)) + 1 : null;
+    const avatarUri = getEvolutionaryAvatar(isGlobal ? item.church_name : item.username, isGlobal ? 0 : item.total_xp || 0);
 
     return (
         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -429,6 +427,12 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </LinearGradient>
 
+                {/* Season Countdown */}
+                <View style={s.seasonCard}>
+                    <Ionicons name="time-outline" size={14} color={GOLD} />
+                    <Text style={s.seasonText}>TEMPORADA DE CUARESMA: FINALIZA EN 5 DÍAS</Text>
+                </View>
+
                 {/* Profile Hero */}
                 {userStats && (
                     <ProfileHeroCard
@@ -575,4 +579,11 @@ const s = StyleSheet.create({
     },
     guideTitle: { color: '#fff', fontSize: 15, fontWeight: '800' },
     guideSub: { color: '#555', fontSize: 12, marginTop: 2 },
+    seasonCard: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: 'rgba(212, 175, 55, 0.05)', marginHorizontal: 16,
+        paddingVertical: 10, borderRadius: 12, marginBottom: 20,
+        borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.1)'
+    },
+    seasonText: { color: GOLD, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
 });

@@ -129,15 +129,17 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                 <View style={styles.rewardsContainer}>
                     {showRewards && (
                         <>
-                            <Animated.View style={[styles.rewardBadge, { transform: [{ scale: xpBadgeScale }], backgroundColor: 'rgba(255,255,255,0.08)' }]}>
-                                <Ionicons name="flash" size={20} color="#FFD700" />
-                                <AppText style={styles.rewardValue}>+{displayXP} XP</AppText>
+                            <Animated.View style={[styles.rewardBadgePremium, { transform: [{ scale: xpBadgeScale }] }]}>
+                                <LinearGradient colors={['#FFD700', '#B8860B']} style={styles.badgeGlow} />
+                                <Ionicons name="flash" size={20} color="#000" />
+                                <AppText style={styles.rewardValuePremium}>+{displayXP} XP</AppText>
                             </Animated.View>
 
                             {rewards.trophies > 0 && (
-                                <Animated.View style={[styles.rewardBadge, { transform: [{ scale: trophyBadgeScale }], backgroundColor: 'rgba(255,255,255,0.08)' }]}>
-                                    <Ionicons name="trophy" size={20} color="#FFD700" />
-                                    <AppText style={styles.rewardValue}>+{rewards.trophies} Trofeos</AppText>
+                                <Animated.View style={[styles.rewardBadgePremium, { transform: [{ scale: trophyBadgeScale }], marginLeft: 10 }]}>
+                                    <LinearGradient colors={['#FFD700', '#D4AF37']} style={[styles.badgeGlow, { opacity: 0.8 }]} />
+                                    <Ionicons name="trophy" size={20} color="#000" />
+                                    <AppText style={styles.rewardValuePremium}>+{rewards.trophies} Trofeos</AppText>
                                 </Animated.View>
                             )}
                         </>
@@ -256,6 +258,30 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '900',
+    },
+    rewardBadgePremium: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 25,
+        gap: 8,
+        overflow: 'hidden',
+        elevation: 10,
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    badgeGlow: {
+        ...StyleSheet.absoluteFillObject,
+        opacity: 0.9,
+    },
+    rewardValuePremium: {
+        color: '#000',
+        fontSize: 18,
+        fontWeight: '900',
+        zIndex: 1,
     },
     actions: {
         width: '100%',
