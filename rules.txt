@@ -1,0 +1,313 @@
+# 📜 REGLAS DEL SISTEMA — MOTOR DE JUEGO BÍBLICO
+
+---
+
+## 🎯 PROPÓSITO
+
+Este archivo define las reglas obligatorias para la generación de contenido del juego bíblico.
+
+La IA debe usar este archivo como única guía para:
+
+* Cantidad de contenido
+* Formato
+* Niveles
+* Lógica de cada modo
+
+---
+
+## 📖 FUENTE DE DATOS (OBLIGATORIO)
+
+Todo el contenido debe basarse exclusivamente en, segun el libro que te este pidiendo, o categoria...:
+
+* Antiguo Testamento → `/root/antiguo_testamento`
+* Nuevo Testamento → `/root/nuevo_testamento`
+
+❌ Prohibido:
+
+* Tradiciones externas
+* Interpretaciones sin respaldo
+* Contenido inventado
+
+---
+
+## 🧠 PRINCIPIO FUNDAMENTAL
+
+Todo contenido debe responder:
+
+> “¿Dónde está esto en la Biblia?”
+
+Si no hay respaldo bíblico → NO generar.
+
+---
+
+## 📊 SISTEMA GLOBAL DE NIVELES
+
+| Nivel | Nombre       | Porcentaje |
+| ----- | ------------ | ---------- |
+| 1     | 🌱 Semilla   | 40%        |
+| 2     | 👣 Discípulo | 35%        |
+| 3     | 🔥 Apóstol   | 25%        |
+
+---
+
+## 🎮 MODOS DE JUEGO
+
+---
+
+# 🧠 1. TRIVIA (TriviaQuestion)
+
+## 📦 FORMATO
+
+```json
+{
+  "id": "string",
+  "question": "string",
+  "options": ["string", "string", "string", "string"],
+  "correctIndex": number,
+  "difficulty": number,
+  "explanation": "string",
+  "verseSupport": "string"
+}
+```
+
+---
+
+## 🔢 CANTIDAD OBLIGATORIA
+
+* Generar **120 preguntas por categoría o libro**
+
+---
+
+## 📊 DISTRIBUCIÓN DE DIFICULTAD
+
+* 50 preguntas → Nivel 1 (Semilla)
+* 40 preguntas → Nivel 2 (Discípulo)
+* 30 preguntas → Nivel 3 (Apóstol)
+
+---
+
+## 📏 REGLAS
+
+* EXACTAMENTE 4 opciones
+* 1 sola respuesta correcta
+* `correctIndex` entre 0 y 3
+
+⚠️ IMPORTANTE:
+
+* La respuesta correcta NO debe ser siempre la más larga
+* Evitar patrones (ej: siempre opción C)
+
+---
+
+## 🧠 CONTENIDO
+
+* Basado directamente en la Escritura
+* Si es teológica → debe tener respaldo bíblico claro
+
+---
+
+## 🆔 ID
+
+Formato:
+
+* `{abreviaturaLibro}_{numero}`
+
+Ej:
+
+* gen_001
+* exo_045
+
+---
+
+---
+
+# 🕵️ 2. IMPOSTOR (WordItem)
+
+## 📦 FORMATO
+
+```json
+{
+  "id": "string",
+  "word": "string",
+  "difficulty": number,
+  "verseRef": "string",
+  "description": "string",
+  "impostorHints": ["string"]
+}
+```
+
+---
+
+## 🔢 CANTIDAD OBLIGATORIA
+
+* Generar **50 palabras por categoría o libro**
+
+---
+
+## 📊 DISTRIBUCIÓN
+
+* 20 → Nivel 1
+* 20 → Nivel 2
+* 10 → Nivel 3
+
+---
+
+## 📏 REGLAS
+
+* `word` debe ser:
+
+  * Personaje
+  * Evento
+  * Concepto bíblico
+
+* `description`:
+
+  * Basada en la Biblia
+  * Clara
+
+---
+
+## 💡 HINTS
+
+* Solo en nivel 1
+* Deben orientar sin revelar directamente
+
+---
+
+---
+
+# 🎭 3. CHARADAS (CharadaCard)
+
+## 📦 FORMATO
+
+```json
+{
+  "word": "string",
+  "verse": "string",
+  "description": "string",
+  "mime": "string",
+  "difficulty": number,
+  "category": "string",
+  "oldTestament": [{ "ref": "string", "text": "string" }],
+  "symbology": [{ "item": "string", "meaning": "string" }]
+}
+```
+
+---
+
+## 🔢 CANTIDAD OBLIGATORIA
+
+* Generar **50 charadas por categoría o libro**
+
+---
+
+## 📊 DISTRIBUCIÓN
+
+* 20 → Nivel 1
+* 20 → Nivel 2
+* 10 → Nivel 3
+
+---
+
+## 📏 REGLAS
+
+* `word` debe ser bíblica
+* `description` clara
+* `mime` actuable
+
+---
+
+## 🎬 MÍMICA
+
+* NO decir nombres directamente
+* Debe poder representarse físicamente
+* Debe ser identificable
+
+---
+
+## 📖 oldTestament
+
+* Usar solo si hay conexión con NT
+
+---
+
+## 🔥 symbology
+
+* Usar para significado teológico
+
+---
+
+---
+
+# 🧪 VALIDACIÓN GLOBAL (OBLIGATORIA)
+
+Antes de generar cualquier elemento:
+
+* ✔ Está en la Biblia
+* ✔ Tiene referencia
+* ✔ No es ambiguo
+* ✔ Tiene 1 sola respuesta correcta (si aplica)
+* ✔ Nivel correcto
+
+---
+
+# 🔁 CONSISTENCIA
+
+* No repetir preguntas o palabras
+* Mantener coherencia doctrinal
+* Mezclar AT y NT si no se especifica
+
+---
+
+# 🚫 PROHIBICIONES
+
+No generar:
+
+* Contenido inventado
+* Preguntas sin respaldo
+* Opciones absurdas
+* Respuestas ambiguas
+
+---
+
+# 🧱 PRINCIPIO FINAL
+
+Este sistema debe:
+
+* Enseñar Biblia real
+* Ser progresivo
+* Mantener fidelidad doctrinal
+
+---
+
+## 🔥 REGLA SUPREMA
+
+> Biblia > creatividad
+> Precisión > cantidad
+
+---
+
+# 🧠 MODO DE USO FINAL
+
+El usuario solo debe indicar:
+
+* modo (trivia | impostor | charadas)
+* categoría
+* libro (opcional)
+
+Y la IA debe:
+
+✔ Aplicar cantidades automáticamente
+✔ Aplicar niveles automáticamente
+✔ Generar contenido válido
+
+---
+
+# 🚀 FIN DEL ARCHIVO
+
+#para cualquiera que sea el juego,
+crea un archivo si no existe, para esa categoria...
+generando una estructura organizada... por carpetas
+cada categoria debe tener su propia carpeta, de manera que el 
+proyecto pueda crecer organizadamente, si esta actualmente
+desorganizado, organizalo ahora

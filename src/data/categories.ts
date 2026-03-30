@@ -132,7 +132,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
                 color: '#4CAF50',
                 difficulty: 1,
                 trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('gen')),
-                words: WORDS_PENTATEUCO.filter(w => typeof w === 'object' && (w as any).id?.startsWith('gen'))
+                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('gen'))
             },
             {
                 id: 'pent_exodo',
@@ -142,7 +142,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
                 color: '#F44336',
                 difficulty: 2,
                 trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('exo')),
-                words: WORDS_PENTATEUCO.filter(w => typeof w === 'object' && (w as any).id?.startsWith('exo'))
+                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('exo'))
             },
             {
                 id: 'pent_levitico',
@@ -152,7 +152,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
                 color: '#FF9800',
                 difficulty: 3,
                 trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('lev')),
-                words: WORDS_PENTATEUCO.filter(w => typeof w === 'object' && (w as any).id?.startsWith('lev'))
+                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('lev'))
             },
             {
                 id: 'pent_numeros',
@@ -162,7 +162,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
                 color: '#2196F3',
                 difficulty: 2,
                 trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('num')),
-                words: WORDS_PENTATEUCO.filter(w => typeof w === 'object' && (w as any).id?.startsWith('num'))
+                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('num'))
             },
             {
                 id: 'pent_deuteronomio',
@@ -172,7 +172,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
                 color: '#9C27B0',
                 difficulty: 2,
                 trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('deu')),
-                words: WORDS_PENTATEUCO.filter(w => typeof w === 'object' && (w as any).id?.startsWith('deu'))
+                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('deu'))
             }
         ],
         trivia: TRIVIA_PENTATEUCO,
