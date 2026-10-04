@@ -4,13 +4,13 @@
     "slug": "berea",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/icon-light.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/icon-light.png",
       "resizeMode": "contain",
-      "backgroundColor": "#050505"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
@@ -25,8 +25,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
-        "backgroundColor": "#121212"
+        "foregroundImage": "./assets/icon-light.png",
+        "backgroundColor": "#FFFFFF"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -59,7 +59,8 @@
         }
       ],
       "expo-screen-orientation",
-      "expo-localization"
+      "expo-localization",
+      "expo-status-bar"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

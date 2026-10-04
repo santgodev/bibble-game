@@ -1,3 +1,4 @@
+import { GlassBackground, GlassSheen } from '../components/Glass';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated, Easing, useWindowDimensions, ScrollView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,37 +11,37 @@ import { TriviaQuestion } from '../data/categories';
 import { theme } from '../theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CORRECT_COLOR = '#27AE60';
-const WRONG_COLOR = '#E74C3C';
+const CORRECT_COLOR = '#217A59';
+const WRONG_COLOR = '#B34360';
 
 export const TriviaGameScreen = ({ navigation, route }: any) => {
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
     const { playSound, playHaptic, setVolumeModifier, pauseMusic, resumeMusic } = useSound();
 
-    const { 
-        categoryObj, 
-        questions: initialQuestions, 
+    const {
+        categoryObj,
+        questions: initialQuestions,
         duration = 60,
         difficulty = 1,
         limit = 15
     } = route.params || {};
 
-    const primaryColor = categoryObj?.color || theme.colors.primary;
-    const themeGradients = categoryObj?.gradientColors || ['#1A1A2E', '#16213E', '#1A1A2E'];
+    const primaryColor = theme.colors.secondary;
+    const themeGradients = categoryObj?.gradientColors || ["#D1E2DA", "#D1E2DA", "#D1E2DA"];
 
     const [questions, setQuestions] = useState<TriviaQuestion[]>([]);
     const [currentQIndex, setCurrentQIndex] = useState(0);
     const [score, setScore] = useState(0);
     const [gameStatus, setGameStatus] = useState<'READY' | 'PLAYING' | 'FEEDBACK' | 'FINISHED'>('READY');
-    
+
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
     const cardScale = useRef(new Animated.Value(0.95)).current;
     const cardOpacity = useRef(new Animated.Value(0)).current;
     const readyPulse = useRef(new Animated.Value(1)).current;
-    
+
     const onTimeEnd = () => handleGameFinish(score, currentQIndex);
     const { timeLeft, startTimer, stopTimer, resetTimer } = useGameTimer(duration, onTimeEnd);
 
@@ -55,10 +56,10 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
                 try {
                     const seenStr = await AsyncStorage.getItem('seen_trivia_ids');
                     let seenIds: string[] = seenStr ? JSON.parse(seenStr) : [];
-                    
+
                     // Filtrar las que NO se han visto
                     let available = filtered.filter((q: TriviaQuestion) => !seenIds.includes(q.id!));
-                    
+
                     // Si quedan muy pocas (ej: < 5), reiniciamos el historial para que el juego siga fluyendo
                     if (available.length < 5) {
                         available = filtered;
@@ -126,7 +127,7 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
 
     const handleAnswer = (optionIdx: number) => {
         if (gameStatus !== 'PLAYING') return;
-        
+
         setSelectedOption(optionIdx);
         const q = questions[currentQIndex];
         if (!q) return;
@@ -168,7 +169,7 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
             const playedIds = questions.slice(0, currentQIndex + 1).map(q => q.id);
             const seenStr = await AsyncStorage.getItem('seen_trivia_ids');
             let seenIds: string[] = seenStr ? JSON.parse(seenStr) : [];
-            
+
             // Combinar y guardar unívocamente (últimas 200 para no sobrecargar)
             const updatedSeenIds = Array.from(new Set([...seenIds, ...playedIds])).slice(-200);
             await AsyncStorage.setItem('seen_trivia_ids', JSON.stringify(updatedSeenIds));
@@ -192,11 +193,11 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
     if (gameStatus === 'READY' || questions.length === 0) {
         return (
             <View style={s.container}>
-                <LinearGradient colors={themeGradients} style={StyleSheet.absoluteFillObject} />
-                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+                <GlassBackground />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.55)" }]} />
                 <View style={s.centered}>
                     <ActivityIndicator size="large" color={primaryColor} />
-                    <AppText style={{ color: '#fff', marginTop: 20 }}>Preparando Trivia...</AppText>
+                    <AppText style={{ color: "#2D3043", marginTop: 20 }}>Preparando Trivia...</AppText>
                 </View>
             </View>
         );
@@ -205,7 +206,7 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
     if (gameStatus === 'FINISHED') {
         return (
             <View style={s.container}>
-                <LinearGradient colors={themeGradients} style={StyleSheet.absoluteFillObject} />
+                <GlassBackground />
                 <View style={s.centered}>
                     <Ionicons name="checkmark-circle" size={80} color={primaryColor} />
                     <AppText variant="header" style={[s.title, { marginTop: 20 }]} numberOfLines={1} adjustsFontSizeToFit>¡Trivia Completada!</AppText>
@@ -220,19 +221,19 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={s.container}>
-            <LinearGradient colors={themeGradients} style={StyleSheet.absoluteFillObject} />
-            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.4)' }]} />
+            <GlassBackground />
+            {/* Removed the extra full-screen translucent layer to reduce GPU overdraw */ }
 
             <View style={[s.header, { paddingTop: insets.top + 10 }]}>
                 <View style={[s.progressBadge, { backgroundColor: primaryColor + '30' }]}>
                     <AppText style={[s.progressText, { color: primaryColor }]}>{currentQIndex + 1} / {questions.length}</AppText>
                 </View>
                 <View style={[s.timerChip, timeLeft <= 10 && { borderColor: WRONG_COLOR, backgroundColor: WRONG_COLOR + '20' }]}>
-                    <Ionicons name="timer-outline" size={16} color={timeLeft <= 10 ? WRONG_COLOR : '#fff'} />
+                    <Ionicons name="timer-outline" size={16} color={timeLeft <= 10 ? WRONG_COLOR : "#2D3043"} />
                     <AppText style={[s.timerText, timeLeft <= 10 && { color: WRONG_COLOR }]}>{timeLeft}s</AppText>
                 </View>
-                <TouchableOpacity onPress={() => handleGameFinish(score, currentQIndex)} style={s.closeIcon}>
-                    <Ionicons name="close" size={24} color="#fff" />
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Terminar partida" onPress={() => handleGameFinish(score, currentQIndex)} style={s.closeIcon}>
+                    <Ionicons name="close" size={24} color="#2D3043" />
                 </TouchableOpacity>
             </View>
 
@@ -257,20 +258,21 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
                                 if (idx === q.correctIndex) {
                                     btnStyle.push({ backgroundColor: CORRECT_COLOR, borderColor: CORRECT_COLOR });
                                     textStyle = s.optionTextSelected;
-                                    icon = <Ionicons name="checkmark-circle" size={20} color="#fff" />;
+                                    icon = <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />;
                                 } else if (idx === selectedOption) {
                                     btnStyle.push({ backgroundColor: WRONG_COLOR, borderColor: WRONG_COLOR });
                                     textStyle = s.optionTextSelected;
-                                    icon = <Ionicons name="close-circle" size={20} color="#fff" />;
+                                    icon = <Ionicons name="close-circle" size={20} color="#FFFFFF" />;
                                 } else {
                                     btnStyle.push({ opacity: 0.3 });
                                 }
                             }
 
                             return (
-                                <TouchableOpacity 
-                                    key={idx} 
-                                    style={btnStyle} 
+                                <TouchableOpacity
+                                    accessibilityRole="button"
+                                    key={idx}
+                                    style={btnStyle}
                                     onPress={() => handleAnswer(idx)}
                                     disabled={gameStatus !== 'PLAYING'}
                                     activeOpacity={0.7}
@@ -285,16 +287,16 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
                     {gameStatus === 'FEEDBACK' && (
                         <View style={s.feedbackCard}>
                             <View style={s.feedbackHeader}>
-                                <Ionicons 
-                                    name={isCorrect ? "happy" : "alert-circle"} 
-                                    size={24} 
-                                    color={isCorrect ? CORRECT_COLOR : WRONG_COLOR} 
+                                <Ionicons
+                                    name={isCorrect ? "happy" : "alert-circle"}
+                                    size={24}
+                                    color={isCorrect ? CORRECT_COLOR : WRONG_COLOR}
                                 />
                                 <AppText style={[s.feedbackTitle, { color: isCorrect ? CORRECT_COLOR : WRONG_COLOR }]}>
                                     {isCorrect ? '¡Excelente!' : '¡Sigue aprendiendo!'}
                                 </AppText>
                             </View>
-                            
+
                             {q.explanation && <AppText style={s.explanation}>{q.explanation}</AppText>}
                             {q.verseSupport && (
                                 <View style={[s.verseBox, { borderColor: primaryColor + '30' }]}>
@@ -302,9 +304,9 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
                                 </View>
                             )}
 
-                            <TouchableOpacity style={[s.nextQuestionBtn, { backgroundColor: primaryColor }]} onPress={nextQuestion}>
+                            <TouchableOpacity accessibilityRole="button" style={[s.nextQuestionBtn, { backgroundColor: primaryColor }]} onPress={nextQuestion}>
                                 <AppText style={s.nextQuestionBtnText}>Siguiente</AppText>
-                                <Ionicons name="arrow-forward" size={20} color="#000" />
+                                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
                     )}
@@ -315,40 +317,40 @@ export const TriviaGameScreen = ({ navigation, route }: any) => {
 };
 
 const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#000' },
+    container: { flex: 1, backgroundColor: "#EAE5E0" },
     centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
     readyIconBox: { width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
     titleContainer: { width: '100%', height: 60, justifyContent: 'center', alignItems: 'center' },
     title: { fontSize: 36, fontWeight: '900', textAlign: 'center', lineHeight: 44 },
-    subtitle: { fontSize: 18, color: 'rgba(255,255,255,0.6)', marginTop: 8, fontWeight: '700' },
-    readyDivider: { width: 60, height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, marginVertical: 40 },
-    startBtn: { height: 64, borderRadius: 32, paddingHorizontal: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
-    startBtnText: { color: '#000', fontSize: 20, fontWeight: '900' },
+    subtitle: { fontSize: 18, color: "#636477", marginTop: 8, fontWeight: '700' },
+    readyDivider: { width: 60, height: 4, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 2, marginVertical: 40 },
+    startBtn: { height: 64, borderRadius: 32, paddingHorizontal: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: "#3E4C45", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 10, elevation: 5 },
+    startBtnText: { color: "#2D3043", fontSize: 20, fontWeight: '900' },
     backBtn: { marginTop: 30 },
-    backBtnText: { color: 'rgba(255,255,255,0.4)', fontSize: 16, fontWeight: '600' },
+    backBtnText: { color: "#636477", fontSize: 16, fontWeight: '600' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 15, zIndex: 10 },
     progressBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15 },
     progressText: { fontSize: 13, fontWeight: '900' },
-    timerChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-    timerText: { color: '#fff', fontSize: 16, fontWeight: '900' },
+    timerChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: "rgba(255,255,255,0.55)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, borderWidth: 1, borderColor: "rgba(255,255,255,0.82)" },
+    timerText: { color: "#2D3043", fontSize: 16, fontWeight: '900' },
     closeIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
     scrollContent: { paddingBottom: 80, paddingHorizontal: 20 },
     cardWrapper: { width: '100%', marginTop: 10 },
-    questionCard: { backgroundColor: 'rgba(255,255,255,0.1)', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', marginBottom: 15 },
+    questionCard: { backgroundColor: "rgba(255,255,255,0.75)", padding: 24, borderRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.9)", marginBottom: 15, shadowColor: "#3E4C45", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
     diffTag: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginBottom: 15 },
     diffText: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-    questionText: { color: '#fff', fontSize: 24, fontWeight: '800', lineHeight: 32 },
+    questionText: { color: "#2D3043", fontSize: 24, fontWeight: '800', lineHeight: 32 },
     optionsGrid: { gap: 12 },
-    optionBtn: { height: 60, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
-    optionText: { flex: 1, color: '#fff', fontSize: 18, fontWeight: '700' },
-    optionTextSelected: { flex: 1, color: '#fff', fontSize: 18, fontWeight: '900' },
-    feedbackCard: { marginTop: 15, backgroundColor: 'rgba(255,255,255,0.12)', padding: 18, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+    optionBtn: { minHeight: 64, paddingVertical: 14, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.48)", borderWidth: 1, borderColor: "rgba(255,255,255,0.82)", flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
+    optionText: { flex: 1, color: "#2D3043", fontSize: 18, fontWeight: '700' },
+    optionTextSelected: { flex: 1, color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+    feedbackCard: { marginTop: 15, backgroundColor: "rgba(255,255,255,0.85)", padding: 22, borderRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.95)", shadowColor: "#3E4C45", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
     feedbackHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 15 },
     feedbackTitle: { fontSize: 22, fontWeight: '900' },
-    explanation: { color: '#ddd', fontSize: 16, lineHeight: 24, marginBottom: 15 },
-    verseBox: { padding: 12, borderLeftWidth: 3, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 8, marginBottom: 20 },
+    explanation: { color: "#2D3043", fontSize: 16, lineHeight: 24, marginBottom: 15 },
+    verseBox: { padding: 12, borderLeftWidth: 3, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 8, marginBottom: 20 },
     verseText: { fontSize: 15, fontWeight: '700', fontStyle: 'italic' },
     nextQuestionBtn: { height: 60, borderRadius: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    nextQuestionBtnText: { color: '#000', fontSize: 18, fontWeight: '900' },
-    statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 16, marginTop: 10 }
+    nextQuestionBtnText: { color: "#FFFFFF", fontSize: 18, fontWeight: '900' },
+    statLabel: { color: "#636477", fontSize: 16, marginTop: 10 }
 });

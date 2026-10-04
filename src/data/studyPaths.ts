@@ -79,7 +79,7 @@ export const JESUS_REAL_PATH: StudyPath = {
     book: 'Evangelio de Juan',
     description: 'Conoce al Jesús real: el Dios que entró a la historia, transformó vidas y sigue vivo.',
     color: '#0D001A',
-    accentColor: '#C89FFF',
+    accentColor: '#68A877',
     iconName: 'star-outline',
     totalWeeks: 4,
     weeks: [

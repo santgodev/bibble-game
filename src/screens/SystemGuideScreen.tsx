@@ -1,3 +1,4 @@
+import { GlassBackground } from '../components/Glass';
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,7 +36,8 @@ export const SystemGuideScreen = ({ navigation }: any) => {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="light-content" backgroundColor="#050505" />
+            <GlassBackground />
+            <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
 
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
@@ -59,7 +61,7 @@ export const SystemGuideScreen = ({ navigation }: any) => {
                 <GuidelineCard
                     icon="trophy-outline"
                     title="Trofeos (Copas)"
-                    color="#FFB800"
+                    color="#9562BC"
                     description="Definen tu posición mensual. Se consiguen ganando y teniendo disciplina en tus misiones."
                     tasks={[
                         { text: 'Ganar charadas en grupo', reward: '+10 Trofeos' },
@@ -89,32 +91,32 @@ export const SystemGuideScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#050505' },
+    container: { flex: 1, backgroundColor: "#EAE5E0" },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: 20, paddingVertical: 14,
-        borderBottomWidth: 1, borderBottomColor: '#111',
+        borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.82)",
     },
     headerTitleContainer: { flex: 1, alignItems: 'center' },
-    headerTitle: { color: '#fff', fontSize: 13, fontWeight: '800', letterSpacing: 3 },
+    headerTitle: { color: "#2D3043", fontSize: 13, fontWeight: '800', letterSpacing: 3 },
     headerSub: { color: theme.colors.primary, fontSize: 11, marginTop: 4, fontWeight: '600' },
     iconBtn: {
         width: 40, height: 40, borderRadius: 12,
-        backgroundColor: '#111', alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: '#1A1A1A',
+        backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1, borderColor: '#FFFFFFCC',
     },
     scrollContent: { padding: 20 },
     introBox: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#0A0A0A',
+        flexDirection: 'row', alignItems: 'center', backgroundColor: "rgba(255,255,255,0.52)",
         borderRadius: 16, padding: 20, marginBottom: 24,
-        borderWidth: 1, borderColor: '#1A1A1A',
+        borderWidth: 1, borderColor: '#FFFFFFCC',
     },
     introText: {
-        color: '#888', flex: 1, marginLeft: 16, fontSize: 13, lineHeight: 22,
+        color: "#636477", flex: 1, marginLeft: 16, fontSize: 13, lineHeight: 22,
     },
     card: {
-        backgroundColor: '#0A0A0A', borderRadius: 20, padding: 24,
-        marginBottom: 20, borderWidth: 1, borderColor: '#1A1A1A',
+        backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 20, padding: 24,
+        marginBottom: 20, borderWidth: 1, borderColor: '#FFFFFFCC',
     },
     cardHeader: {
         flexDirection: 'row', alignItems: 'center', marginBottom: 24,
@@ -123,8 +125,8 @@ const styles = StyleSheet.create({
         width: 56, height: 56, borderRadius: 16,
         alignItems: 'center', justifyContent: 'center',
     },
-    cardTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
-    cardDesc: { color: '#666', fontSize: 12, marginTop: 6, lineHeight: 18 },
+    cardTitle: { color: "#2D3043", fontSize: 18, fontWeight: '800' },
+    cardDesc: { color: "#636477", fontSize: 12, marginTop: 6, lineHeight: 18 },
     tasksContainer: {
         gap: 12, borderTopWidth: 1, borderTopColor: '#151515', paddingTop: 20,
     },
@@ -132,10 +134,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center',
     },
     dot: {
-        width: 6, height: 6, borderRadius: 3, backgroundColor: '#333', marginRight: 12,
+        width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.52)", marginRight: 12,
     },
     taskText: {
-        color: '#ddd', fontSize: 14, flex: 1, fontWeight: '600',
+        color: "#2D3043", fontSize: 14, flex: 1, fontWeight: '600',
     },
     rewardBadge: {
         paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,

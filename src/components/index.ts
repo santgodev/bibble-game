@@ -4,3 +4,5 @@ export * from './Card';
 export * from './Container';
 export * from './CameraManager';
 export * from './Confetti';
+
+export * from './Glass';

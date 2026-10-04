@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ViewStyle, StyleSheet, StatusBar, StyleProp } from 'react-native';
 import { SafeAreaView, SafeAreaViewProps } from 'react-native-safe-area-context';
+import { GlassBackground } from './Glass';
 import { useTheme } from '../context/ThemeContext';
 
 interface ContainerProps extends SafeAreaViewProps {
@@ -31,6 +32,7 @@ export const Container: React.FC<ContainerProps> = ({
             {...props}
         >
             <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+            <GlassBackground />
             {children}
         </SafeAreaView>
     );

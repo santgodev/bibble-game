@@ -15,8 +15,8 @@ const COLORS = [
     '#ffffff', // White
     '#E8D5A3', // Sandy
     '#C0A96E', // Dark Gold
-    '#2ecc71', // Green
-    '#3498db', // Blue
+    '#68A877', // Green
+    '#8FCA97', // Blue
     '#e74c3c', // Red
 ];
 
@@ -165,7 +165,7 @@ export const Confetti: React.FC<ConfettiProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        ...StyleSheet.absoluteFillObject as any,
+        ...StyleSheet.absoluteFill as any,
         zIndex: 999,
     },
     particle: {

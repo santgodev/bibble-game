@@ -1,3 +1,4 @@
+import { GlassBackground } from '../components/Glass';
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -38,7 +39,7 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
                     .like('description', 'MISSION:%');
 
                 if (!error && data) {
-                    const ids = data.map(d => d.description.replace('MISSION:', ''));
+                    const ids = data.map((d: any) => d.description.replace('MISSION:', ''));
                     setCompletedSet(new Set(ids));
                 }
             }
@@ -63,9 +64,9 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
 
     const getNodeColor = (type: string) => {
         switch (type) {
-            case 'intro': return '#9B59B6';
+            case 'intro': return '#8FCA97';
             case 'devotional': return '#E67E22';
-            case 'practice': return '#3498DB';
+            case 'practice': return '#8FCA97';
             case 'quiz': return '#F1C40F';
             default: return path.accentColor;
         }
@@ -84,6 +85,7 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
     if (loading) {
         return (
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+            <GlassBackground />
                 <ActivityIndicator size="large" color={path.accentColor} />
             </View>
         );
@@ -91,11 +93,12 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="light-content" backgroundColor="#050505" />
+            <GlassBackground />
+            <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
 
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#fff" />
+                    <Ionicons name="arrow-back" size={24} color="#2D3043" />
                 </TouchableOpacity>
                 <View style={{ flex: 1, paddingHorizontal: 16 }}>
                     <Text style={[styles.headerSub, { color: path.accentColor }]}>{path.book}</Text>
@@ -129,7 +132,7 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
                                 const isFirstInWeek = i === 0;
 
                                 const nColor = getNodeColor(node.type);
-                                const activeColor = isDone ? nColor : (isUnlocked ? nColor : '#222');
+                                const activeColor = isDone ? nColor : (isUnlocked ? nColor : "#C1D3CB");
                                 const bgOpacity = isUnlocked && !isDone ? '20' : '00';
                                 const ringBorder = isUnlocked && !isDone ? activeColor : 'transparent';
 
@@ -141,7 +144,7 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
                                         {/* Connector Line UP */}
                                         {!(wIndex === 0 && isFirstInWeek) && (
                                             <View style={[styles.connector, {
-                                                backgroundColor: isUnlocked ? '#333' : '#111',
+                                                backgroundColor: isUnlocked ? "#C1D3CB" : "#C1D3CB",
                                                 top: -24, left: 35
                                             }]} />
                                         )}
@@ -160,7 +163,7 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
                                                     <Ionicons
                                                         name={isDone ? 'checkmark' : (isUnlocked ? getNodeIcon(node.type) as any : 'lock-closed')}
                                                         size={24}
-                                                        color={isDone ? '#000' : (isUnlocked ? '#fff' : '#666')}
+                                                        color={isDone ? "#C1D3CB" : (isUnlocked ? "#2D3043" : '#666')}
                                                     />
                                                 </View>
                                             </View>
@@ -174,11 +177,11 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
                                                 <Text style={styles.nodeTitle} numberOfLines={2}>{node.title}</Text>
 
                                                 <View style={styles.rewardsRow}>
-                                                    <View style={[styles.miniPill, { backgroundColor: '#111' }]}>
+                                                    <View style={[styles.miniPill, { backgroundColor: "rgba(255,255,255,0.52)" }]}>
                                                         <Text style={styles.miniPillText}>+{node.xpReward} XP</Text>
                                                     </View>
-                                                    <View style={[styles.miniPill, { backgroundColor: 'rgba(212,175,55,0.1)' }]}>
-                                                        <Text style={[styles.miniPillText, { color: '#FFD700' }]}>+{node.trophyReward} T</Text>
+                                                    <View style={[styles.miniPill, { backgroundColor: "rgba(11,138,94,0.1)" }]}>
+                                                        <Text style={[styles.miniPillText, { color: "#68A877" }]}>+{node.trophyReward} T</Text>
                                                     </View>
                                                 </View>
                                             </View>
@@ -197,16 +200,16 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#050505' },
+    container: { flex: 1, backgroundColor: "#EAE5E0" },
     header: {
         flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14,
-        borderBottomWidth: 1, borderBottomColor: '#111',
+        borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.82)",
     },
     headerSub: { fontSize: 11, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' },
-    headerTitle: { color: '#fff', fontSize: 20, fontWeight: '800' },
+    headerTitle: { color: "#2D3043", fontSize: 20, fontWeight: '800' },
     iconBtn: {
         width: 44, height: 44, borderRadius: 14,
-        backgroundColor: '#151515', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center',
     },
     scrollContent: { paddingHorizontal: 20, paddingTop: 30 },
 
@@ -214,8 +217,8 @@ const styles = StyleSheet.create({
     weekHeader: { marginBottom: 20, alignItems: 'flex-start' },
     weekLabelBox: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 8 },
     weekLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
-    weekTitle: { color: '#fff', fontSize: 24, fontWeight: '900' },
-    weekTheme: { color: '#777', fontSize: 14, marginTop: 4, fontWeight: '600' },
+    weekTitle: { color: "#2D3043", fontSize: 24, fontWeight: '900' },
+    weekTheme: { color: "#636477", fontSize: 14, marginTop: 4, fontWeight: '600' },
 
     mapContainer: {
         paddingLeft: 10,
@@ -246,14 +249,14 @@ const styles = StyleSheet.create({
     },
 
     nodeInfoCard: {
-        flex: 1, backgroundColor: '#0A0A0A',
+        flex: 1, backgroundColor: "rgba(255,255,255,0.52)",
         borderRadius: 16, padding: 16,
-        borderWidth: 1, borderColor: '#1A1A1A',
+        borderWidth: 1, borderColor: '#FFFFFFCC',
         justifyContent: 'center',
     },
     nodeSubtitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
-    nodeTitle: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 20, marginBottom: 10 },
+    nodeTitle: { color: "#2D3043", fontSize: 15, fontWeight: '700', lineHeight: 20, marginBottom: 10 },
     rewardsRow: { flexDirection: 'row', gap: 6 },
     miniPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    miniPillText: { color: '#aaa', fontSize: 10, fontWeight: '800' },
+    miniPillText: { color: "#636477", fontSize: 10, fontWeight: '800' },
 });

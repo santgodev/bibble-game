@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import { AppState, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -12,7 +12,7 @@ export interface Track {
 }
 
 const BACKGROUND_TRACKS: Track[] = [
-    { id: 'ancient_arpeggios', name: 'Paz Biblica (Arpegios)', source: require('../../assets/sounds/main-screan.mp3') }, 
+    { id: 'ancient_arpeggios', name: 'Paz Biblica (Arpegios)', source: require('../../assets/sounds/main-screan.mp3') },
 ];
 
 interface SoundContextType {
@@ -61,11 +61,11 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     const [sfxVolume, setSFXVolume] = useState(1.0); // Máximo volumen equilibrado
     const [volumeModifier, setVolumeModifier] = useState(1.0);
 
-    const musicSound = useRef<Audio.Sound | null>(null);
-    const correctSound = useRef<Audio.Sound | null>(null);
-    const wrongSound = useRef<Audio.Sound | null>(null);
-    const victorySound = useRef<Audio.Sound | null>(null);
-    const unlockSound = useRef<Audio.Sound | null>(null);
+    const musicSound = useRef<AudioPlayer | null>(null);
+    const correctSound = useRef<AudioPlayer | null>(null);
+    const wrongSound = useRef<AudioPlayer | null>(null);
+    const victorySound = useRef<AudioPlayer | null>(null);
+    const unlockSound = useRef<AudioPlayer | null>(null);
 
     const enableMusicRef = useRef(enableMusic);
     const isPausedRef = useRef(isTemporarilyPaused);
@@ -77,11 +77,11 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentTrackIndex(Math.floor(Math.random() * BACKGROUND_TRACKS.length));
 
         const init = async () => {
-            await Audio.setAudioModeAsync({
-                playsInSilentModeIOS: true,
-                staysActiveInBackground: false,
-                shouldDuckAndroid: true,
-                allowsRecordingIOS: false
+            await setAudioModeAsync({
+                playsInSilentMode: true,
+                shouldPlayInBackground: false,
+                interruptionMode: 'duckOthers'
+
             });
 
             await loadSettings();
@@ -100,11 +100,11 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const unloadAll = async () => {
-        if (musicSound.current) await musicSound.current.unloadAsync();
-        if (correctSound.current) await correctSound.current.unloadAsync();
-        if (wrongSound.current) await wrongSound.current.unloadAsync();
-        if (victorySound.current) await victorySound.current.unloadAsync();
-        if (unlockSound.current) await unlockSound.current.unloadAsync();
+        if (musicSound.current) musicSound.current.remove();
+        if (correctSound.current) correctSound.current.remove();
+        if (wrongSound.current) wrongSound.current.remove();
+        if (victorySound.current) victorySound.current.remove();
+        if (unlockSound.current) unlockSound.current.remove();
     };
 
     useEffect(() => {
@@ -115,22 +115,22 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         if (!musicSound.current) return;
         if (enableMusic && !isTemporarilyPaused) {
-            musicSound.current.playAsync();
+            musicSound.current.play();
         } else {
-            musicSound.current.pauseAsync();
+            musicSound.current.pause();
         }
     }, [enableMusic, isTemporarilyPaused]);
 
     useEffect(() => {
-        if (musicSound.current) musicSound.current.setVolumeAsync(musicVolume * volumeModifier);
+        if (musicSound.current) musicSound.current.volume = musicVolume * volumeModifier;
     }, [musicVolume, volumeModifier]);
 
     useEffect(() => {
         const subscription = AppState.addEventListener('change', nextAppState => {
             if (nextAppState === 'active' && enableMusic && !isTemporarilyPaused) {
-                musicSound.current?.playAsync();
+                musicSound.current?.play();
             } else if (nextAppState.match(/inactive|background/)) {
-                musicSound.current?.pauseAsync();
+                musicSound.current?.pause();
             }
         });
         return () => subscription.remove();
@@ -156,7 +156,7 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
             if (sfx !== null) setEnableSFX(sfx === 'true');
             if (vib !== null) setEnableVibration(vib === 'true');
             if (rec !== null) setEnableMusicInVideo(rec === 'true');
-            
+
             // Forzar volúmenes altos y equilibrados (1.0)
             setMusicVolume(1.0);
             setSFXVolume(1.0);
@@ -167,7 +167,7 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
 
     const loadBackgroundMusic = async () => {
         if (musicSound.current) {
-            await musicSound.current.unloadAsync();
+            musicSound.current.remove();
             musicSound.current = null;
         }
 
@@ -180,11 +180,11 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
 
         try {
             const shouldPlay = enableMusicRef.current && !isPausedRef.current;
-            const { sound } = await Audio.Sound.createAsync(
-                source,
-                { isLooping: true, volume: musicVolume * volumeModifier, shouldPlay: shouldPlay }
-            );
-            musicSound.current = sound;
+            const player = createAudioPlayer(source);
+            player.loop = true;
+            player.volume = musicVolume * volumeModifier;
+            if (shouldPlay) player.play();
+            musicSound.current = player;
         } catch (e) {
             console.warn("Error loading bg music", e);
         }
@@ -192,31 +192,31 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
 
     const loadSFX = async () => {
         try {
-            if (correctSound.current) await correctSound.current.unloadAsync();
-            if (wrongSound.current) await wrongSound.current.unloadAsync();
-            if (victorySound.current) await victorySound.current.unloadAsync();
-            if (unlockSound.current) await unlockSound.current.unloadAsync();
+            if (correctSound.current) correctSound.current.remove();
+            if (wrongSound.current) wrongSound.current.remove();
+            if (victorySound.current) victorySound.current.remove();
+            if (unlockSound.current) unlockSound.current.remove();
 
             try {
-                const { sound } = await Audio.Sound.createAsync(require('../../assets/sounds/correct.mp3'));
-                correctSound.current = sound;
+                correctSound.current = createAudioPlayer(require('../../assets/sounds/correct.mp3'));
+
             } catch (e) { }
 
             try {
-                const { sound } = await Audio.Sound.createAsync(require('../../assets/sounds/wrong.mp3'));
-                wrongSound.current = sound;
+                wrongSound.current = createAudioPlayer(require('../../assets/sounds/wrong.mp3'));
+
             } catch (e) { }
 
             // Victory = correct sound played 3x rapidly at full volume (no extra asset needed)
             try {
-                const { sound } = await Audio.Sound.createAsync(require('../../assets/sounds/correct.mp3'));
-                victorySound.current = sound;
+                victorySound.current = createAudioPlayer(require('../../assets/sounds/correct.mp3'));
+
             } catch (e) { }
 
             // Unlock = correct at lower pitch feel
             try {
-                const { sound } = await Audio.Sound.createAsync(require('../../assets/sounds/correct.mp3'));
-                unlockSound.current = sound;
+                unlockSound.current = createAudioPlayer(require('../../assets/sounds/correct.mp3'));
+
             } catch (e) { }
         } catch (e) { }
     };
@@ -225,18 +225,18 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
         if (!enableSFX) return;
         try {
             if (type === 'correct' && correctSound.current) {
-                await correctSound.current.setVolumeAsync(sfxVolume); // Volumen total equilibrado
-                await correctSound.current.replayAsync();
+                correctSound.current.volume = sfxVolume;
+                await correctSound.current.seekTo(0); correctSound.current.play();
             } else if (type === 'wrong' && wrongSound.current) {
-                await wrongSound.current.setVolumeAsync(sfxVolume); // Volumen total equilibrado
-                await wrongSound.current.replayAsync();
+                wrongSound.current.volume = sfxVolume;
+                await wrongSound.current.seekTo(0); wrongSound.current.play();
             } else if (type === 'win' && victorySound.current) {
                 // Play correct sound once for a clean victory signal
-                await victorySound.current.setVolumeAsync(sfxVolume);
-                await victorySound.current.replayAsync();
+                victorySound.current.volume = sfxVolume;
+                await victorySound.current.seekTo(0); victorySound.current.play();
             } else if (type === 'unlock' && unlockSound.current) {
-                await unlockSound.current.setVolumeAsync(sfxVolume * 0.9);
-                await unlockSound.current.replayAsync();
+                unlockSound.current.volume = sfxVolume * 0.9;
+                await unlockSound.current.seekTo(0); unlockSound.current.play();
             }
         } catch (e) { }
     };

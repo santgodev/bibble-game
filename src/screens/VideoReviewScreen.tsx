@@ -1,17 +1,18 @@
+import { GlassBackground } from '../components/Glass';
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
     View, StyleSheet, TouchableOpacity, Dimensions
 } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { AppText } from '../components';
-import * as MediaLibrary from 'expo-media-library';
+import * as MediaLibrary from 'expo-media-library/legacy';
 import { useSound } from '../context/SoundContext';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const GOLD = '#D4AF37';
+const GOLD = "#68A877";
 
 interface WordEntry {
     word: string;
@@ -28,8 +29,21 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
 
     const insets = useSafeAreaInsets();
     const { pauseMusic, resumeMusic } = useSound();
-    const videoRef = useRef<Video>(null);
-    const [playbackStatus, setPlaybackStatus] = useState<any>({});
+    const [position, setPosition] = useState(0);
+    const player = useVideoPlayer(videoUri, player => {
+        player.loop = true;
+        player.play();
+    });
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (player?.playing) {
+                setPosition(player.currentTime * 1000);
+            }
+        }, 200);
+        return () => clearInterval(interval);
+    }, [player]);
+
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -39,18 +53,18 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
         return () => { resumeMusic(); };
     }, []);
 
-    const onPlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
-        setPlaybackStatus(status);
-    }, []);
+    const handlePlayPause = () => {
+        if (!player) return;
+        if (player.playing) {
 
-    const handlePlayPause = async () => {
-        if (!videoRef.current) return;
-        if (playbackStatus.isPlaying) {
-            await videoRef.current.pauseAsync();
+            player.pause();
         } else {
-            await videoRef.current.playAsync();
+            player.play();
         }
     };
+
+
+
 
     const handleSave = async () => {
         if (!videoUri) {
@@ -92,9 +106,9 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
         }
     };
 
-    const isPlaying = playbackStatus?.isPlaying;
-    const duration = playbackStatus?.durationMillis || 1;
-    const position = playbackStatus?.positionMillis || 0;
+    const isPlaying = player?.playing;
+    const duration = (player?.duration || 0) * 1000 || 1;
+
     const progress = Math.min(position / duration, 1);
 
     const withResult = wordHistory.filter(w => w.result !== 'pending');
@@ -111,11 +125,12 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
+            <GlassBackground />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-                    <Ionicons name="arrow-back" size={20} color="#fff" />
+                    <Ionicons name="arrow-back" size={20} color="#2D3043" />
                 </TouchableOpacity>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                     <AppText style={styles.headerLabel}>REVISIÓN DE PARTIDA</AppText>
@@ -127,15 +142,15 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
             {/* Video Player */}
             <View style={styles.videoArea}>
                 <View style={styles.videoCard}>
-                    <Video
-                        ref={videoRef}
+                    <VideoView
                         style={styles.video}
-                        source={{ uri: videoUri }}
-                        resizeMode={ResizeMode.CONTAIN}
-                        isLooping
-                        shouldPlay
-                        onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+                        player={player}
+                        fullscreenOptions={{ enable: false }}
+                        allowsPictureInPicture={false}
                     />
+
+
+
 
                     {/* Play/Pause tap */}
                     <TouchableOpacity
@@ -145,7 +160,7 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
                     >
                         {!isPlaying && (
                             <View style={styles.playIconCircle}>
-                                <Ionicons name="play" size={36} color="#fff" />
+                                <Ionicons name="play" size={36} color="#2D3043" />
                             </View>
                         )}
                     </TouchableOpacity>
@@ -208,7 +223,7 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
                         onPress={() => navigation.goBack()}
                         activeOpacity={0.8}
                     >
-                        <Ionicons name="arrow-back" size={18} color="#fff" />
+                        <Ionicons name="arrow-back" size={18} color="#2D3043" />
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -217,11 +232,11 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
                         disabled={isSaving}
                         activeOpacity={0.85}
                     >
-                        <LinearGradient colors={[GOLD, '#9B6F00']} style={styles.saveBtnGrad}>
+                        <LinearGradient colors={[GOLD, "#6145A1"]} style={styles.saveBtnGrad}>
                             <Ionicons
                                 name={isSaving ? 'hourglass-outline' : 'download-outline'}
                                 size={20}
-                                color="#000"
+                                color="#FFFFFF"
                             />
                             <AppText style={styles.saveBtnText}>
                                 {isSaving ? 'GUARDANDO...' : 'DESCARGAR VIDEO'}
@@ -235,7 +250,7 @@ export const VideoReviewScreen = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#050505' },
+    container: { flex: 1, backgroundColor: "#EAE5E0" },
 
     header: {
         flexDirection: 'row', alignItems: 'center',
@@ -243,64 +258,64 @@ const styles = StyleSheet.create({
     },
     iconBtn: {
         width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.07)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
     },
-    headerLabel: { fontSize: 10, color: '#555', letterSpacing: 2, marginBottom: 2 },
+    headerLabel: { fontSize: 10, color: "#636477", letterSpacing: 2, marginBottom: 2 },
     headerCategory: { fontSize: 15, fontWeight: '800', color: GOLD, textAlign: 'center', maxWidth: 200 },
 
     videoArea: { paddingHorizontal: 16, marginBottom: 12 },
     videoCard: {
         width: '100%', aspectRatio: 9 / 16,
-        backgroundColor: '#000', borderRadius: 20, overflow: 'hidden',
-        borderWidth: 1, borderColor: 'rgba(212,175,55,0.25)',
+        backgroundColor: '#16131D', borderRadius: 20, overflow: 'hidden',
+        borderWidth: 1, borderColor: "rgba(11,138,94,0.25)",
         maxHeight: 340,
     },
     video: { width: '100%', height: '100%' },
     playTapArea: {
-        ...StyleSheet.absoluteFillObject as any,
+        ...StyleSheet.absoluteFill as any,
         justifyContent: 'center', alignItems: 'center',
     },
     playIconCircle: {
         width: 70, height: 70, borderRadius: 35,
-        backgroundColor: 'rgba(0,0,0,0.65)',
+        backgroundColor: "rgba(255,255,255,0.55)",
         justifyContent: 'center', alignItems: 'center',
-        borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
+        borderWidth: 2, borderColor: "rgba(255,255,255,0.82)",
     },
     progressTrack: {
-        height: 3, backgroundColor: 'rgba(255,255,255,0.08)',
+        height: 3, backgroundColor: "rgba(255,255,255,0.48)",
         borderRadius: 2, marginTop: 10,
     },
     progressFill: { height: 3, backgroundColor: GOLD, borderRadius: 2 },
     timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-    timeText: { fontSize: 11, color: '#444', letterSpacing: 0.5 },
+    timeText: { fontSize: 11, color: "#636477", letterSpacing: 0.5 },
 
     statsRow: {
         flexDirection: 'row', alignItems: 'center',
         marginHorizontal: 16, paddingVertical: 14,
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+        backgroundColor: "rgba(255,255,255,0.48)",
+        borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
     },
     statItem: { flex: 1, alignItems: 'center', gap: 4 },
     statNum: { fontSize: 22, fontWeight: '900', includeFontPadding: false },
-    statLabel: { fontSize: 9, color: '#444', letterSpacing: 1.5, fontWeight: '800' },
-    statDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.07)' },
+    statLabel: { fontSize: 9, color: "#636477", letterSpacing: 1.5, fontWeight: '800' },
+    statDivider: { width: 1, height: 32, backgroundColor: "rgba(255,255,255,0.48)" },
 
     actions: { paddingHorizontal: 16 },
     actionsRow: { flexDirection: 'row', gap: 12 },
     backBtn: {
         width: 52, height: 52, borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.06)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+        borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
     },
     saveBtn: { flex: 1, borderRadius: 16, overflow: 'hidden' },
     saveBtnGrad: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         paddingVertical: 16, gap: 10,
     },
-    saveBtnText: { color: '#000', fontWeight: '900', fontSize: 14, letterSpacing: 1.5, includeFontPadding: false },
+    saveBtnText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14, letterSpacing: 1.5, includeFontPadding: false },
 
     toast: {
         flexDirection: 'row', alignItems: 'center', gap: 10,

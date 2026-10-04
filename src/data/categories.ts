@@ -85,8 +85,10 @@ export interface Category {
     slug?: string; 
 }
 
-import { TRIVIA_PENTATEUCO } from './trivia_pentateuco';
-import { WORDS_PENTATEUCO } from './words_pentateuco';
+import {
+    WORDS_PERSONAJES_AT, WORDS_PERSONAJES_NT, WORDS_ANIMALES, WORDS_LUGARES,
+    WORDS_OBJETOS, WORDS_COMIDA, WORDS_HISTORIAS, WORDS_NAVIDAD, WORDS_ALABANZAS,
+} from './words_simple';
 import { TRIVIA_GENERAL } from './trivia_general';
 import { TRIVIA_PERSONAJES } from './trivia_personajes';
 import { TRIVIA_ANTIGUO } from './trivia_antiguo';
@@ -100,84 +102,8 @@ import { WORDS_NUEVO } from './words_nuevo';
  * PALETA DE COLORES PREMIUM (Elegante y Biblica)
  * - Gold / Navy / Crimson / Forest
  */
-export const DEFAULT_CATEGORIES: Category[] = [
-    {
-        id: 'pentateuco',
-        slug: 'pentateuco',
-        title: 'PENTATEUCO',
-        capitulo: 'La Ley y los Orígenes',
-        description: 'Desde la Creación hasta las puertas de la Tierra Prometida.',
-        icon: 'leaf', // Genesis Focus
-        color: '#2E7D32', // Deep Forest Green
-        gradientColors: ['#051105', '#1B5E20', '#051105'], 
-        difficulty: 3,
-        image: null,
-        subcategories: [
-            {
-                id: 'pent_todo',
-                title: 'TODO EL PENTATEUCO',
-                description: 'Desafío completo de los 5 libros de la Ley.',
-                icon: 'layers',
-                color: '#2E7D32',
-                gradientColors: ['#051105', '#2E7D32', '#051105'], 
-                difficulty: 3,
-                trivia: TRIVIA_PENTATEUCO,
-                words: WORDS_PENTATEUCO
-            },
-            {
-                id: 'pent_genesis',
-                title: 'GÉNESIS',
-                description: 'El libro de los orígenes y los patriarcas.',
-                icon: 'egg',
-                color: '#4CAF50',
-                difficulty: 1,
-                trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('gen')),
-                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('gen'))
-            },
-            {
-                id: 'pent_exodo',
-                title: 'ÉXODO',
-                description: 'La salida de Egipto y la entrega de la Ley.',
-                icon: 'exit',
-                color: '#F44336',
-                difficulty: 2,
-                trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('exo')),
-                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('exo'))
-            },
-            {
-                id: 'pent_levitico',
-                title: 'LEVÍTICO',
-                description: 'Leyes de santidad, sacrificios y sacerdocio.',
-                icon: 'flame',
-                color: '#FF9800',
-                difficulty: 3,
-                trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('lev')),
-                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('lev'))
-            },
-            {
-                id: 'pent_numeros',
-                title: 'NÚMEROS',
-                description: 'El censo y el peregrinaje por el desierto.',
-                icon: 'list',
-                color: '#2196F3',
-                difficulty: 2,
-                trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('num')),
-                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('num'))
-            },
-            {
-                id: 'pent_deuteronomio',
-                title: 'DEUTERONOMIO',
-                description: 'Repetición de la Ley y despedida de Moisés.',
-                icon: 'ribbon',
-                color: '#9C27B0',
-                difficulty: 2,
-                trivia: TRIVIA_PENTATEUCO.filter(q => q.id?.startsWith('deu')),
-                words: WORDS_PENTATEUCO.filter((w: any) => typeof w === 'object' && w.id?.startsWith('deu'))
-            }
-        ],
-        trivia: TRIVIA_PENTATEUCO,
-        words: WORDS_PENTATEUCO
-    },
+// Categorías de TRIVIA (conservan sus preguntas; sin Pentateuco)
+export const TRIVIA_CATEGORIES: Category[] = [
     {
         id: 'biblia_general',
         slug: 'biblia_general',
@@ -298,8 +224,37 @@ export const DEFAULT_CATEGORIES: Category[] = [
     }
 ];
 
-export const getCategories = async (): Promise<Category[]> => {
-    return DEFAULT_CATEGORIES;
+/** Compatibilidad: el nombre anterior apunta a las categorías de trivia. */
+export const DEFAULT_CATEGORIES: Category[] = TRIVIA_CATEGORIES;
+
+/**
+ * CATEGORÍAS SIMPLES para Charadas e Impostor.
+ * Temas cotidianos y palabras que todos conocen. Todo local, sin internet.
+ */
+const simple = (
+    id: string, title: string, description: string, icon: string, color: string,
+    words: string[], capitulo: string,
+): Category => ({
+    id, slug: id, title, description, icon, color, capitulo,
+    difficulty: 1, words,
+});
+
+export const SIMPLE_CATEGORIES: Category[] = [
+    simple('personajes_at', 'PERSONAJES DEL ANTIGUO TESTAMENTO', 'Adán, Noé, David, Moisés y más.', 'people', '#00D4FF', WORDS_PERSONAJES_AT, 'Los famosos de siempre'),
+    simple('personajes_nt', 'PERSONAJES DEL NUEVO TESTAMENTO', 'Jesús, Pedro, Pablo y los apóstoles.', 'person', '#FF7043', WORDS_PERSONAJES_NT, 'Jesús y sus amigos'),
+    simple('animales', 'ANIMALES', 'León, serpiente, paloma, ballena…', 'paw', '#8BC34A', WORDS_ANIMALES, 'Los que salen en la Biblia'),
+    simple('lugares', 'LUGARES', 'Belén, Jerusalén, el Mar Rojo…', 'map', '#FFA726', WORDS_LUGARES, 'Dónde pasó todo'),
+    simple('objetos', 'COSAS Y OBJETOS', 'Arca, honda, cruz, corona…', 'cube', '#AB47BC', WORDS_OBJETOS, 'Cosas que reconoces'),
+    simple('comida', 'COMIDA', 'Pan, pescado, uvas, miel…', 'restaurant', '#EF5350', WORDS_COMIDA, 'Lo que se comía'),
+    simple('historias', 'HISTORIAS FAMOSAS', 'David y Goliat, el diluvio, Jonás…', 'book', '#26A69A', WORDS_HISTORIAS, 'Las que todos conocen'),
+    simple('navidad_pascua', 'NAVIDAD Y PASCUA', 'Estrella, pesebre, reyes magos…', 'star', '#FFD54F', WORDS_NAVIDAD, 'Fechas especiales'),
+    simple('alabanzas', 'ALABANZAS FAMOSAS', 'Marcos Witt, JAR, Miel San Marcos, Hillsong…', 'musical-notes', '#E91E63', WORDS_ALABANZAS, 'Canciones que todos cantan'),
+];
+
+export type GameMode = 'trivia' | 'charadas' | 'impostor';
+
+export const getCategories = async (game: GameMode = 'trivia'): Promise<Category[]> => {
+    return game === 'trivia' ? TRIVIA_CATEGORIES : SIMPLE_CATEGORIES;
 };
 
 export const deleteCategory = async (id: string): Promise<void> => {

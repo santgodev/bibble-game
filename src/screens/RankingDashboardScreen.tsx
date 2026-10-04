@@ -1,3 +1,4 @@
+import { GlassBackground } from '../components/Glass';
 import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -10,12 +11,12 @@ import { supabase } from '../lib/supabase';
 import { getEvolutionaryAvatar } from '../utils/avatarUtils';
 
 // ─── Design tokens ────────────────────────────────────────
-const GOLD = '#D4AF37';
+const GOLD = "#68A877";
 const SILVER = '#C0C0C0';
 const BRONZE = '#CD7F32';
-const BG = '#06060E';
-const SURFACE = '#0E0E1C';
-const BORDER = 'rgba(255,255,255,0.07)';
+const BG = "#EAE5E0";
+const SURFACE = "rgba(255,255,255,0.55)";
+const BORDER = "rgba(255,255,255,0.82)";
 
 // ─── Helper: Level from XP ────────────────────────────────
 const getLevel = (xp: number) => Math.floor(Math.sqrt(xp / 50)) + 1;
@@ -29,7 +30,7 @@ const getLevelProgress = (xp: number) => {
 // ─── Medal component ──────────────────────────────────────
 const Medal = ({ rank }: { rank: number }) => {
     const colors: Record<number, string[]> = {
-        1: ['#FFD700', '#D4AF37', '#B8860B'],
+        1: ["#68A877", "#68A877", "#45834D"],
         2: ['#E8E8E8', '#C0C0C0', '#A8A8A8'],
         3: ['#E8A060', '#CD7F32', '#A0602A'],
     };
@@ -51,8 +52,8 @@ const Medal = ({ rank }: { rank: number }) => {
 
 const medals = StyleSheet.create({
     wrapper: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-    plain: { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: BORDER },
-    num: { color: '#888', fontWeight: '800', fontSize: 14 },
+    plain: { backgroundColor: "rgba(255,255,255,0.48)", borderWidth: 1, borderColor: BORDER },
+    num: { color: "#636477", fontWeight: '800', fontSize: 14 },
 });
 
 // ─── Profile Hero Card ─────────────────────────────────────
@@ -74,7 +75,7 @@ const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
 
     return (
         <LinearGradient
-            colors={['#0E0E24', '#0A0A18', '#06060E']}
+            colors={["#D1E2DA", "#D1E2DA", "#D1E2DA"]}
             style={card.container}
         >
             {/* Decorative glow */}
@@ -83,12 +84,12 @@ const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
             {/* Avatar + Identity */}
             <View style={card.topRow}>
                 <View style={card.avatarShell}>
-                    <LinearGradient colors={[GOLD, '#B8860B']} style={card.avatarGradientBorder}>
+                    <LinearGradient colors={[GOLD, "#45834D"]} style={card.avatarGradientBorder}>
                         <View style={card.avatarInner}>
                             <Image
                                 source={{ uri: avatarUri }}
                                 style={card.avatar}
-                                defaultSource={require('../../assets/logo.png')}
+                                defaultSource={require('../../assets/icon-light.png')}
                             />
                         </View>
                     </LinearGradient>
@@ -134,23 +135,23 @@ const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
             {/* Stats row */}
             <View style={card.statsRow}>
                 <View style={card.statBox}>
-                    <LinearGradient colors={['rgba(212,175,55,0.15)', 'rgba(212,175,55,0.03)']} style={card.statGrad}>
+                    <LinearGradient colors={["rgba(11,138,94,0.15)", "rgba(11,138,94,0.03)"]} style={card.statGrad}>
                         <Ionicons name="flash" size={18} color={GOLD} />
                         <Text style={card.statNum}>{(userStats?.total_xp || 0).toLocaleString()}</Text>
                         <Text style={card.statLabel}>XP TOTAL</Text>
                     </LinearGradient>
                 </View>
                 <View style={card.statBox}>
-                    <LinearGradient colors={['rgba(255,215,0,0.15)', 'rgba(255,215,0,0.03)']} style={card.statGrad}>
-                        <Ionicons name="trophy" size={18} color="#FFD700" />
-                        <Text style={[card.statNum, { color: '#FFD700' }]}>{userStats?.total_trophies || 0}</Text>
+                    <LinearGradient colors={["rgba(11,138,94,0.15)", "rgba(11,138,94,0.03)"]} style={card.statGrad}>
+                        <Ionicons name="trophy" size={18} color="#68A877" />
+                        <Text style={[card.statNum, { color: "#68A877" }]}>{userStats?.total_trophies || 0}</Text>
                         <Text style={card.statLabel}>TROFEOS</Text>
                     </LinearGradient>
                 </View>
                 <View style={card.statBox}>
-                    <LinearGradient colors={['rgba(94,22,181,0.2)', 'rgba(94,22,181,0.04)']} style={card.statGrad}>
-                        <Ionicons name="medal" size={18} color="#9B59B6" />
-                        <Text style={[card.statNum, { color: '#9B59B6' }]}>{userStats?.level || level}</Text>
+                    <LinearGradient colors={['rgba(69,131,77,0.2)', 'rgba(69,131,77,0.04)']} style={card.statGrad}>
+                        <Ionicons name="medal" size={18} color="#8FCA97" />
+                        <Text style={[card.statNum, { color: '#8FCA97' }]}>{userStats?.level || level}</Text>
                         <Text style={card.statLabel}>NIVEL</Text>
                     </LinearGradient>
                 </View>
@@ -164,7 +165,7 @@ const card = StyleSheet.create({
         marginHorizontal: 16,
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: 'rgba(212,175,55,0.2)',
+        borderColor: "rgba(11,138,94,0.2)",
         overflow: 'hidden',
         marginBottom: 28,
         padding: 20,
@@ -172,7 +173,7 @@ const card = StyleSheet.create({
     glow: {
         position: 'absolute', top: -40, right: -40,
         width: 150, height: 150, borderRadius: 75,
-        backgroundColor: 'rgba(212,175,55,0.06)',
+        backgroundColor: "rgba(11,138,94,0.06)",
     },
     topRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
     avatarShell: { position: 'relative', marginRight: 14 },
@@ -182,37 +183,37 @@ const card = StyleSheet.create({
     },
     avatarInner: {
         width: 66, height: 66, borderRadius: 33,
-        backgroundColor: '#0A0A18', overflow: 'hidden',
+        backgroundColor: "rgba(255,255,255,0.52)", overflow: 'hidden',
     },
     avatar: { width: '100%', height: '100%' },
     levelChip: {
         position: 'absolute', bottom: -4, right: -4,
-        backgroundColor: '#1a1a2e', borderRadius: 20,
+        backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 20,
         borderWidth: 1.5, borderColor: GOLD,
         paddingHorizontal: 6, paddingVertical: 2,
     },
     levelChipText: { color: GOLD, fontSize: 10, fontWeight: '900' },
     identity: { flex: 1 },
-    username: { color: '#fff', fontSize: 20, fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 },
+    username: { color: "#2D3043", fontSize: 20, fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 },
     churchRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
     churchName: { color: GOLD, fontSize: 12, fontWeight: '600', maxWidth: 150 },
     roleChip: {
-        backgroundColor: 'rgba(255,255,255,0.07)', alignSelf: 'flex-start',
+        backgroundColor: "rgba(255,255,255,0.48)", alignSelf: 'flex-start',
         paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
     },
-    roleText: { color: '#aaa', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+    roleText: { color: "#636477", fontSize: 10, fontWeight: '800', letterSpacing: 1 },
     settingsBtn: {
         width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(212,175,55,0.1)',
+        backgroundColor: "rgba(11,138,94,0.1)",
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: 'rgba(212,175,55,0.2)',
+        borderWidth: 1, borderColor: "rgba(11,138,94,0.2)",
     },
     xpSection: { marginBottom: 18 },
     xpRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-    xpLabel: { color: '#666', fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+    xpLabel: { color: "#636477", fontSize: 11, fontWeight: '700', letterSpacing: 1 },
     xpVal: { color: GOLD, fontSize: 11, fontWeight: '900' },
-    progressBg: { height: 6, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 3, overflow: 'hidden' },
+    progressBg: { height: 6, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 3, overflow: 'hidden' },
     progressFill: {
         height: '100%', borderRadius: 3,
         backgroundColor: GOLD,
@@ -221,10 +222,10 @@ const card = StyleSheet.create({
     statBox: { flex: 1 },
     statGrad: {
         borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8,
-        alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+        alignItems: 'center', borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
     },
     statNum: { color: GOLD, fontSize: 18, fontWeight: '900', marginTop: 4 },
-    statLabel: { color: '#555', fontSize: 9, fontWeight: '700', letterSpacing: 1, marginTop: 2 },
+    statLabel: { color: "#636477", fontSize: 9, fontWeight: '700', letterSpacing: 1, marginTop: 2 },
 });
 
 // ─── Rank Item ─────────────────────────────────────────────
@@ -238,7 +239,7 @@ const RankRow = ({ item, index, isMe, isGlobal }: any) => {
 
     const isTop3 = index < 3;
     const rankColors = [
-        ['rgba(212,175,55,0.12)', 'rgba(212,175,55,0.03)', GOLD],
+        ["rgba(11,138,94,0.12)", "rgba(11,138,94,0.03)", GOLD],
         ['rgba(192,192,192,0.1)', 'rgba(192,192,192,0.02)', SILVER],
         ['rgba(205,127,50,0.1)', 'rgba(205,127,50,0.02)', BRONZE],
     ];
@@ -255,7 +256,7 @@ const RankRow = ({ item, index, isMe, isGlobal }: any) => {
         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
             <LinearGradient
                 colors={isMe
-                    ? ['rgba(212,175,55,0.22)', 'rgba(212,175,55,0.08)']
+                    ? ["rgba(11,138,94,0.22)", "rgba(11,138,94,0.08)"]
                     : [c1 as string, c2 as string]
                 }
                 style={[
@@ -292,7 +293,7 @@ const RankRow = ({ item, index, isMe, isGlobal }: any) => {
                 {/* Score */}
                 <View style={[row.scoreBox, isMe && row.scoreBoxMe]}>
                     <Text style={[row.scoreVal, isMe && { fontSize: 18 }]}>{score}</Text>
-                    <Ionicons name="trophy" size={14} color="#FFD700" />
+                    <Ionicons name="trophy" size={14} color="#68A877" />
                 </View>
             </LinearGradient>
         </Animated.View>
@@ -315,7 +316,7 @@ const row = StyleSheet.create({
         width: 4, backgroundColor: GOLD, borderTopLeftRadius: 18, borderBottomLeftRadius: 18,
     },
     avatarWrap: { position: 'relative' },
-    avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1a1a2e' },
+    avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.52)" },
     avatarMe: { borderWidth: 2, borderColor: GOLD },
     meDot: {
         position: 'absolute', bottom: 0, right: 0,
@@ -323,29 +324,29 @@ const row = StyleSheet.create({
         backgroundColor: GOLD, borderWidth: 1.5, borderColor: BG,
     },
     info: { flex: 1 },
-    name: { color: '#fff', fontSize: 15, fontWeight: '800' },
+    name: { color: "#2D3043", fontSize: 15, fontWeight: '800' },
     nameMe: { color: GOLD, fontSize: 16, fontWeight: '900' },
-    sub: { color: '#666', fontSize: 11, marginTop: 2 },
+    sub: { color: "#636477", fontSize: 11, marginTop: 2 },
     meBadge: {
         backgroundColor: GOLD, borderRadius: 6,
         paddingHorizontal: 7, paddingVertical: 2,
     },
-    meBadgeText: { color: '#000', fontSize: 9, fontWeight: '900', letterSpacing: 1.5 },
+    meBadgeText: { color: "#2D3043", fontSize: 9, fontWeight: '900', letterSpacing: 1.5 },
     // Legacy (kept for compat)
     meTag: {
         backgroundColor: GOLD, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1,
-        color: '#000', fontSize: 9, fontWeight: '900', letterSpacing: 1,
+        color: "#2D3043", fontSize: 9, fontWeight: '900', letterSpacing: 1,
     },
     scoreBox: {
         flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 10,
+        backgroundColor: "rgba(255,255,255,0.55)", paddingHorizontal: 10,
         paddingVertical: 6, borderRadius: 12,
     },
     scoreBoxMe: {
-        backgroundColor: 'rgba(212,175,55,0.15)',
-        borderWidth: 1, borderColor: 'rgba(212,175,55,0.4)',
+        backgroundColor: "rgba(11,138,94,0.15)",
+        borderWidth: 1, borderColor: "rgba(11,138,94,0.4)",
     },
-    scoreVal: { color: '#FFD700', fontWeight: '900', fontSize: 16 },
+    scoreVal: { color: "#68A877", fontWeight: '900', fontSize: 16 },
 });
 
 // ─── Main Screen ──────────────────────────────────────────
@@ -399,6 +400,7 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
     if (loading) {
         return (
             <View style={[s.container, { justifyContent: 'center', alignItems: 'center' }]}>
+            <GlassBackground />
                 <ActivityIndicator size="large" color={GOLD} />
             </View>
         );
@@ -408,6 +410,7 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
 
     return (
         <View style={s.container}>
+            <GlassBackground />
             <ScrollView
                 style={{ flex: 1 }}
                 contentContainerStyle={{ paddingBottom: insets.bottom + 30 }}
@@ -416,7 +419,7 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
                 {/* Header */}
                 <LinearGradient colors={[BG, 'transparent']} style={[s.header, { paddingTop: insets.top + 10 }]}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
-                        <Ionicons name="arrow-back" size={22} color="#fff" />
+                        <Ionicons name="arrow-back" size={22} color="#2D3043" />
                     </TouchableOpacity>
                     <View style={s.headerCenter}>
                         <Text style={s.headerTitle}>RANKING</Text>
@@ -454,7 +457,7 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
                             <Ionicons
                                 name={tab === 'LOCAL' ? 'people' : 'earth'}
                                 size={16}
-                                color={activeTab === tab ? GOLD : '#555'}
+                                color={activeTab === tab ? GOLD : "#C1D3CB"}
                                 style={{ marginRight: 6 }}
                             />
                             <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
@@ -514,13 +517,13 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
 
                 {/* Guide link */}
                 <TouchableOpacity style={s.guideBtn} onPress={() => navigation.navigate('SystemGuide')} activeOpacity={0.8}>
-                    <LinearGradient colors={['rgba(212,175,55,0.12)', 'rgba(212,175,55,0.04)']} style={s.guideBtnInner}>
+                    <LinearGradient colors={["rgba(11,138,94,0.12)", "rgba(11,138,94,0.04)"]} style={s.guideBtnInner}>
                         <Ionicons name="information-circle" size={22} color={GOLD} />
                         <View style={{ flex: 1, marginLeft: 12 }}>
                             <Text style={s.guideTitle}>¿Cómo ganar XP y Trofeos?</Text>
                             <Text style={s.guideSub}>Guía completa del sistema de impacto</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={18} color="#444" />
+                        <Ionicons name="chevron-forward" size={18} color="#636477" />
                     </LinearGradient>
                 </TouchableOpacity>
             </ScrollView>
@@ -535,55 +538,55 @@ const s = StyleSheet.create({
         paddingHorizontal: 16, paddingBottom: 16,
     },
     headerCenter: { alignItems: 'center' },
-    headerTitle: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 2 },
-    headerSub: { color: '#444', fontSize: 10, fontWeight: '600', letterSpacing: 1 },
+    headerTitle: { color: "#2D3043", fontSize: 18, fontWeight: '900', letterSpacing: 2 },
+    headerSub: { color: "#636477", fontSize: 10, fontWeight: '600', letterSpacing: 1 },
     iconBtn: {
         width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 1, borderColor: BORDER,
     },
     tabBar: {
         flexDirection: 'row', marginHorizontal: 16, marginBottom: 24,
-        backgroundColor: 'rgba(255,255,255,0.04)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         borderRadius: 16, padding: 4, borderWidth: 1, borderColor: BORDER,
     },
     tab: {
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         paddingVertical: 11, borderRadius: 12,
     },
-    tabActive: { backgroundColor: 'rgba(212,175,55,0.1)', borderWidth: 1, borderColor: 'rgba(212,175,55,0.25)' },
-    tabText: { color: '#555', fontWeight: '700', fontSize: 13 },
+    tabActive: { backgroundColor: "rgba(11,138,94,0.1)", borderWidth: 1, borderColor: "rgba(11,138,94,0.25)" },
+    tabText: { color: "#636477", fontWeight: '700', fontSize: 13 },
     tabTextActive: { color: GOLD, fontWeight: '900' },
     sectionHeader: {
         flexDirection: 'row', alignItems: 'center',
         paddingHorizontal: 16, marginBottom: 16, gap: 12,
     },
     sectionLine: { flex: 1, height: 1, backgroundColor: BORDER },
-    sectionTitle: { color: '#fff', fontSize: 14, fontWeight: '800' },
+    sectionTitle: { color: "#2D3043", fontSize: 14, fontWeight: '800' },
     emptyBox: {
         alignItems: 'center', marginHorizontal: 16, marginTop: 20,
-        padding: 30, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.03)',
+        padding: 30, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.48)",
         borderWidth: 1, borderColor: BORDER,
     },
-    emptyTitle: { color: '#fff', fontSize: 18, fontWeight: '800', marginBottom: 8 },
-    emptySub: { color: '#666', fontSize: 14, textAlign: 'center', lineHeight: 20 },
+    emptyTitle: { color: "#2D3043", fontSize: 18, fontWeight: '800', marginBottom: 8 },
+    emptySub: { color: "#636477", fontSize: 14, textAlign: 'center', lineHeight: 20 },
     emptyBtn: {
         marginTop: 16, backgroundColor: GOLD, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12,
     },
-    emptyBtnText: { color: '#000', fontWeight: '900', fontSize: 14 },
+    emptyBtnText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
     guideBtn: { marginHorizontal: 16, marginTop: 32 },
     guideBtnInner: {
         flexDirection: 'row', alignItems: 'center', padding: 18,
-        borderRadius: 20, borderWidth: 1, borderColor: 'rgba(212,175,55,0.15)',
+        borderRadius: 20, borderWidth: 1, borderColor: "rgba(11,138,94,0.15)",
     },
-    guideTitle: { color: '#fff', fontSize: 15, fontWeight: '800' },
-    guideSub: { color: '#555', fontSize: 12, marginTop: 2 },
+    guideTitle: { color: "#2D3043", fontSize: 15, fontWeight: '800' },
+    guideSub: { color: "#636477", fontSize: 12, marginTop: 2 },
     seasonCard: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        backgroundColor: 'rgba(212, 175, 55, 0.05)', marginHorizontal: 16,
+        backgroundColor: "rgba(11,138,94,0.05)", marginHorizontal: 16,
         paddingVertical: 10, borderRadius: 12, marginBottom: 20,
-        borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.1)'
+        borderWidth: 1, borderColor: "rgba(11,138,94,0.1)"
     },
     seasonText: { color: GOLD, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
 });

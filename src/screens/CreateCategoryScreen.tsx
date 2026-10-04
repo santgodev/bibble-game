@@ -14,7 +14,7 @@ export const CreateCategoryScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
 
     // Fixed asset for custom categories
-    const defaultImage = require('../../assets/logo.png');
+    const defaultImage = require('../../assets/icon-light.png');
 
     const handleSave = async () => {
         if (!title.trim() || !description.trim() || !wordsText.trim()) {
@@ -83,7 +83,7 @@ export const CreateCategoryScreen = ({ navigation }: any) => {
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Ej: Mi Cumpleaños"
-                                    placeholderTextColor="rgba(255,255,255,0.4)"
+                                    placeholderTextColor="#636477"
                                     value={title}
                                     onChangeText={setTitle}
                                     maxLength={30}
@@ -95,7 +95,7 @@ export const CreateCategoryScreen = ({ navigation }: any) => {
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Ej: Solo para los de la oficina..."
-                                    placeholderTextColor="rgba(255,255,255,0.4)"
+                                    placeholderTextColor="#636477"
                                     value={description}
                                     onChangeText={setDescription}
                                     maxLength={50}
@@ -110,7 +110,7 @@ export const CreateCategoryScreen = ({ navigation }: any) => {
                                 <TextInput
                                     style={[styles.input, styles.textArea]}
                                     placeholder="Escribe una palabra o frase por línea..."
-                                    placeholderTextColor="rgba(255,255,255,0.4)"
+                                    placeholderTextColor="#636477"
                                     value={wordsText}
                                     onChangeText={setWordsText}
                                     multiline
@@ -118,7 +118,7 @@ export const CreateCategoryScreen = ({ navigation }: any) => {
                                     textAlignVertical="top"
                                 />
                                 <AppText style={styles.hint}>
-                                    <Ionicons name="information-circle-outline" size={14} color="#ccc" /> Escribe cada charada en una nueva línea.
+                                    <Ionicons name="information-circle-outline" size={14} color="#636477" /> Escribe cada charada en una nueva línea.
                                 </AppText>
                             </View>
 
@@ -143,7 +143,7 @@ export const CreateCategoryScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: '#050505',
+        backgroundColor: "#EAE5E0",
     },
     scrollContent: {
         padding: 20,
@@ -161,30 +161,30 @@ const styles = StyleSheet.create({
     headerTitle: {
         textAlign: 'center',
         fontSize: 28,
-        color: '#FFFFFF',
+        color: "#2D3043",
         fontWeight: 'bold',
-        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowColor: "transparent",
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 3,
     },
     subHeader: {
         textAlign: 'center',
-        color: '#E0E0E0',
+        color: "#2D3043",
         marginBottom: 20,
         fontSize: 16,
     },
     card: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         borderRadius: 20,
         padding: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.2)',
-        shadowColor: "#000",
+        borderColor: "rgba(255,255,255,0.82)",
+        shadowColor: "#3E4C45",
         shadowOffset: {
             width: 0,
             height: 4,
         },
-        shadowOpacity: 0.30,
+        shadowOpacity: 0.12,
         shadowRadius: 4.65,
         elevation: 8,
     },
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     label: {
         marginBottom: 8,
         fontWeight: 'bold',
-        color: '#FFD700', // Gold color for labels
+        color: "#68A877", // Gold color for labels
         fontSize: 16,
     },
     labelRow: {
@@ -209,24 +209,24 @@ const styles = StyleSheet.create({
     },
     counter: {
         fontSize: 14,
-        color: '#FFFFFF',
+        color: "#2D3043",
         fontWeight: 'bold',
     },
     input: {
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        backgroundColor: "rgba(255,255,255,0.55)",
         borderRadius: 12,
         padding: 15,
-        color: 'white',
+        color: "#2D3043",
         fontSize: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: "rgba(255,255,255,0.82)",
     },
     textArea: {
         minHeight: 180,
     },
     hint: {
         fontSize: 13,
-        color: '#ccc',
+        color: "#636477",
         marginTop: 8,
         fontStyle: 'italic',
     },
@@ -234,12 +234,12 @@ const styles = StyleSheet.create({
         marginTop: 10,
         height: 55,
         borderRadius: 25,
-        shadowColor: "#FF4081",
+        shadowColor: "#3E4C45",
         shadowOffset: {
             width: 0,
             height: 4,
         },
-        shadowOpacity: 0.5,
+        shadowOpacity: 0.12,
         shadowRadius: 5,
         elevation: 10,
     },

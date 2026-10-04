@@ -15,8 +15,8 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
 
     // Theme values from first selected category
     const mainCategory = selectedCategories?.[0];
-    const themeGradients = mainCategory?.gradientColors || ['#2D1457', '#5E16B5', '#8E44AD'];
-    const primaryColor = mainCategory?.color || '#9b59b6';
+    const themeGradients = mainCategory?.gradientColors || ["#D1E2DA", '#45834D', '#68A877'];
+    const primaryColor = '#A25078';
 
     const [isFinished, setIsFinished] = useState(false);
     const [starterPlayer, setStarterPlayer] = useState('');
@@ -103,8 +103,10 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
     const handleVote = () => {
         stopTimer();
         navigation.navigate('ImpostorVote', {
-            timeLeft, players, impostorList, secretWord, secretCategory, playerDetails,
-            caughtImpostors, eliminatedInnocents, selectedCategories
+            timeLeft, remainingTime: timeLeft, duration, players, impostorList, secretWord, secretCategory, playerDetails,
+            caughtImpostors, eliminatedInnocents, selectedCategories,
+            initialCaughtImpostors: caughtImpostors,
+            initialEliminatedInnocents: eliminatedInnocents,
         });
     };
 
@@ -113,22 +115,22 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={themeGradients}
+                colors={['#EAE3ED', '#E8E3ED']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
             />
-            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)' }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.55)" }]} />
 
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.iconBtn}>
-                    <Ionicons name="close" size={24} color="#FFF" />
+                    <Ionicons name="close" size={24} color="#2D3043" />
                 </TouchableOpacity>
                 <View style={[styles.badge, { backgroundColor: primaryColor + '40' }]}>
                     <AppText style={[styles.badgeText, { color: primaryColor }]}>{secretCategory}</AppText>
                 </View>
                 <TouchableOpacity style={styles.iconBtn}>
-                    <Ionicons name="help-circle" size={24} color="#FFF" />
+                    <Ionicons name="help-circle" size={24} color="#2D3043" />
                 </TouchableOpacity>
             </View>
 
@@ -138,13 +140,13 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
                 </View>
 
                 <AppText variant="display" style={styles.title}>Tiempo de Debate</AppText>
-                
+
                 <AppText style={styles.instruction}>
                     Hagan preguntas estratégicas para encontrar al impostor.
                 </AppText>
 
                 <AppText style={styles.starterText}>
-                    <AppText style={{ color: '#fff' }}>Empieza: </AppText>{starterPlayer}
+                    <AppText style={{ color: "#2D3043" }}>Empieza: </AppText>{starterPlayer}
                 </AppText>
 
                 <View style={styles.timerWrapper}>
@@ -172,7 +174,7 @@ export const ImpostorGameScreen = ({ navigation, route }: any) => {
                     onPress={handleVote}
                     activeOpacity={0.8}
                 >
-                    <Ionicons name="checkmark-circle" size={24} color="#000" style={{ marginRight: 10 }} />
+                    <Ionicons name="checkmark-circle" size={24} color="#2D3043" style={{ marginRight: 10 }} />
                     <AppText style={styles.voteBtnText}>VOTAR AHORA</AppText>
                 </TouchableOpacity>
             </View>
@@ -195,7 +197,7 @@ const styles = StyleSheet.create({
     },
     iconBtn: {
         width: 44, height: 44, borderRadius: 22,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         alignItems: 'center', justifyContent: 'center'
     },
     badge: {
@@ -207,32 +209,32 @@ const styles = StyleSheet.create({
         borderWidth: 2, justifyContent: 'center', alignItems: 'center', marginBottom: 20,
     },
     title: {
-        fontSize: 36, color: '#fff', fontWeight: '900', marginBottom: 10, textAlign: 'center'
+        fontSize: 36, color: "#2D3043", fontWeight: '900', marginBottom: 10, textAlign: 'center'
     },
     instruction: {
-        fontSize: 16, color: 'rgba(255,255,255,0.6)', textAlign: 'center', paddingHorizontal: 30, marginBottom: 20, lineHeight: 24
+        fontSize: 16, color: "#636477", textAlign: 'center', paddingHorizontal: 30, marginBottom: 20, lineHeight: 24
     },
     starterText: {
-        fontSize: 24, color: '#FFD700', fontWeight: '900', marginBottom: 30, textAlign: 'center'
+        fontSize: 24, color: "#68A877", fontWeight: '900', marginBottom: 30, textAlign: 'center'
     },
     timerWrapper: {
         alignItems: 'center', justifyContent: 'center', marginBottom: 30
     },
     timerCircle: {
         width: 240, height: 240, borderRadius: 120,
-        borderWidth: 8, backgroundColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 8, backgroundColor: "rgba(255,255,255,0.48)",
         justifyContent: 'center', alignItems: 'center'
     },
     timerCircleLow: {
         backgroundColor: 'rgba(231,76,60,0.1)',
     },
     timer: {
-        fontSize: 80, color: '#fff', fontWeight: '900',
+        fontSize: 80, color: "#2D3043", fontWeight: '900',
         lineHeight: 90, textAlign: 'center', includeFontPadding: false,
         paddingVertical: 10
     },
     bottomInstruction: {
-        fontSize: 14, color: 'rgba(255,255,255,0.4)', textAlign: 'center', paddingHorizontal: 40, fontWeight: '600'
+        fontSize: 14, color: "#636477", textAlign: 'center', paddingHorizontal: 40, fontWeight: '600'
     },
     footerArea: {
         paddingHorizontal: 30, width: '100%', alignItems: 'center'
@@ -241,5 +243,5 @@ const styles = StyleSheet.create({
         flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
         height: 64, borderRadius: 32, width: '100%',
     },
-    voteBtnText: { color: '#000', fontSize: 20, fontWeight: '900' }
+    voteBtnText: { color: "#FFFFFF", fontSize: 20, fontWeight: '900' }
 });

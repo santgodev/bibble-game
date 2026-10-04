@@ -1,7 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Platform, AppState, AppStateStatus } from 'react-native';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
-import * as MediaLibrary from 'expo-media-library';
+import * as MediaLibrary from 'expo-media-library/legacy';
 
 export interface CameraManagerHandle {
     startRecording: () => Promise<void>;
@@ -131,7 +131,7 @@ export const CameraManager = forwardRef<CameraManagerHandle, CameraManagerProps>
 
 const styles = StyleSheet.create({
     container: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         backgroundColor: 'black', // fallback
     },
     camera: {

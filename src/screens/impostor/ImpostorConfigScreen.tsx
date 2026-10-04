@@ -1,10 +1,11 @@
+import { GlassSheen } from '../../components/Glass';
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Animated, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Container, AppText, Button } from '../../components';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
-import { Category } from '../../data/categories';
+import { Category, getCategories } from '../../data/categories';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -74,7 +75,13 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
             if (storedHints) setHintEnabled(storedHints === 'true');
             if (storedDiff) setDifficulty(parseInt(storedDiff));
             if (storedCats && !route.params?.selectedCategories) {
-                setSelectedCategories(JSON.parse(storedCats));
+                // Solo conservar paquetes que aún existen (evita categorías viejas guardadas)
+                const valid = await getCategories('impostor');
+                const fresh = (JSON.parse(storedCats) as Category[])
+                    .map(sc => valid.find(v => v.id === sc.id))
+                    .filter((c): c is Category => !!c);
+                setSelectedCategories(fresh);
+                AsyncStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(fresh));
             }
 
             setIsConfigLoaded(true);
@@ -194,12 +201,12 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={styles.container}>
-            <Container style={{ paddingTop: 60 }} noPadding>
+            <Container style={{ paddingTop: 14 }} noPadding>
 
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                        <Ionicons name="arrow-back" size={24} color="#2D3043" />
                     </TouchableOpacity>
                     <View style={styles.titleContainer}>
                         <View style={styles.iconCircle}>
@@ -225,17 +232,18 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                             <AppText style={styles.rowValue}>
                                 {selectedCategories.length === 0 ? "Ninguno" : `${selectedCategories.length} Paquetes`}
                             </AppText>
-                            <Ionicons name="chevron-forward" size={20} color="#666" style={{ marginLeft: 10 }} />
+                            <Ionicons name="chevron-forward" size={20} color="#636477" style={{ marginLeft: 10 }} />
                         </View>
                     </TouchableOpacity>
 
                     {/* Players config */}
                     <View style={styles.menuRowCol}>
+                    <GlassSheen />
                         <View style={styles.rowLeft}>
                             <Ionicons name="people" size={24} color="#e74c3c" />
                             <AppText style={styles.rowLabel}>Participantes</AppText>
                         </View>
-                        <AppText style={styles.helpText}>Selecciona quiénes van a jugar de tu iglesia:</AppText>
+                        <AppText style={styles.helpText}>Agrega a los jugadores que van a participar (mínimo 3):</AppText>
 
                         {churchMembers.length > 0 ? (
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.membersScroll}>
@@ -253,13 +261,13 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                                 })}
                             </ScrollView>
                         ) : (
-                            <AppText style={styles.noMembers}>No hay miembros en tu iglesia.</AppText>
+                            null
                         )}
 
                         <View style={styles.anonHeaderRow}>
-                            <AppText style={styles.anonLabel}>Compañeros Anónimos</AppText>
+                            <AppText style={styles.anonLabel}>Jugadores</AppText>
                             <TouchableOpacity style={styles.addAnonBtn} onPress={addAnonPlayer}>
-                                <Ionicons name="person-add" size={16} color="#fff" />
+                                <Ionicons name="person-add" size={16} color="#2D3043" />
                                 <AppText style={styles.addAnonText}>Agregar</AppText>
                             </TouchableOpacity>
                         </View>
@@ -267,14 +275,14 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                         {anonPlayersList.map(anon => (
                             <View key={anon.id} style={styles.anonEditRow}>
                                 <View style={styles.anonAvatarPlaceholder}>
-                                    <Ionicons name="person" size={16} color="#aaa" />
+                                    <Ionicons name="person" size={16} color="#636477" />
                                 </View>
                                 <TextInput
                                     style={styles.anonInput}
                                     value={anon.name}
                                     onChangeText={(val) => updateAnonName(anon.id, val)}
                                     placeholder="Nombre del jugador"
-                                    placeholderTextColor="#666"
+                                    placeholderTextColor="#636477"
                                     selectTextOnFocus
                                     maxLength={20}
                                 />
@@ -295,11 +303,11 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                         </View>
                         <View style={styles.stepper}>
                             <TouchableOpacity onPress={() => setImpostors(Math.max(1, impostors - 1))}>
-                                <Ionicons name="remove-circle" size={30} color={impostors <= 1 ? '#333' : '#e74c3c'} />
+                                <Ionicons name="remove-circle" size={30} color={impostors <= 1 ? "#C1D3CB" : '#e74c3c'} />
                             </TouchableOpacity>
                             <AppText style={styles.stepperValue}>{impostors}</AppText>
                             <TouchableOpacity onPress={() => setImpostors(Math.min(Math.floor(Math.max(3, totalPlayers) / 2), impostors + 1))}>
-                                <Ionicons name="add-circle" size={30} color={impostors >= Math.floor(Math.max(3, totalPlayers) / 2) ? '#333' : '#e74c3c'} />
+                                <Ionicons name="add-circle" size={30} color={impostors >= Math.floor(Math.max(3, totalPlayers) / 2) ? "#C1D3CB" : '#e74c3c'} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -326,53 +334,26 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                         </View>
                         <View style={styles.stepper}>
                             <TouchableOpacity onPress={() => setDurationMinutes(Math.max(1, durationMinutes - 1))}>
-                                <Ionicons name="remove-circle" size={30} color={durationMinutes <= 1 ? '#333' : '#e74c3c'} />
+                                <Ionicons name="remove-circle" size={30} color={durationMinutes <= 1 ? "#C1D3CB" : '#e74c3c'} />
                             </TouchableOpacity>
                             <AppText style={styles.stepperValue}>{durationMinutes} min</AppText>
                             <TouchableOpacity onPress={() => setDurationMinutes(Math.min(15, durationMinutes + 1))}>
-                                <Ionicons name="add-circle" size={30} color={durationMinutes >= 15 ? '#333' : '#e74c3c'} />
+                                <Ionicons name="add-circle" size={30} color={durationMinutes >= 15 ? "#C1D3CB" : '#e74c3c'} />
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* Dificultad */}
-                    <View style={styles.menuRowCol}>
-                        <View style={styles.rowLeft}>
-                            <Ionicons name="ribbon" size={24} color="#f1c40f" />
-                            <AppText style={styles.rowLabel}>Dificultad</AppText>
-                        </View>
-                        <View style={styles.difficultyContainer}>
-                            <TouchableOpacity 
-                                style={[styles.diffTab, difficulty === 1 && styles.diffTabActive]} 
-                                onPress={() => setDifficulty(1)}
-                            >
-                                <AppText style={[styles.diffTabText, difficulty === 1 && styles.diffTabTextActive]}>Semilla</AppText>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                style={[styles.diffTab, difficulty === 2 && styles.diffTabActive]} 
-                                onPress={() => setDifficulty(2)}
-                            >
-                                <AppText style={[styles.diffTabText, difficulty === 2 && styles.diffTabTextActive]}>Discípulo</AppText>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                style={[styles.diffTab, difficulty === 3 && styles.diffTabActive]} 
-                                onPress={() => setDifficulty(3)}
-                            >
-                                <AppText style={[styles.diffTabText, difficulty === 3 && styles.diffTabTextActive]}>Apóstol</AppText>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
                 </ScrollView>
 
                 {/* Footer Button */}
                 <View style={styles.footer}>
                     <TouchableOpacity style={styles.startButton} onPress={handleStartGame}>
                         <LinearGradient
-                            colors={['#ff6b6b', '#e74c3c', '#9b1c1c']}
+                            colors={['#C599D7', '#A365B0', '#8453A0']}
                             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                             style={styles.startButtonInner}
                         >
-                            <Ionicons name="play-circle" size={24} color="#fff" style={{ marginRight: 10 }} />
+                            <Ionicons name="play-circle" size={24} color="#FFFFFF" style={{ marginRight: 10 }} />
                             <AppText style={styles.startButtonText}>Iniciar Juego</AppText>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -386,7 +367,7 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0a0a0f',
+        backgroundColor: "rgba(255,255,255,0.52)",
     },
     header: {
         flexDirection: 'row',
@@ -397,7 +378,7 @@ const styles = StyleSheet.create({
     },
     backBtn: {
         padding: 5,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         borderRadius: 20
     },
     titleContainer: {
@@ -421,22 +402,22 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(255,255,255,0.04)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         padding: 18,
         borderRadius: 22,
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)'
+        borderColor: "rgba(255,255,255,0.82)"
     },
     menuRowCol: {
         flexDirection: 'column',
         alignItems: 'stretch',
-        backgroundColor: 'rgba(255,255,255,0.04)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         padding: 18,
         borderRadius: 22,
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)'
+        borderColor: "rgba(255,255,255,0.82)"
     },
     rowLeft: {
         flexDirection: 'row',
@@ -444,7 +425,7 @@ const styles = StyleSheet.create({
     },
     rowLabel: {
         fontSize: 16,
-        color: '#fff',
+        color: "#2D3043",
         marginLeft: 12,
         fontWeight: '600'
     },
@@ -454,10 +435,10 @@ const styles = StyleSheet.create({
     },
     rowValue: {
         fontSize: 14,
-        color: '#ccc',
+        color: "#636477",
     },
     helpText: {
-        color: '#888',
+        color: "#636477",
         fontSize: 13,
         marginTop: 10,
         marginBottom: 10
@@ -467,19 +448,19 @@ const styles = StyleSheet.create({
         paddingBottom: 5
     },
     memberTag: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#555',
+        borderColor: "rgba(255,255,255,0.82)",
     },
     memberTagSelected: {
         backgroundColor: 'rgba(231, 76, 60, 0.2)',
         borderColor: '#e74c3c',
     },
     memberText: {
-        color: '#ccc',
+        color: "#636477",
         fontSize: 14,
         fontWeight: 'bold',
     },
@@ -487,7 +468,7 @@ const styles = StyleSheet.create({
         color: '#ff6b6b',
     },
     noMembers: {
-        color: '#555',
+        color: "#636477",
         fontStyle: 'italic',
         fontSize: 13
     },
@@ -497,40 +478,40 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginTop: 15,
         borderTopWidth: 1,
-        borderTopColor: '#222',
+        borderTopColor: "rgba(255,255,255,0.82)",
         paddingTop: 15,
         marginBottom: 10
     },
     anonLabel: {
-        color: '#ccc',
+        color: "#636477",
         fontSize: 15,
         fontWeight: 'bold'
     },
     addAnonBtn: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 15,
         alignItems: 'center',
         gap: 5,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)'
+        borderColor: "rgba(255,255,255,0.82)"
     },
     addAnonText: {
-        color: '#fff',
+        color: '#2D3043',
         fontWeight: 'bold',
         fontSize: 12
     },
     anonEditRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#2a2a35', // Un gris oscuro más elegante
+        backgroundColor: "rgba(255,255,255,0.52)", // Un gris oscuro más elegante
         borderRadius: 20,
         marginBottom: 10,
         paddingVertical: 5,
         paddingHorizontal: 10,
-        shadowColor: "#000",
+        shadowColor: "#3E4C45",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 3,
@@ -540,14 +521,14 @@ const styles = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: 15,
-        backgroundColor: '#16161c',
+        backgroundColor: "rgba(255,255,255,0.52)",
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 10
     },
     anonInput: {
         flex: 1,
-        color: '#fff',
+        color: "#2D3043",
         fontSize: 16,
         paddingVertical: 10,
         fontWeight: 'bold',
@@ -569,7 +550,7 @@ const styles = StyleSheet.create({
     },
     stepperValue: {
         fontSize: 18,
-        color: '#fff',
+        color: "#2D3043",
         fontWeight: 'bold',
         width: 50,
         textAlign: 'center',
@@ -585,7 +566,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#e74c3c',
     },
     toggleOff: {
-        backgroundColor: '#555',
+        backgroundColor: "rgba(255,255,255,0.52)",
     },
     toggleThumb: {
         width: 22,
@@ -605,7 +586,7 @@ const styles = StyleSheet.create({
         bottom: 0, left: 0, right: 0,
         padding: 20,
         paddingBottom: 40,
-        backgroundColor: 'rgba(10, 10, 15, 0.9)'
+        backgroundColor: "rgba(229,224,233,0.94)"
     },
     startButton: {
         borderRadius: 30,
@@ -618,7 +599,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     startButtonText: {
-        color: '#fff',
+        color: '#FFFFFF',
         fontSize: 18,
         fontWeight: '900',
         textTransform: 'uppercase',
@@ -627,7 +608,7 @@ const styles = StyleSheet.create({
     difficultyContainer: {
         flexDirection: 'row',
         marginTop: 15,
-        backgroundColor: '#0a0a0f',
+        backgroundColor: "rgba(255,255,255,0.52)",
         borderRadius: 12,
         padding: 4,
     },
@@ -641,11 +622,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#e74c3c',
     },
     diffTabText: {
-        color: '#666',
+        color: "#636477",
         fontSize: 13,
         fontWeight: 'bold',
     },
     diffTabTextActive: {
-        color: '#fff',
+        color: "#2D3043",
     }
 });

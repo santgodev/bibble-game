@@ -1,3 +1,4 @@
+import { GlassBackground } from '../../components/Glass';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, Animated, PanResponder, ScrollView } from 'react-native';
 import { AppText } from '../../components';
@@ -12,8 +13,8 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
 
     // Theme values from first selected category
     const mainCategory = selectedCategories?.[0];
-    const themeGradients = mainCategory?.gradientColors || ['#0F172A', '#1E3A8A', '#0F172A'];
-    const primaryColor = mainCategory?.color || '#D4AF37';
+    const themeGradients = mainCategory?.gradientColors || ["#D1E2DA", '#68A877', "#D1E2DA"];
+    const primaryColor = '#A25078';
 
     const [currentPlayer, setCurrentPlayer] = useState(0);
     const [hasPeeked, setHasPeeked] = useState(false);
@@ -54,52 +55,45 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
     );
 
     useEffect(() => {
+        const SEEN_KEY = 'seen_impostor_words_v2';
         const setupGame = async () => {
             if (selectedCategories && selectedCategories.length > 0) {
-                let randomCat = selectedCategories[Math.floor(Math.random() * selectedCategories.length)];
-                let pool = randomCat.words || [];
-                if (pool.length > 0) {
-                    // Filter pool if it contains WordItem objects with difficulty
-                    let filteredPool = pool.filter((w: any) => {
-                        if (typeof w === 'string') return true;
-                        if (w.difficulty) return w.difficulty === (difficulty || 1);
-                        return true;
+                // Junta TODAS las palabras de las categorías elegidas (cada una con su categoría)
+                const entries: { word: string; category: string }[] = [];
+                selectedCategories.forEach((cat: any) => {
+                    (cat.words || []).forEach((w: any) => {
+                        const text = typeof w === 'string' ? w : w.word;
+                        if (text) entries.push({ word: text, category: cat.title });
                     });
-                    if (filteredPool.length === 0) filteredPool = pool;
+                });
 
-                    // --- ALGORITMO DE NO REPETICIÓN (IMPOSTOR) ---
+                if (entries.length > 0) {
+                    const keyOf = (e: { word: string; category: string }) => `${e.category}|${e.word}`;
+                    const pickRandom = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+                    let chosen = pickRandom(entries);
+
+                    // --- NO REPETICIÓN: historial persistente de palabras ya jugadas ---
                     try {
-                        const seenStr = await AsyncStorage.getItem('seen_impostor_words');
-                        let seenWords: string[] = seenStr ? JSON.parse(seenStr) : [];
-                        
-                        // Obtener solo el texto de la palabra para comparar
-                        let available = filteredPool.filter((w: any) => {
-                            const wordText = typeof w === 'string' ? w : w.word;
-                            return !seenWords.includes(wordText);
-                        });
+                        const seenStr = await AsyncStorage.getItem(SEEN_KEY);
+                        let seen: string[] = seenStr ? JSON.parse(seenStr) : [];
 
-                        if (available.length < 2) {
-                            available = filteredPool;
-                            // Limpiar historial de este subgrupo
-                            const textsInPool = filteredPool.map((w: any) => typeof w === 'string' ? w : w.word);
-                            seenWords = seenWords.filter(sw => !textsInPool.includes(sw));
+                        let available = entries.filter(e => !seen.includes(keyOf(e)));
+                        if (available.length === 0) {
+                            // Ya se jugaron todas las de esta selección: reinicia solo ese grupo
+                            const poolKeys = new Set(entries.map(keyOf));
+                            seen = seen.filter(k => !poolKeys.has(k));
+                            available = entries;
                         }
 
-                        let wordObj = available[Math.floor(Math.random() * available.length)];
-                        const selectedWord = typeof wordObj === 'string' ? wordObj : wordObj.word;
-                        
-                        setSecretWord(selectedWord);
-                        setSecretCategory(randomCat.title);
-
-                        // Guardar en historial
-                        const updatedSeen = Array.from(new Set([...seenWords, selectedWord])).slice(-100);
-                        await AsyncStorage.setItem('seen_impostor_words', JSON.stringify(updatedSeen));
+                        chosen = pickRandom(available);
+                        seen.push(keyOf(chosen));
+                        await AsyncStorage.setItem(SEEN_KEY, JSON.stringify(seen.slice(-1000)));
                     } catch (e) {
-                        console.error("Error with word history", e);
-                        let wordObj = filteredPool[Math.floor(Math.random() * filteredPool.length)];
-                        setSecretWord(typeof wordObj === 'string' ? wordObj : wordObj.word);
-                        setSecretCategory(randomCat.title);
+                        console.error('Error with word history', e);
                     }
+
+                    setSecretWord(chosen.word);
+                    setSecretCategory(chosen.category);
                 }
             }
             const impSet = new Set<number>();
@@ -145,17 +139,13 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={styles.container}>
-            <LinearGradient
-                colors={themeGradients}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
-            />
-            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)' }]} />
+            <GlassBackground />
+
+
 
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-                    <Ionicons name="close" size={24} color="#FFF" />
+                    <Ionicons name="close" size={24} color="#2D3043" />
                 </TouchableOpacity>
                 <AppText style={styles.turnLabel}>PASSA EL TELÉFONO</AppText>
                 <View style={{ width: 40 }} />
@@ -189,10 +179,10 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
                                 </View>
                             ) : (
                                 <View style={styles.roleBox}>
-                                    <Ionicons name="shield-checkmark" size={80} color="#2ecc71" />
+                                    <Ionicons name="shield-checkmark" size={80} color="#68A877" />
                                     <AppText style={styles.roleTitle}>Tú eres un</AppText>
                                     <AppText style={styles.roleValueCit} numberOfLines={1} adjustsFontSizeToFit>CIUDADANO</AppText>
-                                    
+
                                     <View style={styles.secretWordBox}>
                                          <AppText style={styles.secretWord} numberOfLines={1} adjustsFontSizeToFit>{secretWord}</AppText>
                                      </View>
@@ -207,14 +197,14 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
                     </View>
 
                     {/* FRENTE (PORTADA DESLIZABLE) */}
-                    <Animated.View 
-                        {...panResponder.panHandlers} 
+                    <Animated.View
+                        {...panResponder.panHandlers}
                         style={[styles.card, frontAnimatedStyle, { zIndex: 10 }]}
                     >
                         <Image source={cardCovers[currentPlayer % cardCovers.length]} style={styles.cardImageCover} />
                         <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.cardOverlayBase}>
-                            <Ionicons name="chevron-up" size={32} color={primaryColor} />
-                            <AppText style={[styles.cardTouchText, { color: primaryColor }]}>DESLIZA HACIA ARRIBA</AppText>
+                            <Ionicons name="chevron-up" size={32} color="#FFFFFF" />
+                            <AppText style={[styles.cardTouchText, { color: "#FFFFFF" }]}>DESLIZA HACIA ARRIBA</AppText>
                         </LinearGradient>
                     </Animated.View>
                 </View>
@@ -242,33 +232,33 @@ export const ImpostorPassScreen = ({ navigation, route }: any) => {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, marginBottom: 10 },
-    iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12 },
-    turnLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '900', letterSpacing: 2 },
+    iconBtn: { padding: 8, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 12 },
+    turnLabel: { color: "#636477", fontSize: 12, fontWeight: '900', letterSpacing: 2 },
     turnBanner: { alignItems: 'center', paddingHorizontal: 40, marginBottom: 20 },
-    turnSubLabel: { color: '#D4AF37', fontSize: 12, fontWeight: '900', letterSpacing: 1, marginBottom: 5 },
-    playerName: { color: '#fff', fontSize: 42, textAlign: 'center', lineHeight: 50, fontWeight: '900' },
+    turnSubLabel: { color: "#68A877", fontSize: 12, fontWeight: '900', letterSpacing: 1, marginBottom: 5 },
+    playerName: { color: "#2D3043", fontSize: 42, textAlign: 'center', lineHeight: 50, fontWeight: '900' },
     cardWrapper: { flex: 1, alignItems: 'center', paddingHorizontal: 30 },
     cardContainer: { width: 320, height: 420, position: 'relative' },
-    card: { width: '100%', height: '100%', backgroundColor: '#1E1E1E', borderRadius: 32, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.6, shadowRadius: 30, elevation: 15 },
+    card: { width: '100%', height: '100%', backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 32, overflow: 'hidden', borderWidth: 1, borderColor: "rgba(255,255,255,0.82)", shadowColor: "#3E4C45", shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.12, shadowRadius: 30, elevation: 15 },
     cardImageCover: { width: '100%', height: '100%', resizeMode: 'cover' },
     cardOverlayBase: { position: 'absolute', bottom: 0, width: '100%', height: '50%', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 30 },
     cardTouchText: { fontSize: 14, fontWeight: '900', letterSpacing: 2, marginTop: 10 },
-    cardReverso: { ...StyleSheet.absoluteFillObject, backgroundColor: '#0A0A0A', borderRadius: 32, overflow: 'hidden', borderWidth: 2, borderColor: '#D4AF37' },
+    cardReverso: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 32, overflow: 'hidden', borderWidth: 2, borderColor: "#68A877" },
     scrollContent: { flexGrow: 1, padding: 25, alignItems: 'center', justifyContent: 'center' },
     roleBox: { alignItems: 'center', width: '100%' },
-    roleTitle: { color: 'rgba(255,255,255,0.6)', fontSize: 16, fontWeight: '700', marginTop: 15 },
+    roleTitle: { color: "#636477", fontSize: 16, fontWeight: '700', marginTop: 15 },
     roleValueImp: { color: '#E74C3C', fontSize: 44, fontWeight: '900', lineHeight: 52, textAlign: 'center' },
-    roleValueCit: { color: '#2ECC71', fontSize: 44, fontWeight: '900', lineHeight: 52, width: '100%', textAlign: 'center' },
-    detailText: { color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 10, fontSize: 14 },
-    hintTag: { backgroundColor: 'rgba(212,175,55,0.1)', padding: 15, borderRadius: 16, marginTop: 25, width: '100%', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(212,175,55,0.2)' },
-    hintLabel: { color: '#D4AF37', fontSize: 10, fontWeight: '900', marginBottom: 5 },
-    hintValue: { color: '#fff', fontSize: 20, fontWeight: '800' },
+    roleValueCit: { color: '#68A877', fontSize: 44, fontWeight: '900', lineHeight: 52, width: '100%', textAlign: 'center' },
+    detailText: { color: "#636477", textAlign: 'center', marginTop: 10, fontSize: 14 },
+    hintTag: { backgroundColor: "rgba(11,138,94,0.1)", padding: 15, borderRadius: 16, marginTop: 25, width: '100%', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: "rgba(11,138,94,0.2)" },
+    hintLabel: { color: "#68A877", fontSize: 10, fontWeight: '900', marginBottom: 5 },
+    hintValue: { color: "#2D3043", fontSize: 20, fontWeight: '800' },
     secretWordBox: { marginTop: 20, paddingVertical: 15, width: '100%', alignItems: 'center' },
-    secretWord: { color: '#fff', fontSize: 36, fontWeight: '900', textAlign: 'center', lineHeight: 44 },
-    catBox: { marginTop: 15, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)' },
-    catLabel: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '900', textAlign: 'center' },
-    catValue: { color: '#D4AF37', fontSize: 14, fontWeight: '800', textAlign: 'center' },
-    hintPeekText: { color: 'rgba(255,255,255,0.4)', textAlign: 'center', fontSize: 13, marginTop: 20 },
+    secretWord: { color: "#2D3043", fontSize: 36, fontWeight: '900', textAlign: 'center', lineHeight: 44 },
+    catBox: { marginTop: 15, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.48)" },
+    catLabel: { color: "#636477", fontSize: 10, fontWeight: '900', textAlign: 'center' },
+    catValue: { color: "#68A877", fontSize: 14, fontWeight: '800', textAlign: 'center' },
+    hintPeekText: { color: "#636477", textAlign: 'center', fontSize: 13, marginTop: 20 },
     nextBtn: { width: '100%', height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginTop: 15 },
-    nextBtnText: { color: '#000', fontSize: 18, fontWeight: '900' }
+    nextBtnText: { color: "#FFFFFF", fontSize: 18, fontWeight: '900' }
 });

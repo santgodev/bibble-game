@@ -1,3 +1,4 @@
+import { GlassBackground } from '../components/Glass';
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, StyleSheet, ScrollView, TouchableOpacity,
@@ -14,10 +15,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../theme';
 
-const GOLD = '#D4AF37';
-const GOLD2 = '#F5D76E';
-const SURFACE = 'rgba(255,255,255,0.05)';
-const BORDER = 'rgba(255,255,255,0.08)';
+const GOLD = "#68A877";
+const GOLD2 = "#AE91E4";
+const SURFACE = "rgba(255,255,255,0.55)";
+const BORDER = "rgba(255,255,255,0.82)";
 
 const { width: SW } = Dimensions.get('window');
 
@@ -97,7 +98,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
     const shuffleAndPick = (dur?: number) => {
         if (!totalPool || totalPool.length === 0) return;
         const activeDuration = dur ?? gameDuration;
-        
+
         let pool = [...totalPool];
 
         // Filter by difficulty if provided
@@ -112,7 +113,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
             const j = Math.floor(Math.random() * (i + 1));
             [pool[i], pool[j]] = [pool[j], pool[i]];
         }
-        
+
         // Respect duration-based count even if difficulty is set, especially for Charadas
         const targetCount = getWordsCount(activeDuration);
         const target = Math.min(targetCount, pool.length);
@@ -148,19 +149,15 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
         s >= 60 ? `${Math.floor(s / 60)}:${s % 60 === 0 ? '00' : String(s % 60).padStart(2, '0')}` : `${s}s`;
 
     // Colorimetry
-    const themeGradients = categoryObj?.gradientColors || ['#0D0520', '#080818', '#0D0520'];
-    const primaryColor = categoryObj?.color || theme.colors.primary;
+    const themeGradients = categoryObj?.gradientColors || ["#D1E2DA", "#D1E2DA", "#D1E2DA"];
+    const primaryColor = theme.colors.primary;
 
     return (
         <View style={s.root}>
+            <GlassBackground />
             {/* ── Hero gradient background ── */}
-            <LinearGradient
-                colors={themeGradients}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
-            />
-            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(5,5,10,0.7)' }]} />
+
+
 
             {/* Decorative glow orb */}
             <Animated.View style={[s.glowOrb, { opacity: glowOpacity, backgroundColor: primaryColor }]} />
@@ -172,7 +169,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                 {/* ── Hero Header ── */}
                 <View style={s.heroRow}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} activeOpacity={0.7}>
-                        <Ionicons name="arrow-back" size={20} color="rgba(255,255,255,0.8)" />
+                        <Ionicons name="arrow-back" size={20} color="#636477" />
                     </TouchableOpacity>
 
                     <View style={s.heroCenter}>
@@ -215,7 +212,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                                 >
                                     {active ? (
                                         <LinearGradient colors={[primaryColor, primaryColor]} style={s.durBtnGrad}>
-                                            <AppText style={[s.durTextActive, { color: '#000' }]}>{label}</AppText>
+                                            <AppText style={[s.durTextActive, { color: "#FFFFFF" }]}>{label}</AppText>
                                         </LinearGradient>
                                     ) : (
                                         <AppText style={s.durText}>{label}</AppText>
@@ -237,7 +234,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                     </View>
                     {totalPool.length < getWordsCount(gameDuration) && (
                         <View style={s.limitWarning}>
-                            <Ionicons name="information-circle-outline" size={14} color="#666" />
+                            <Ionicons name="information-circle-outline" size={14} color="#636477" />
                             <AppText style={s.limitWarningText}>
                                 Esta categoría tiene pocas palabras ({totalPool.length}). Jugando con todas.
                             </AppText>
@@ -249,12 +246,12 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                             return (
                                 <View
                                     key={index}
-                                    style={[s.chip, { 
-                                        backgroundColor: 'rgba(255,255,255,0.04)', 
-                                        borderColor: primaryColor + '40' 
+                                    style={[s.chip, {
+                                        backgroundColor: "rgba(255,255,255,0.48)",
+                                        borderColor: primaryColor + '40'
                                     }]}
                                 >
-                                    <AppText style={[s.chipText, { color: '#fff' }]} numberOfLines={1} adjustsFontSizeToFit>
+                                    <AppText style={[s.chipText, { color: "#2D3043" }]} numberOfLines={1} adjustsFontSizeToFit>
                                         {wordText}
                                     </AppText>
                                 </View>
@@ -262,7 +259,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                         })}
                         {displayedWords.length === 0 && (
                             <View style={s.emptyWords}>
-                                <Ionicons name="alert-circle-outline" size={32} color="#333" />
+                                <Ionicons name="alert-circle-outline" size={32} color="#636477" />
                                 <AppText style={s.emptyText}>Sin palabras disponibles</AppText>
                             </View>
                         )}
@@ -281,7 +278,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                             <AppText style={[s.sectionLabel, { flex: 1 }]}>¿QUIÉN JUEGA?</AppText>
                             <Ionicons
                                 name={showMembers ? 'chevron-up' : 'chevron-down'}
-                                size={16} color="#444"
+                                size={16} color="#636477"
                             />
                         </TouchableOpacity>
 
@@ -324,10 +321,10 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
                         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                         style={s.startBtnInner}
                     >
-                        <Ionicons name="play-circle" size={26} color="#000" />
+                        <Ionicons name="play-circle" size={26} color="#2D3043" />
                         <View style={{ alignItems: 'center' }}>
-                            <AppText style={[s.startBtnText, { color: '#000' }]}>INICIAR JUEGO</AppText>
-                            <AppText style={[s.startBtnSub, { color: 'rgba(0,0,0,0.6)' }]}>{formatDuration(gameDuration)} · {displayedWords.length} palabras</AppText>
+                            <AppText style={[s.startBtnText, { color: "#FFFFFF" }]}>INICIAR JUEGO</AppText>
+                            <AppText style={[s.startBtnSub, { color: "#FFFFFFCC" }]}>{formatDuration(gameDuration)} · {displayedWords.length} palabras</AppText>
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -337,7 +334,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
 };
 
 const s = StyleSheet.create({
-    root: { flex: 1, backgroundColor: '#08081A' },
+    root: { flex: 1, backgroundColor: "#EAE5E0" },
     scroll: { paddingHorizontal: 16, paddingBottom: 20 },
 
     // Glow orb
@@ -355,7 +352,7 @@ const s = StyleSheet.create({
     },
     backBtn: {
         width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.06)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 1, borderColor: BORDER,
     },
@@ -365,7 +362,7 @@ const s = StyleSheet.create({
     },
     categoryName: {
         fontSize: 22, fontWeight: '900', letterSpacing: 0.5,
-        color: '#fff', // overridden visually by gradient bg on text
+        color: "#2D3043", // overridden visually by gradient bg on text
         includeFontPadding: false,
         lineHeight: 28,
         paddingTop: 2,
@@ -379,14 +376,14 @@ const s = StyleSheet.create({
     },
     shuffleBtn: {
         width: 40, height: 40, borderRadius: 20,
-        backgroundColor: 'rgba(212,175,55,0.1)',
+        backgroundColor: "rgba(11,138,94,0.1)",
         alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: 'rgba(212,175,55,0.25)',
+        borderWidth: 1, borderColor: "rgba(11,138,94,0.25)",
     },
 
     // Sections
     section: {
-        backgroundColor: 'rgba(255,255,255,0.04)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         borderRadius: 22, padding: 16,
         borderWidth: 1, borderColor: BORDER,
         marginBottom: 14,
@@ -395,13 +392,13 @@ const s = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14,
     },
     sectionLabel: {
-        color: '#666', fontSize: 10, fontWeight: '800', letterSpacing: 1.5,
+        color: "#636477", fontSize: 10, fontWeight: '800', letterSpacing: 1.5,
     },
     countBadge: {
         marginLeft: 'auto',
-        backgroundColor: 'rgba(212,175,55,0.12)',
+        backgroundColor: "rgba(11,138,94,0.12)",
         paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10,
-        borderWidth: 1, borderColor: 'rgba(212,175,55,0.25)',
+        borderWidth: 1, borderColor: "rgba(11,138,94,0.25)",
     },
     countBadgeText: { color: GOLD, fontSize: 12, fontWeight: '900' },
 
@@ -410,13 +407,13 @@ const s = StyleSheet.create({
     durBtn: {
         flex: 1, borderRadius: 14, overflow: 'hidden',
         borderWidth: 1, borderColor: BORDER,
-        backgroundColor: 'rgba(255,255,255,0.03)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         minHeight: 46, alignItems: 'center', justifyContent: 'center',
     },
     durBtnActive: { borderColor: GOLD },
     durBtnGrad: { width: '100%', paddingVertical: 13, alignItems: 'center' },
-    durText: { color: '#555', fontWeight: '800', fontSize: 12 },
-    durTextActive: { color: '#000', fontWeight: '900', fontSize: 12 },
+    durText: { color: "#636477", fontWeight: '800', fontSize: 12 },
+    durTextActive: { color: "#2D3043", fontWeight: '900', fontSize: 12 },
 
     // Words
     wordsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
@@ -426,36 +423,36 @@ const s = StyleSheet.create({
     },
     chipText: { fontSize: 13, fontWeight: '700' },
     emptyWords: { alignItems: 'center', width: '100%', paddingVertical: 30, gap: 10 },
-    emptyText: { color: '#333', fontSize: 14 },
+    emptyText: { color: "#636477", fontSize: 14 },
 
     // Members
     membersToggle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     memberChip: {
         flexDirection: 'row', alignItems: 'center',
         paddingVertical: 8, paddingHorizontal: 13, borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.04)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         borderWidth: 1, borderColor: BORDER,
     },
     memberChipActive: {
-        backgroundColor: 'rgba(212,175,55,0.08)',
-        borderColor: 'rgba(212,175,55,0.35)',
+        backgroundColor: "rgba(11,138,94,0.08)",
+        borderColor: "rgba(11,138,94,0.35)",
     },
-    memberText: { color: '#777', fontSize: 13, fontWeight: '700' },
+    memberText: { color: "#636477", fontSize: 13, fontWeight: '700' },
 
     // Footer CTA
     footer: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
         paddingHorizontal: 16, paddingTop: 12,
-        backgroundColor: 'rgba(8,8,26,0.96)',
-        borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: "rgba(229,224,233,0.94)",
+        borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.82)",
     },
     startBtn: { borderRadius: 20, overflow: 'hidden' },
     startBtnInner: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         paddingVertical: 18, gap: 14,
     },
-    startBtnText: { color: '#000', fontSize: 18, fontWeight: '900', letterSpacing: 1.5, includeFontPadding: false },
-    startBtnSub: { color: 'rgba(0,0,0,0.55)', fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 2 },
+    startBtnText: { color: "#2D3043", fontSize: 18, fontWeight: '900', letterSpacing: 1.5, includeFontPadding: false },
+    startBtnSub: { color: "#636477", fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 2 },
 
     // Warning
     limitWarning: {
@@ -464,5 +461,5 @@ const s = StyleSheet.create({
         padding: 8, borderRadius: 10, marginBottom: 16,
         borderWidth: 1, borderColor: 'rgba(255,165,0,0.15)',
     },
-    limitWarningText: { color: '#888', fontSize: 11, fontWeight: '600' },
+    limitWarningText: { color: "#636477", fontSize: 11, fontWeight: '600' },
 });

@@ -53,9 +53,10 @@ export const AppNavigator = () => {
             <Stack.Navigator
                 screenOptions={{
                     headerShown: false,
+                    cardStyle: { flex: 1, height: '100%', backgroundColor: colors.background, width: '100%', maxWidth: 1040, alignSelf: 'center' },
                 }}
             >
-                <Stack.Screen name="Home" component={HomeScreen} />
+                <Stack.Screen name="Home" component={HomeScreen} options={{ cardStyle: { flex: 1, height: '100%', maxWidth: undefined, width: '100%' } }} />
                 <Stack.Screen name="Auth" component={AuthScreen} />
                 <Stack.Screen name="RankingDashboard" component={RankingDashboardScreen} />
                 <Stack.Screen name="Profile" component={ProfileScreen} />

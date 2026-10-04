@@ -1,86 +1,39 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
+import { Pressable, StyleSheet, ViewStyle, ActivityIndicator, StyleProp, TextStyle, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { AppText } from './AppText';
 
 interface ButtonProps {
-    title: string;
-    onPress: () => void;
+    title: string; onPress: () => void;
     variant?: 'primary' | 'secondary' | 'outline' | 'danger';
-    disabled?: boolean;
-    loading?: boolean;
-    style?: ViewStyle;
-    textStyle?: object; // Allow custom text style
+    disabled?: boolean; loading?: boolean;
+    style?: StyleProp<ViewStyle>; textStyle?: StyleProp<TextStyle>;
 }
-
-export const Button: React.FC<ButtonProps> = ({
-    title,
-    onPress,
-    variant = 'primary',
-    disabled,
-    loading,
-    style,
-    textStyle,
-}) => {
+export const Button = ({ title, onPress, variant = 'primary', disabled, loading, style, textStyle }: ButtonProps) => {
     const { colors, theme } = useTheme();
-
-    const handlePress = () => {
-        if (disabled || loading) return;
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-    };
-
-    const getBackgroundColor = () => {
-        if (disabled) return colors.lightGray;
-        switch (variant) {
-            case 'primary': return colors.primary;
-            case 'secondary': return colors.secondary;
-            case 'danger': return colors.error;
-            case 'outline': return 'transparent';
-            default: return colors.primary;
-        }
-    };
-
-    const getTextColor = () => {
-        if (disabled) return colors.textSecondary;
-        if (variant === 'outline') return colors.primary;
-        return '#FFFFFF';
-    };
-
+    const solid = variant !== 'outline';
+    const ink = disabled ? colors.textSecondary : solid ? '#FFFFFF' : colors.primary;
+    const gradient: [string, string, string] = disabled ? ['#DDDAE4', '#D4D0DB', '#E0DDE5']
+        : variant === 'secondary' ? ['#64BCB5', '#187D80', '#21918F']
+        : variant === 'danger' ? ['#D17D94', '#AC3D5D', '#BC5876']
+        : variant === 'outline' ? ['rgba(255,255,255,0.85)', 'rgba(255,255,255,0.22)', 'rgba(255,255,255,0.55)']
+        : ['#AEDBB8', '#8FCA97', '#68A877'];
     return (
-        <TouchableOpacity
-            onPress={handlePress}
+        <Pressable accessibilityRole="button" accessibilityLabel={title}
+            accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
             disabled={disabled || loading}
-            style={[
-                styles.button,
-                {
-                    backgroundColor: getBackgroundColor(),
-                    borderColor: variant === 'outline' ? colors.primary : 'transparent',
-                    borderWidth: variant === 'outline' ? 2 : 0,
-                },
-                style,
-            ]}
-            activeOpacity={0.7}
-        >
-            {loading ? (
-                <ActivityIndicator color={getTextColor()} />
-            ) : (
-                <AppText variant="button" style={[{ color: getTextColor() }, textStyle]}>
-                    {title}
-                </AppText>
-            )}
-        </TouchableOpacity>
+            onPress={() => {
+                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                onPress();
+            }}
+            style={({ pressed }) => [styles.button, theme.shadows.soft, { opacity: disabled ? 0.65 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }, style]}>
+            <LinearGradient pointerEvents="none" colors={gradient} style={[StyleSheet.absoluteFill, { borderRadius: 26 }]} />
+            {loading ? <ActivityIndicator color={ink} /> : <AppText variant="button" centered style={[{ color: ink }, textStyle]}>{title}</AppText>}
+        </Pressable>
     );
 };
-
 const styles = StyleSheet.create({
-    button: {
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        borderRadius: 12, // User likes rounded modern look
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 52,
-    },
+    button: { paddingVertical: 15, paddingHorizontal: 24, borderRadius: 26, borderWidth: 1, borderColor: 'rgba(255,255,255,0.7)', alignItems: 'center', justifyContent: 'center', minHeight: 52 },
 });

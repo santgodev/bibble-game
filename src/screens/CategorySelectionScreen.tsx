@@ -1,7 +1,8 @@
+import { GlassBackground } from '../components/Glass';
 import React from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Image, Dimensions, ImageBackground, Platform, Modal } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Image, Dimensions, ImageBackground, Platform, Modal, useWindowDimensions, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Container, AppText, Button } from '../components';
+import { Container, AppText, Button, GlassSheen } from '../components';
 import { getCategories, deleteCategory, Category, UnleashQuestion, TriviaQuestion, WordItem } from '../data/categories';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,15 +12,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { getCategoryLockStatus } from '../utils/categoryLock';
 import { useSound } from '../context/SoundContext';
 
-const { width } = Dimensions.get('window');
-const SPACING = 20; // Padding horizontal del container
-const GAP = 16; // Espacio entre columnas
-const NUM_COLUMNS = 2;
-// Ancho total disponible = width - (SPACING * 2) - GAP
-const CARD_SIZE = (width - (SPACING * 2) - GAP) / NUM_COLUMNS;
+
 
 export const CategorySelectionScreen = ({ navigation, route }: any) => {
     const { t } = useLanguage();
+    const { width } = useWindowDimensions();
+    const columns = width >= 900 ? 4 : width >= 620 ? 3 : 2;
+    const cardSize = (Math.min(width, 1040) - 40 - (columns - 1) * 16) / columns;
+    const [search, setSearch] = React.useState('');
     const { playSound, playHaptic } = useSound();
     const subcategories = route?.params?.subcategories;
     const parentTitle = route?.params?.parentTitle;
@@ -33,7 +33,7 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
     const [currentQuizCategory, setCurrentQuizCategory] = React.useState<Category | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [quizMistakes, setQuizMistakes] = React.useState(0);
-    
+
     // Trivia Difficulty Selection
     const [difficultyModalVisible, setDifficultyModalVisible] = React.useState(false);
     const [categoryForTrivia, setCategoryForTrivia] = React.useState<Category | null>(null);
@@ -42,7 +42,7 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         if (subcategories) {
             setCategories(subcategories);
         } else {
-            const data = await getCategories();
+            const data = await getCategories(targetGame);
             setCategories(data);
         }
 
@@ -56,7 +56,7 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                     .like('description', 'MISSION:%');
 
                 if (events) {
-                    setCompletedMissions(events.map(e => e.description.replace('MISSION:', '')));
+                    setCompletedMissions(events.map((e: any) => e.description.replace('MISSION:', '')));
                 }
             }
         } catch (err) {
@@ -143,7 +143,7 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         const locked = isCategoryLocked(item);
 
         const proceedToGame = async (categoryWithData: Category) => {
-            if (targetGame === 'trivia' || targetGame === 'charadas') {
+            if (targetGame === 'trivia') {
                 setCategoryForTrivia(categoryWithData);
                 setDifficultyModalVisible(true);
             } else {
@@ -174,7 +174,7 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                         .from('trivia_questions')
                         .select('*')
                         .eq('category_id', item.id);
-                    
+
                     if (qs && qs.length > 0) {
                         const mappedQs: TriviaQuestion[] = qs.map((q: any) => ({
                             id: q.id,
@@ -215,7 +215,9 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
 
         return (
             <TouchableOpacity
-                style={[styles.card, styles.gridCard, locked && { borderColor: '#333', borderWidth: 1 }]}
+                accessibilityRole="button"
+                accessibilityLabel={item.title + (locked ? ', bloqueado' : '')}
+                style={[styles.card, styles.gridCard, { width: cardSize, minHeight: cardSize + 18 }]}
                 onPress={() => {
                     if (locked) {
                         const lockStatus = getCategoryLockStatus(item, completedMissions);
@@ -246,8 +248,8 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                     }
 
                     if (item.subcategories && item.subcategories.length > 0 && targetGame === 'trivia') {
-                        navigation.push('CategorySelection', { 
-                            subcategories: item.subcategories, 
+                        navigation.push('CategorySelection', {
+                            subcategories: item.subcategories,
                             parentTitle: item.title,
                             targetGame: targetGame
                         });
@@ -257,78 +259,19 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                 }}
                 activeOpacity={locked ? 1 : 0.8}
             >
-                {item.image ? (
-                    <Image
-                        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-                        style={{ width: CARD_SIZE, height: CARD_SIZE }}
-                        resizeMode="contain"
-                    />
-                ) : (
-                    <LinearGradient
-                        colors={(item.gradientColors as any) || [item.color || '#1A1A1A', '#000']}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                        style={[styles.minimalistCover, locked && { opacity: 0.3 }]}
-                    >
-                        {/* Glass reflect effect */}
-                        <LinearGradient 
-                            colors={['rgba(255,255,255,0.15)', 'transparent']}
-                            start={{ x: 0, y: 0 }} end={{ x: 0.5, y: 0.5 }}
-                            style={styles.glassReflect}
-                        />
 
-                        {/* Top Accent Line */}
-                        <View style={[styles.topAccent, { backgroundColor: item.color }]} />
-
-                        {item.icon && !locked && (
-                            <Ionicons 
-                                name={item.icon as any} 
-                                size={60} 
-                                color="rgba(255,255,255,0.08)" 
-                                style={styles.watermarkIcon} 
-                            />
-                        )}
-
-                        <View style={styles.cardInfoContainer}>
-                            <AppText 
-                                style={[styles.minimalistTitle, locked && { color: '#555' }]} 
-                                numberOfLines={2} 
-                                adjustsFontSizeToFit
-                            >
-                                {item.title.toUpperCase()}
-                            </AppText>
-                            
-                            <View style={[styles.divider, { backgroundColor: item.color + '40' }]} />
-
-                            {item.capitulo ? (
-                                <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]} numberOfLines={1}>{item.capitulo}</AppText>
-                            ) : (
-                                <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]} numberOfLines={1}>
-                                    {item.difficulty === 'Fácil' ? '🌱 SEMILLA' : item.difficulty === 'Medio' ? '👣 DISCÍPULO' : '🕊️ MAESTRO'}
-                                </AppText>
-                            )}
-                        </View>
-
-                        {/* Bottom Glow */}
-                        <View style={[styles.bottomGlow, { backgroundColor: item.color + '20' }]} />
-                    </LinearGradient>
-                )}
-
-                {item.image && (
-                    <View style={styles.textOverlay}>
-                        <AppText variant="subheader" style={styles.gridTitle} numberOfLines={2}>
-                            {item.title}
-                        </AppText>
+                <GlassSheen tint={locked ? 'neutral' : targetGame === 'trivia' ? 'mint' : 'violet'} />
+                <View style={styles.categoryTop}>
+                    <View style={[styles.categoryIcon, { backgroundColor: locked ? '#D9D4DF66' : '#FFFFFF88' }]}>
+                        <Ionicons name={locked ? 'lock-closed-outline' : (item.icon as any) || 'book-outline'} size={28} color={locked ? '#797080' : theme.colors.primary} />
                     </View>
-                )}
+                    <Ionicons name={locked ? 'lock-closed-outline' : 'arrow-forward'} size={16} color={theme.colors.textSecondary} />
+                </View>
+                <AppText style={styles.categoryTitle} numberOfLines={3}>{item.title}</AppText>
+                <AppText style={styles.categorySubtitle} numberOfLines={2}>
+                    {locked ? 'Completa la ruta para desbloquear' : item.capitulo || (item.difficulty === 'Fácil' ? 'Semilla · Para comenzar' : item.difficulty === 'Medio' ? 'Discípulo · Sigue creciendo' : 'Explora y aprende')}
+                </AppText>
 
-
-                {locked && (
-                    <View style={styles.lockOverlayAbsolute}>
-                        <View style={styles.lockCircle}>
-                            <Ionicons name="lock-closed" size={24} color="#888" />
-                        </View>
-                    </View>
-                )}
             </TouchableOpacity>
         );
     };
@@ -340,24 +283,24 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         const q = currentQuizCategory.unleashQuiz[currentQuestionIndex];
 
         return (
-            <Modal visible={unleashModalVisible} animationType="slide" transparent>
+            <Modal onRequestClose={() => setUnleashModalVisible(false)} visible={unleashModalVisible} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         {/* Dark Header */}
                         <View style={styles.modalHeader}>
                             <View style={{ flex: 1 }}>
-                                <AppText style={{ color: '#aaa', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>EXAMEN DE DESBLOQUEO</AppText>
-                                <AppText variant="subheader" style={{ color: '#fff', fontSize: 17 }}>{currentQuizCategory.title}</AppText>
+                                <AppText style={{ color: "#636477", fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>EXAMEN DE DESBLOQUEO</AppText>
+                                <AppText variant="subheader" style={{ color: "#2D3043", fontSize: 17 }}>{currentQuizCategory.title}</AppText>
                             </View>
-                            <TouchableOpacity onPress={() => setUnleashModalVisible(false)} style={{ padding: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
-                                <Ionicons name="close" size={20} color="#fff" />
+                            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar examen" onPress={() => setUnleashModalVisible(false)} style={{ padding: 5, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 20 }}>
+                                <Ionicons name="close" size={20} color="#2D3043" />
                             </TouchableOpacity>
                         </View>
 
                         <View style={{ padding: 20 }}>
                             {/* Progress */}
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-                                <AppText style={{ color: '#aaa', fontSize: 13 }}>Pregunta {currentQuestionIndex + 1} / {currentQuizCategory.unleashQuiz.length}</AppText>
+                                <AppText style={{ color: "#636477", fontSize: 13 }}>Pregunta {currentQuestionIndex + 1} / {currentQuizCategory.unleashQuiz.length}</AppText>
                                 <AppText style={{ color: '#e74c3c', fontSize: 13, letterSpacing: 2 }}>{'❤️'.repeat(3 - quizMistakes)}</AppText>
                             </View>
 
@@ -375,9 +318,9 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                                     activeOpacity={0.7}
                                 >
                                     <View style={styles.modalOptionLetter}>
-                                        <AppText style={{ color: '#000', fontWeight: 'bold' }}>{['A', 'B', 'C', 'D'][i]}</AppText>
+                                        <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>{['A', 'B', 'C', 'D'][i]}</AppText>
                                     </View>
-                                    <AppText style={{ color: '#e0e0e0', flex: 1, fontSize: 15 }}>{opt}</AppText>
+                                    <AppText style={{ color: "#2D3043", flex: 1, fontSize: 15 }}>{opt}</AppText>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -417,47 +360,50 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         };
 
         return (
-            <Modal visible={difficultyModalVisible} animationType="fade" transparent>
+            <Modal onRequestClose={() => setDifficultyModalVisible(false)} visible={difficultyModalVisible} animationType="fade" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <View style={{ flex: 1 }}>
-                                <AppText style={{ color: '#aaa', fontSize: 11, letterSpacing: 2 }}>SELECCIONA NIVEL</AppText>
-                                <AppText variant="subheader" style={{ color: '#fff', fontSize: 17 }}>{categoryForTrivia.title}</AppText>
+                                <AppText style={{ color: "#636477", fontSize: 11, letterSpacing: 2 }}>SELECCIONA NIVEL</AppText>
+                                <AppText variant="subheader" style={{ color: "#2D3043", fontSize: 17 }}>{categoryForTrivia.title}</AppText>
                             </View>
-                            <TouchableOpacity onPress={() => setDifficultyModalVisible(false)} style={{ padding: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
-                                <Ionicons name="close" size={20} color="#fff" />
+                            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar niveles" onPress={() => setDifficultyModalVisible(false)} style={{ padding: 5, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 20 }}>
+                                <Ionicons name="close" size={20} color="#2D3043" />
                             </TouchableOpacity>
                         </View>
 
                         <View style={{ padding: 20, gap: 12 }}>
-                            <TouchableOpacity style={[styles.modalOptionBtn, { borderColor: '#27AE60' }]} onPress={() => startTrivia(1)}>
+                            <TouchableOpacity accessibilityRole="button"
+                                style={[styles.modalOptionBtn, { borderColor: '#27AE60' }]} onPress={() => startTrivia(1)}>
                                 <View style={[styles.modalOptionLetter, { backgroundColor: '#27AE60' }]}>
-                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>🌱</AppText>
+                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>🌱</AppText>
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>Nivel Semilla</AppText>
-                                    <AppText style={{ color: '#aaa', fontSize: 12 }}>Principios básicos y fundamentales.</AppText>
+                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>Nivel Semilla</AppText>
+                                    <AppText style={{ color: "#636477", fontSize: 12 }}>Principios básicos y fundamentales.</AppText>
                                 </View>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={[styles.modalOptionBtn, { borderColor: '#3498DB' }]} onPress={() => startTrivia(2)}>
-                                <View style={[styles.modalOptionLetter, { backgroundColor: '#3498DB' }]}>
-                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>⚔️</AppText>
+                            <TouchableOpacity accessibilityRole="button"
+                                style={[styles.modalOptionBtn, { borderColor: '#8FCA97' }]} onPress={() => startTrivia(2)}>
+                                <View style={[styles.modalOptionLetter, { backgroundColor: '#8FCA97' }]}>
+                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>⚔️</AppText>
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>Nivel Discípulo</AppText>
-                                    <AppText style={{ color: '#aaa', fontSize: 12 }}>Conocimiento intermedio y reflexivo.</AppText>
+                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>Nivel Discípulo</AppText>
+                                    <AppText style={{ color: "#636477", fontSize: 12 }}>Conocimiento intermedio y reflexivo.</AppText>
                                 </View>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={[styles.modalOptionBtn, { borderColor: '#D4AF37' }]} onPress={() => startTrivia(3)}>
-                                <View style={[styles.modalOptionLetter, { backgroundColor: '#D4AF37' }]}>
-                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>👑</AppText>
+                            <TouchableOpacity accessibilityRole="button"
+                                style={[styles.modalOptionBtn, { borderColor: "#68A877" }]} onPress={() => startTrivia(3)}>
+                                <View style={[styles.modalOptionLetter, { backgroundColor: "#68A877" }]}>
+                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>👑</AppText>
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <AppText style={{ color: '#fff', fontWeight: 'bold' }}>Nivel Apóstol</AppText>
-                                    <AppText style={{ color: '#aaa', fontSize: 12 }}>Desafíos avanzados de sabiduría bíblica.</AppText>
+                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>Nivel Apóstol</AppText>
+                                    <AppText style={{ color: "#636477", fontSize: 12 }}>Desafíos avanzados de sabiduría bíblica.</AppText>
                                 </View>
                             </TouchableOpacity>
                         </View>
@@ -469,34 +415,36 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={styles.container}>
-            <LinearGradient
-                colors={['#050505', '#101018', '#050505']}
-                style={StyleSheet.absoluteFillObject}
-            />
+            <GlassBackground />
             <Container style={styles.innerContainer} noPadding>
                 <View style={[styles.headerRow, { paddingHorizontal: 20, paddingTop: 20, justifyContent: 'space-between' }]}>
-                    {subcategories ? (
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 5 }}>
-                            <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
-                        </TouchableOpacity>
-                    ) : (
-                        <View style={{ width: 34 }} />
-                    )}
-                    <AppText variant="header" style={{ color: theme.colors.primary, textAlign: 'center', flex: 1 }}>
-                        {parentTitle || t('choose_theme')}
-                    </AppText>
-                    <View style={{ width: 34 }} />
+
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Volver" onPress={() => navigation.goBack()} style={styles.backControl}>
+                        <Ionicons name="arrow-back" size={21} color={theme.colors.text} />
+                    </TouchableOpacity>
+                    <View style={{ flex: 1, marginLeft: 14 }}>
+                        <AppText style={styles.modeLabel}>{targetGame === 'trivia' ? 'TRIVIA BÍBLICA' : 'CHARADAS'}</AppText>
+                        <AppText variant="header" style={{ fontSize: 25 }}>{parentTitle || 'Elige tu aventura'}</AppText>
+                    </View>
+                    <View style={styles.countPill}><AppText style={styles.countText}>{categories.length} temas</AppText></View>
+                </View>
+                <View style={styles.searchBox}>
+                    <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} />
+                    <TextInput accessibilityLabel="Buscar un tema" placeholder="¿Qué quieres descubrir hoy?" placeholderTextColor={theme.colors.textSecondary}
+                        value={search} onChangeText={setSearch} style={styles.searchInput} />
+                    {search.length > 0 && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Limpiar búsqueda" onPress={() => setSearch('')} style={{ padding: 8 }}><Ionicons name="close" size={18} color={theme.colors.textSecondary} /></TouchableOpacity>}
                 </View>
 
                 <FlatList
-                    data={categories}
+                    data={categories.filter(item => item.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))}
                     keyExtractor={(item) => item.id}
                     renderItem={renderItem}
                     ListHeaderComponent={renderHeader}
+                    ListEmptyComponent={<AppText centered style={{ padding: 32, color: theme.colors.textSecondary }}>No encontramos temas con ese nombre.</AppText>}
                     contentContainerStyle={styles.list}
                     showsVerticalScrollIndicator={false}
-                    numColumns={2}
-                    key={2} // Force re-render if we were switching dynamically
+                    numColumns={columns}
+                    key={columns} // Force re-render if we were switching dynamically
                     columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 20 }}
                 />
 
@@ -508,12 +456,23 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
+    categoryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 },
+    categoryIcon: { width: 48, height: 48, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FFFFFF' },
+    categoryTitle: { fontSize: 17, lineHeight: 23, fontWeight: '600', letterSpacing: -0.4 },
+    categorySubtitle: { fontSize: 11, lineHeight: 17, marginTop: 8, color: theme.colors.textSecondary },
+    backControl: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF77', borderWidth: 1, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+    modeLabel: { fontSize: 9, letterSpacing: 1.6, color: theme.colors.primary, fontWeight: '700', marginBottom: 3 },
+    countPill: { backgroundColor: '#FFFFFF77', borderRadius: 15, paddingVertical: 6, paddingHorizontal: 10 },
+    countText: { fontSize: 10, color: theme.colors.textSecondary },
+    searchBox: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 17, minHeight: 51, borderRadius: 26, borderWidth: 1, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF66', marginHorizontal: 20, marginBottom: 24 },
+    searchInput: { flex: 1, color: theme.colors.text, fontSize: 14, minHeight: 48 },
+
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
     },
     innerContainer: {
-        flex: 1,
+        flex: 1, width: '100%', maxWidth: 1040, alignSelf: 'center',
         backgroundColor: 'transparent',
     },
     headerRow: {
@@ -526,26 +485,11 @@ const styles = StyleSheet.create({
         paddingBottom: 80, // Space for bottom
     },
     card: {
-        backgroundColor: '#1E1E1E',
-        borderRadius: 16,
-        padding: 0,
-        marginBottom: 16,
-        alignItems: 'center',
-        // Shadow
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-        overflow: 'hidden'
+        backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 28,
+        padding: 19, marginBottom: 16, borderWidth: 1, borderColor: '#FFFFFFDD',
+        ...theme.shadows.soft,
     },
-    gridCard: {
-        width: CARD_SIZE,
-        height: CARD_SIZE,
-        flexDirection: 'column',
-        paddingVertical: 0,
-        paddingHorizontal: 0,
-    },
+    gridCard: { flexDirection: 'column' },
     // categoryImage is unused now, removed
     icon: {
         fontSize: 32,
@@ -557,11 +501,11 @@ const styles = StyleSheet.create({
         paddingLeft: 10,
     },
     title: {
-        color: '#FFFFFF',
+        color: "#2D3043",
         marginBottom: 4,
     },
     desc: {
-        color: '#aaa',
+        color: "#636477",
         marginBottom: 0,
     },
     arrow: {
@@ -572,13 +516,13 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'rgba(0,0,0,0.6)',
+        backgroundColor: "rgba(255,255,255,0.55)",
         padding: 10,
         justifyContent: 'center',
         alignItems: 'center',
     },
     gridTitle: {
-        color: 'white',
+        color: "#2D3043",
         textAlign: 'center',
         fontWeight: 'bold',
         fontSize: 16,
@@ -588,96 +532,97 @@ const styles = StyleSheet.create({
         top: 5,
         right: 5,
         padding: 5,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: "rgba(255,255,255,0.55)",
         borderRadius: 20,
     },
     createCard: {
         flexDirection: 'row',
         padding: 20,
-        borderLeftColor: '#FFF',
+        borderLeftColor: "rgba(255,255,255,0.82)",
         borderLeftWidth: 2,
         borderStyle: 'dashed',
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         marginBottom: 24,
     },
     modalOptionLetter: {
         width: 30, height: 30, borderRadius: 15,
-        backgroundColor: '#D4AF37',
+        backgroundColor: "#68A877",
         justifyContent: 'center', alignItems: 'center',
     },
     minimalistCover: {
-        width: CARD_SIZE,
-        height: CARD_SIZE,
+        width: '100%',
+        minHeight: 170,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 10,
-        backgroundColor: '#111',
+        backgroundColor: "rgba(255,255,255,0.52)",
     },
     minimalistTitle: {
-        color: '#FFFFFF',
+        color: "#2D3043",
         fontSize: 18, // Slightly smaller to fit better with adjustsFontSizeToFit
         fontWeight: '900', // Bolder for more identity
-        letterSpacing: 2, 
+        letterSpacing: 2,
         textAlign: 'center',
         marginBottom: 2,
     },
     minimalistSubtitle: {
-        color: 'rgba(255,255,255,0.7)',
+        color: "#636477",
         fontSize: 10,
         letterSpacing: 1.5,
         textTransform: 'uppercase',
     },
     lockOverlayAbsolute: {
-        ...StyleSheet.absoluteFillObject as any,
-        backgroundColor: 'rgba(5,5,5,0.8)',
+        ...StyleSheet.absoluteFill as any,
+        backgroundColor: "rgba(229,224,233,0.94)",
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 10,
     },
     lockCircle: {
         width: 60, height: 60, borderRadius: 30,
-        backgroundColor: '#0A0A0A', borderWidth: 2, borderColor: '#333',
+        backgroundColor: "rgba(255,255,255,0.52)", borderWidth: 2, borderColor: "rgba(255,255,255,0.82)",
         justifyContent: 'center', alignItems: 'center',
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.9)',
+        backgroundColor: "rgba(229,224,233,0.94)",
         justifyContent: 'center',
         padding: 20,
     },
     modalContent: {
-        backgroundColor: '#0A0A14',
+        width: '100%', maxWidth: 540, alignSelf: 'center',
+        backgroundColor: "rgba(255,255,255,0.52)",
         borderRadius: 30,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        shadowColor: '#000',
+        borderColor: "rgba(255,255,255,0.82)",
+        shadowColor: "#3E4C45",
         shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.5,
+        shadowOpacity: 0.12,
         shadowRadius: 20,
     },
     modalHeader: {
-        backgroundColor: '#05050A',
+        backgroundColor: "rgba(255,255,255,0.52)",
         padding: 24,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+        borderBottomColor: "rgba(255,255,255,0.82)",
     },
     modalOptionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.03)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         padding: 18,
         borderRadius: 20,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: "rgba(255,255,255,0.82)",
     },
     // New Styles for Premium Cards
     glassReflect: {
-        ...StyleSheet.absoluteFillObject as any,
+        ...StyleSheet.absoluteFill as any,
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,
     },

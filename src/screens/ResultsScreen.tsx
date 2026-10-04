@@ -1,3 +1,4 @@
+import { GlassBackground } from '../components/Glass';
 import React, { useRef, useState, useEffect } from 'react';
 import { View, StyleSheet, BackHandler, Animated, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -27,10 +28,10 @@ export const ResultsScreen = ({ navigation, route }: any) => {
     } = route.params || {};
 
     const categoryObj = DEFAULT_CATEGORIES.find(c => c.id === category || c.title === category);
-    const themeGradients = (categoryObj?.gradientColors && categoryObj.gradientColors.length >= 2) 
-        ? (categoryObj.gradientColors as [string, string, ...string[]]) 
-        : (['#1A1A2E', '#16213E'] as [string, string, ...string[]]);
-    const primaryColor = categoryObj?.color || theme.colors.primary;
+    const themeGradients = (categoryObj?.gradientColors && categoryObj.gradientColors.length >= 2)
+        ? (categoryObj.gradientColors as [string, string, ...string[]])
+        : (["#D1E2DA", "#D1E2DA"] as [string, string, ...string[]]);
+    const primaryColor = theme.colors.primary;
 
     const rewards = calculateCharadasRewards(score, total, canEarnTrophies, duration);
     const { playSound, playHaptic } = useSound();
@@ -106,20 +107,16 @@ export const ResultsScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={styles.container}>
-            <LinearGradient
-                colors={themeGradients}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
-            />
-            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+            <GlassBackground />
+
+
 
             <Confetti visible={showConfetti} />
 
             <Animated.View style={[styles.inner, { opacity: fadeIn, transform: [{ scale: scaleIn }] }]}>
                 <AppText style={styles.finishedLabel}>Partida Finalizada</AppText>
 
-                <View style={[styles.scoreCircle, { borderColor: primaryColor + '60', backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+                <View style={[styles.scoreCircle, { borderColor: primaryColor + '60', backgroundColor: "rgba(255,255,255,0.48)" }]}>
                     <AppText style={styles.scoreValue}>{displayScore}</AppText>
                     <View style={styles.scoreDivider} />
                     <AppText style={styles.scoreTotal}>{total}</AppText>
@@ -130,15 +127,15 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                     {showRewards && (
                         <>
                             <Animated.View style={[styles.rewardBadgePremium, { transform: [{ scale: xpBadgeScale }] }]}>
-                                <LinearGradient colors={['#FFD700', '#B8860B']} style={styles.badgeGlow} />
-                                <Ionicons name="flash" size={20} color="#000" />
+                                <LinearGradient colors={["#68A877", "#45834D"]} style={styles.badgeGlow} />
+                                <Ionicons name="flash" size={20} color="#2D3043" />
                                 <AppText style={styles.rewardValuePremium}>+{displayXP} XP</AppText>
                             </Animated.View>
 
                             {rewards.trophies > 0 && (
                                 <Animated.View style={[styles.rewardBadgePremium, { transform: [{ scale: trophyBadgeScale }], marginLeft: 10 }]}>
-                                    <LinearGradient colors={['#FFD700', '#D4AF37']} style={[styles.badgeGlow, { opacity: 0.8 }]} />
-                                    <Ionicons name="trophy" size={20} color="#000" />
+                                    <LinearGradient colors={["#68A877", "#68A877"]} style={[styles.badgeGlow, { opacity: 0.8 }]} />
+                                    <Ionicons name="trophy" size={20} color="#2D3043" />
                                     <AppText style={styles.rewardValuePremium}>+{rewards.trophies} Trofeos</AppText>
                                 </Animated.View>
                             )}
@@ -153,17 +150,17 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                             onPress={() => navigation.navigate('VideoReview', { videoUri, category, score, total, wordHistory })}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name="videocam" size={20} color="#fff" style={{ marginRight: 10 }} />
+                            <Ionicons name="videocam" size={20} color="#2D3043" style={{ marginRight: 10 }} />
                             <AppText style={styles.btnSecondaryText}>Revisar Video</AppText>
                         </TouchableOpacity>
                     )}
 
                     <TouchableOpacity
-                        style={[styles.btn, styles.btnPrimary, { backgroundColor: primaryColor }, isTrivia && { backgroundColor: '#3498db' }]}
+                        style={[styles.btn, styles.btnPrimary, { backgroundColor: primaryColor }, isTrivia && { backgroundColor: theme.colors.secondary }]}
                         onPress={() => navigation.navigate('CategorySelection', { targetGame: isTrivia ? 'trivia' : 'charadas' })}
                         activeOpacity={0.8}
                     >
-                        <Ionicons name="refresh" size={20} color="#000" style={{ marginRight: 10 }} />
+                        <Ionicons name="refresh" size={20} color="#2D3043" style={{ marginRight: 10 }} />
                         <AppText style={styles.btnPrimaryText}>JUGAR OTRA VEZ</AppText>
                     </TouchableOpacity>
 
@@ -172,7 +169,7 @@ export const ResultsScreen = ({ navigation, route }: any) => {
                         onPress={() => navigation.navigate('Home')}
                         activeOpacity={0.8}
                     >
-                        <Ionicons name="home" size={20} color="#aaa" style={{ marginRight: 10 }} />
+                        <Ionicons name="home" size={20} color="#636477" style={{ marginRight: 10 }} />
                         <AppText style={styles.btnOutlineText}>VOLVER AL INICIO</AppText>
                     </TouchableOpacity>
                 </View>
@@ -194,7 +191,7 @@ const styles = StyleSheet.create({
     },
     finishedLabel: {
         fontSize: 12,
-        color: 'rgba(255,255,255,0.5)',
+        color: "#636477",
         letterSpacing: 4,
         textTransform: 'uppercase',
         marginBottom: 40,
@@ -208,27 +205,27 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 30,
-        shadowColor: '#000',
+        shadowColor: "#3E4C45",
         shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.12,
         shadowRadius: 20,
         elevation: 10,
     },
     scoreValue: {
         fontSize: 72,
         fontWeight: '900',
-        color: '#fff',
+        color: "#2D3043",
         lineHeight: 80,
     },
     scoreDivider: {
         width: 40,
         height: 2,
-        backgroundColor: 'rgba(255,255,255,0.15)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         marginVertical: 4,
     },
     scoreTotal: {
         fontSize: 24,
-        color: 'rgba(255,255,255,0.4)',
+        color: "#636477",
         fontWeight: '700',
     },
     scoreLabel: {
@@ -252,10 +249,10 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         gap: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)'
+        borderColor: "rgba(255,255,255,0.82)"
     },
     rewardValue: {
-        color: '#fff',
+        color: "#2D3043",
         fontSize: 16,
         fontWeight: '900',
     },
@@ -268,17 +265,17 @@ const styles = StyleSheet.create({
         gap: 8,
         overflow: 'hidden',
         elevation: 10,
-        shadowColor: '#FFD700',
+        shadowColor: "#68A877",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.12,
         shadowRadius: 8,
     },
     badgeGlow: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         opacity: 0.9,
     },
     rewardValuePremium: {
-        color: '#000',
+        color: "#2D3043",
         fontSize: 18,
         fontWeight: '900',
         zIndex: 1,
@@ -299,17 +296,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     btnPrimaryText: {
-        color: '#000',
+        color: '#FFFFFF',
         fontSize: 18,
         fontWeight: '900',
     },
     btnSecondary: {
-        backgroundColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: "rgba(255,255,255,0.82)",
     },
     btnSecondaryText: {
-        color: '#fff',
+        color: "#2D3043",
         fontSize: 18,
         fontWeight: '800',
     },
@@ -317,7 +314,7 @@ const styles = StyleSheet.create({
         height: 50,
     },
     btnOutlineText: {
-        color: 'rgba(255,255,255,0.4)',
+        color: "#636477",
         fontSize: 14,
         fontWeight: '700',
     },

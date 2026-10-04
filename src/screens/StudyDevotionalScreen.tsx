@@ -1,3 +1,4 @@
+import { GlassBackground } from '../components/Glass';
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -230,16 +231,16 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
 
     const getColors = () => {
         switch (node.type) {
-            case 'intro': return { c: '#9B59B6', i: 'book-outline' };
+            case 'intro': return { c: '#8FCA97', i: 'book-outline' };
             case 'devotional': return { c: '#E67E22', i: 'sunny-outline' };
-            case 'practice': return { c: '#3498DB', i: 'color-palette-outline' };
+            case 'practice': return { c: '#8FCA97', i: 'color-palette-outline' };
             case 'quiz': return { c: '#F1C40F', i: 'trophy-outline' };
             default: return { c: path.accentColor, i: 'ellipse-outline' };
         }
     };
     const nodeTheme = getColors();
 
-    const DIFF_COLOR = { facil: '#27AE60', medio: '#D4AF37', dificil: '#E74C3C' };
+    const DIFF_COLOR = { facil: '#27AE60', medio: "#68A877", dificil: '#E74C3C' };
 
     // ===================================
     // PHASE: RESULT
@@ -247,7 +248,8 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     if (phase === 'result') {
         return (
             <View style={[styles.container, styles.resultContainer, { paddingTop: insets.top + 20 }]}>
-                <StatusBar barStyle="light-content" backgroundColor="#050505" />
+            <GlassBackground />
+                <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
                 <Confetti visible={showConfetti} duration={3200} />
 
                 <View style={[styles.resultIconBg, { backgroundColor: nodeTheme.c + '15' }]}>
@@ -257,9 +259,9 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                 <Text style={styles.resultDay}>{node.title}</Text>
 
                 {alreadyDone ? (
-                    <View style={{ marginTop: 20, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', padding: 15, borderRadius: 15 }}>
-                        <Ionicons name="information-circle" size={30} color="#aaa" />
-                        <Text style={{ color: '#aaa', fontSize: 16, textAlign: 'center', marginTop: 10, fontWeight: 'bold' }}>
+                    <View style={{ marginTop: 20, alignItems: 'center', backgroundColor: "rgba(255,255,255,0.48)", padding: 15, borderRadius: 15 }}>
+                        <Ionicons name="information-circle" size={30} color="#636477" />
+                        <Text style={{ color: "#636477", fontSize: 16, textAlign: 'center', marginTop: 10, fontWeight: 'bold' }}>
                             Ya has cobrado las recompensas por este estudio. ¡Sigue avanzando al siguiente nivel!
                         </Text>
                     </View>
@@ -270,9 +272,9 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                             opacity: xpBadgeOpacity,
                         }]}>
                             <View style={styles.rewardIconBg}>
-                                <Ionicons name="flash" size={24} color="#D4AF37" />
+                                <Ionicons name="flash" size={24} color="#68A877" />
                             </View>
-                            <Text style={[styles.rewardNum, { color: '#D4AF37' }]}>+{node.xpReward}</Text>
+                            <Text style={[styles.rewardNum, { color: "#68A877" }]}>+{node.xpReward}</Text>
                             <Text style={styles.rewardLabel}>XP GANADOS</Text>
                         </Animated.View>
 
@@ -280,10 +282,10 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                             transform: [{ scale: xpBadgeScale }, { translateY: xpBadgeY }],
                             opacity: xpBadgeOpacity,
                         }]}>
-                            <View style={[styles.rewardIconBg, { backgroundColor: 'rgba(255,215,0,0.1)' }]}>
-                                <Ionicons name="trophy" size={24} color="#FFD700" />
+                            <View style={[styles.rewardIconBg, { backgroundColor: "rgba(11,138,94,0.1)" }]}>
+                                <Ionicons name="trophy" size={24} color="#68A877" />
                             </View>
-                            <Text style={[styles.rewardNum, { color: '#FFD700' }]}>+{node.trophyReward}</Text>
+                            <Text style={[styles.rewardNum, { color: "#68A877" }]}>+{node.trophyReward}</Text>
                             <Text style={styles.rewardLabel}>TROFEOS</Text>
                         </Animated.View>
                     </View>
@@ -295,7 +297,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                     activeOpacity={0.8}
                 >
                     <Text style={styles.ctaBtnText}>Ir al Mapa</Text>
-                    <Ionicons name="map" size={18} color="rgba(0,0,0,0.6)" style={{ marginLeft: 8 }} />
+                    <Ionicons name="map" size={18} color="#636477" style={{ marginLeft: 8 }} />
                 </TouchableOpacity>
             </View>
         );
@@ -307,10 +309,11 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     if (phase === 'microQuiz' && node.microQuiz) {
         return (
              <View style={[styles.container, { paddingTop: insets.top }]}>
-                 <StatusBar barStyle="light-content" backgroundColor="#050505" />
+            <GlassBackground />
+                 <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
                  <View style={styles.header}>
                      <TouchableOpacity onPress={() => setPhase('content')} style={styles.iconBtn}>
-                         <Ionicons name="arrow-back" size={22} color="#fff" />
+                         <Ionicons name="arrow-back" size={22} color="#2D3043" />
                      </TouchableOpacity>
                      <View style={styles.headerCenter}>
                          <Text style={[styles.headerSub, { color: nodeTheme.c }]}>RETO DEL DÍA</Text>
@@ -322,8 +325,8 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                      <View style={styles.stepRow}>
                          <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                          <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
-                         <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
-                         <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
+                         <View style={[styles.stepDot, { backgroundColor: "rgba(255,255,255,0.52)" }]} />
+                         <View style={[styles.stepDot, { backgroundColor: "rgba(255,255,255,0.52)" }]} />
                      </View>
 
                      <Animated.View style={{ transform: [{ translateX: shakeAnim }, { scale: scaleAnim }] }}>
@@ -388,7 +391,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                              </View>
                          </View>
                      )}
-                     
+
                      <View style={{ height: 40 }} />
                  </ScrollView>
 
@@ -396,16 +399,16 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                      <TouchableOpacity
                          style={[
                              styles.ctaBtn,
-                             { backgroundColor: (answered && isCorrect) ? nodeTheme.c : '#1a1a1a' },
-                             (!answered || !isCorrect) && { borderWidth: 1, borderColor: '#222', opacity: 0.5 }
+                             { backgroundColor: (answered && isCorrect) ? nodeTheme.c : "#D1E2DA" },
+                             (!answered || !isCorrect) && { borderWidth: 1, borderColor: "rgba(255,255,255,0.82)", opacity: 0.5 }
                          ]}
                          onPress={handleAction}
                          disabled={!answered || !isCorrect}
                          activeOpacity={0.8}
                      >
-                         <Ionicons name="arrow-forward-circle" size={22} color={(answered && isCorrect) ? '#000' : '#555'} />
+                         <Ionicons name="arrow-forward-circle" size={22} color={(answered && isCorrect) ? "#C1D3CB" : "#C1D3CB"} />
                          <View style={{ marginLeft: 12 }}>
-                             <Text style={[styles.ctaBtnText, { color: (answered && isCorrect) ? '#000' : '#555' }]}>
+                             <Text style={[styles.ctaBtnText, { color: (answered && isCorrect) ? "#C1D3CB" : "#C1D3CB" }]}>
                                  {activity ? 'Siguiente: Aplicación' : 'Reclamar Loot'}
                              </Text>
                          </View>
@@ -420,15 +423,16 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     // ===================================
     if (phase === 'activity' && activity && activity.type === 'journal') {
         const isValidEntry = journalEntry.trim().length >= 10;
-        
+
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
-                <StatusBar barStyle="light-content" backgroundColor="#050505" />
+            <GlassBackground />
+                <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
 
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => setPhase('content')} style={styles.iconBtn}>
-                        <Ionicons name="arrow-back" size={22} color="#fff" />
+                        <Ionicons name="arrow-back" size={22} color="#2D3043" />
                     </TouchableOpacity>
                     <View style={styles.headerCenter}>
                         <Text style={[styles.headerSub, { color: nodeTheme.c }]}>DIARIO DIGITAL</Text>
@@ -443,7 +447,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
-                        <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
+                        <View style={[styles.stepDot, { backgroundColor: "rgba(255,255,255,0.52)" }]} />
                     </View>
 
                     <View style={{ alignItems: 'center', marginBottom: 20 }}>
@@ -464,25 +468,25 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                         }}
                     >
                         <Ionicons name="help-circle" size={28} color={nodeTheme.c} style={{ marginBottom: 12 }} />
-                        <Text style={{ fontSize: 18, color: '#fff', fontWeight: 'bold', lineHeight: 26, marginBottom: 16 }}>
+                        <Text style={{ fontSize: 18, color: "#2D3043", fontWeight: 'bold', lineHeight: 26, marginBottom: 16 }}>
                             {activity.data.question}
                         </Text>
-                        
+
                         <View style={{
-                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            backgroundColor: "rgba(255,255,255,0.55)",
                             borderRadius: 12,
                             padding: 12,
                             borderWidth: 1,
-                            borderColor: isValidEntry ? nodeTheme.c : '#333'
+                            borderColor: isValidEntry ? nodeTheme.c : "#C1D3CB"
                         }}>
                             <TextInput
                                 style={{
-                                    color: '#fff',
+                                    color: "#2D3043",
                                     fontSize: 16,
                                     lineHeight: 24,
                                     minHeight: 120,
                                 }}
-                                placeholderTextColor="#666"
+                                placeholderTextColor="#636477"
                                 placeholder="Escribe tu reflexión aquí..."
                                 multiline
                                 textAlignVertical="top"
@@ -495,7 +499,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                             />
                         </View>
                         {!isValidEntry && (
-                            <Text style={{ color: '#888', fontSize: 12, marginTop: 10, textAlign: 'right' }}>
+                            <Text style={{ color: "#636477", fontSize: 12, marginTop: 10, textAlign: 'right' }}>
                                 Escribe al menos 10 caracteres...
                             </Text>
                         )}
@@ -517,23 +521,23 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                     <TouchableOpacity
                         style={[
                             styles.ctaBtn,
-                            { backgroundColor: isValidEntry ? nodeTheme.c : '#1a1a1a' },
-                            !isValidEntry && { borderWidth: 1, borderColor: '#222', opacity: 0.5 }
+                            { backgroundColor: isValidEntry ? nodeTheme.c : "#D1E2DA" },
+                            !isValidEntry && { borderWidth: 1, borderColor: "rgba(255,255,255,0.82)", opacity: 0.5 }
                         ]}
                         onPress={handleAction}
                         disabled={!isValidEntry || saving}
                         activeOpacity={0.85}
                     >
                         {saving ? (
-                            <ActivityIndicator color="#000" />
+                            <ActivityIndicator color="#2D3043" />
                         ) : (
                             <>
-                                <Ionicons name="checkmark-circle" size={22} color={isValidEntry ? '#000' : '#555'} />
+                                <Ionicons name="checkmark-circle" size={22} color={isValidEntry ? "#C1D3CB" : "#C1D3CB"} />
                                 <View style={{ marginLeft: 12 }}>
-                                    <Text style={[styles.ctaBtnText, { color: isValidEntry ? '#000' : '#555' }]}>
+                                    <Text style={[styles.ctaBtnText, { color: isValidEntry ? "#C1D3CB" : "#C1D3CB" }]}>
                                         Completar y Reclamar
                                     </Text>
-                                    <Text style={[styles.ctaBtnSub, { color: isValidEntry ? 'rgba(0,0,0,0.6)' : '#444' }]}>
+                                    <Text style={[styles.ctaBtnSub, { color: isValidEntry ? 'rgba(0,0,0,0.6)' : "#C1D3CB" }]}>
                                         +{node.xpReward} XP · +{node.trophyReward} Trofeos
                                     </Text>
                                 </View>
@@ -550,12 +554,13 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     // ===================================
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="light-content" backgroundColor="#050505" />
+            <GlassBackground />
+            <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-                    <Ionicons name="close" size={24} color="#fff" />
+                    <Ionicons name="close" size={24} color="#2D3043" />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
                     <Text style={[styles.headerSub, { color: nodeTheme.c }]}>{node.subtitle}</Text>
@@ -569,9 +574,9 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                 {node.type === 'devotional' && (
                     <View style={styles.stepRow}>
                         <View style={[styles.stepDot, { backgroundColor: nodeTheme.c }]} />
-                        <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
-                        <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
-                        <View style={[styles.stepDot, { backgroundColor: '#222' }]} />
+                        <View style={[styles.stepDot, { backgroundColor: "rgba(255,255,255,0.52)" }]} />
+                        <View style={[styles.stepDot, { backgroundColor: "rgba(255,255,255,0.52)" }]} />
+                        <View style={[styles.stepDot, { backgroundColor: "rgba(255,255,255,0.52)" }]} />
                     </View>
                 )}
 
@@ -612,7 +617,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                                         </View>
                                         <Text style={styles.teaserText}>{node.question}</Text>
                                         <View style={styles.teaserFooter}>
-                                            <Ionicons name="lock-closed" size={12} color="#555" />
+                                            <Ionicons name="lock-closed" size={12} color="#636477" />
                                             <Text style={styles.teaserLocked}>Completa la lectura para acceder al reto</Text>
                                         </View>
                                     </LinearGradient>
@@ -636,7 +641,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                         {node.charadas && node.charadas.length > 0 && (
                             <View style={styles.charadasBox}>
                                 <View style={styles.charadasTitleRow}>
-                                    <Ionicons name="game-controller" size={20} color="#fff" />
+                                    <Ionicons name="game-controller" size={20} color="#2D3043" />
                                     <Text style={styles.charadasTitle}>Banco de Charadas Especiales</Text>
                                 </View>
                                 <Text style={styles.charadasSub}>Juega estas palabras en la app principal para ganar más puntos en tu iglesia hoy.</Text>
@@ -660,7 +665,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                 {/* 3. QUIZ */}
                 {node.type === 'quiz' && node.quiz && (
                     <View style={{ marginTop: 20 }}>
-                        <Text style={{ color: '#888', textAlign: 'center', marginBottom: 16, fontSize: 13, fontWeight: '700', letterSpacing: 1 }}>
+                        <Text style={{ color: "#636477", textAlign: 'center', marginBottom: 16, fontSize: 13, fontWeight: '700', letterSpacing: 1 }}>
                             PREGUNTA {currentQuestionIndex + 1} DE {node.quiz.questions.length}
                         </Text>
                         <Animated.View style={{ transform: [{ translateX: shakeAnim }, { scale: scaleAnim }] }}>
@@ -736,7 +741,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                     style={[
                         styles.ctaBtn,
                         { backgroundColor: nodeTheme.c },
-                        (node.type === 'quiz' && (!answered || !isCorrect)) && { backgroundColor: '#333', opacity: 0.5 },
+                        (node.type === 'quiz' && (!answered || !isCorrect)) && { backgroundColor: "rgba(255,255,255,0.52)", opacity: 0.5 },
                         saving && { opacity: 0.6 }
                     ]}
                     onPress={handleAction}
@@ -744,13 +749,13 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                     activeOpacity={0.8}
                 >
                     {saving ? (
-                        <ActivityIndicator color="#000" />
+                        <ActivityIndicator color="#2D3043" />
                     ) : (
                         <>
                             <Ionicons
                                 name={node.type === 'devotional' && activity ? 'arrow-forward-circle' : 'checkmark-circle'}
                                 size={22}
-                                color="#000"
+                                color="#2D3043"
                             />
                             <View style={{ marginLeft: 12 }}>
                                 <Text style={styles.ctaBtnText}>
@@ -783,17 +788,17 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#050505' },
+    container: { flex: 1, backgroundColor: "#EAE5E0" },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: 20, paddingVertical: 14,
-        borderBottomWidth: 1, borderBottomColor: '#111',
+        borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.82)",
     },
     headerCenter: { flex: 1, alignItems: 'center' },
     headerSub: { fontSize: 11, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' },
     iconBtn: {
         width: 40, height: 40, borderRadius: 12,
-        backgroundColor: '#111', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center',
     },
     scrollContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 60 },
 
@@ -801,7 +806,7 @@ const styles = StyleSheet.create({
     stepRow: { flexDirection: 'row', gap: 8, alignSelf: 'center', marginBottom: 24 },
     stepDot: { width: 8, height: 8, borderRadius: 4 },
 
-    nodeMainTitle: { color: '#fff', fontSize: 26, fontWeight: '900', marginBottom: 24, lineHeight: 32 },
+    nodeMainTitle: { color: "#2D3043", fontSize: 26, fontWeight: '900', marginBottom: 24, lineHeight: 32 },
 
     // Reading
     refPill: {
@@ -812,16 +817,16 @@ const styles = StyleSheet.create({
     },
     refText: { fontSize: 14, fontWeight: '800', marginLeft: 8 },
     readingCard: {
-        backgroundColor: '#0A0A0A', padding: 24, borderRadius: 20,
+        backgroundColor: "rgba(255,255,255,0.52)", padding: 24, borderRadius: 20,
         borderWidth: 1, borderColor: '#1A1A1A', marginBottom: 20,
     },
-    readingText: { color: '#ddd', fontSize: 16, lineHeight: 28, fontWeight: '500' },
+    readingText: { color: "#2D3043", fontSize: 16, lineHeight: 28, fontWeight: '500' },
     insightBox: {
-        flexDirection: 'row', backgroundColor: '#111', padding: 16,
+        flexDirection: 'row', backgroundColor: "rgba(255,255,255,0.52)", padding: 16,
         borderRadius: 14, borderWidth: 1, borderColor: '#1A1A1A',
         marginTop: 10, alignItems: 'center',
     },
-    insightText: { color: '#aaa', fontSize: 14, lineHeight: 22, flex: 1 },
+    insightText: { color: "#636477", fontSize: 14, lineHeight: 22, flex: 1 },
 
     // Teaser (replaced flat actionCard)
     devoWrapper: { gap: 16, marginTop: 10 },
@@ -833,42 +838,42 @@ const styles = StyleSheet.create({
         paddingTop: 16, paddingHorizontal: 16, paddingBottom: 8,
     },
     teaserLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, textTransform: 'uppercase' },
-    teaserText: { color: '#fff', fontSize: 15, lineHeight: 24, fontStyle: 'italic', fontWeight: '500', paddingHorizontal: 16, paddingBottom: 12 },
+    teaserText: { color: "#2D3043", fontSize: 15, lineHeight: 24, fontStyle: 'italic', fontWeight: '500', paddingHorizontal: 16, paddingBottom: 12 },
     teaserFooter: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)',
+        borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.82)",
         paddingVertical: 10, paddingHorizontal: 16,
     },
-    teaserLocked: { color: '#555', fontSize: 11, fontWeight: '600' },
+    teaserLocked: { color: "#636477", fontSize: 11, fontWeight: '600' },
 
     // Practice
     practiceHeader: { alignItems: 'center', paddingVertical: 20 },
-    iconCircleBig: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-    practiceTitle: { color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 12 },
-    practiceDesc: { color: '#888', fontSize: 15, textAlign: 'center', lineHeight: 24, paddingHorizontal: 20 },
+    iconCircleBig: { width: 70, height: 70, borderRadius: 35, backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+    practiceTitle: { color: "#2D3043", fontSize: 22, fontWeight: '900', marginBottom: 12 },
+    practiceDesc: { color: "#636477", fontSize: 15, textAlign: 'center', lineHeight: 24, paddingHorizontal: 20 },
 
     charadasBox: {
-        backgroundColor: '#0A0A0A', borderRadius: 20, padding: 20, marginTop: 30, borderWidth: 1, borderColor: '#1A1A1A'
+        backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 20, padding: 20, marginTop: 30, borderWidth: 1, borderColor: '#1A1A1A'
     },
     charadasTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-    charadasTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
-    charadasSub: { color: '#666', fontSize: 13, marginBottom: 20, lineHeight: 20 },
+    charadasTitle: { color: "#2D3043", fontSize: 16, fontWeight: '800' },
+    charadasSub: { color: "#636477", fontSize: 13, marginBottom: 20, lineHeight: 20 },
     charadaItem: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: '#111', padding: 14, borderRadius: 12, marginBottom: 8,
+        backgroundColor: "rgba(255,255,255,0.52)", padding: 14, borderRadius: 12, marginBottom: 8,
     },
-    cWord: { color: '#fff', fontSize: 15, fontWeight: '700', flex: 1 },
-    cCatBg: { backgroundColor: '#222', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    cCat: { color: '#888', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+    cWord: { color: "#2D3043", fontSize: 15, fontWeight: '700', flex: 1 },
+    cCatBg: { backgroundColor: "rgba(255,255,255,0.52)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+    cCat: { color: "#636477", fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
     cDiffBg: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
     cDiff: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
 
     // Quiz
     quizCard: {
-        alignItems: 'center', padding: 20, backgroundColor: '#0A0A0A',
+        alignItems: 'center', padding: 20, backgroundColor: "rgba(255,255,255,0.52)",
         borderRadius: 24, borderWidth: 1, borderColor: '#1A1A1A', marginBottom: 24,
     },
-    quizQuestion: { color: '#fff', fontSize: 18, fontWeight: '800', textAlign: 'center', lineHeight: 28 },
+    quizQuestion: { color: "#2D3043", fontSize: 18, fontWeight: '800', textAlign: 'center', lineHeight: 28 },
     optionsContainer: { gap: 12 },
     optionCard: {
         flexDirection: 'row', alignItems: 'center', gap: 14,
@@ -883,22 +888,22 @@ const styles = StyleSheet.create({
 
     feedbackCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, marginTop: 20 },
     feedbackTitle: { fontSize: 16, fontWeight: '800' },
-    feedbackText: { color: '#888', fontSize: 13, marginTop: 4 },
+    feedbackText: { color: "#636477", fontSize: 13, marginTop: 4 },
 
     footerSpacer: { marginTop: 40 },
     ctaBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         padding: 20, borderRadius: 18,
     },
-    ctaBtnText: { color: '#000', fontSize: 16, fontWeight: '900' },
-    ctaBtnSub: { color: 'rgba(0,0,0,0.6)', fontSize: 12, fontWeight: '700', marginTop: 2 },
+    ctaBtnText: { color: "#2D3043", fontSize: 16, fontWeight: '900' },
+    ctaBtnSub: { color: "#636477", fontSize: 12, fontWeight: '700', marginTop: 2 },
 
     // Activity / Flip Card
     activityLabel: {
-        color: '#fff', fontSize: 22, fontWeight: '900', textAlign: 'center', marginBottom: 8,
+        color: "#2D3043", fontSize: 22, fontWeight: '900', textAlign: 'center', marginBottom: 8,
     },
     activityInstruction: {
-        color: '#666', fontSize: 14, textAlign: 'center', marginBottom: 32, paddingHorizontal: 20,
+        color: "#636477", fontSize: 14, textAlign: 'center', marginBottom: 32, paddingHorizontal: 20,
     },
     flipCardContainer: {
         width: '100%', height: 280, position: 'relative', alignItems: 'center',
@@ -907,13 +912,13 @@ const styles = StyleSheet.create({
         width: '100%', height: 280, borderRadius: 24, borderWidth: 1,
         overflow: 'hidden', backfaceVisibility: 'hidden',
     },
-    flipCardFront: { backgroundColor: '#0A0A0A' },
-    flipCardBack: { backgroundColor: '#0A0A14', borderColor: '#27AE6040' },
+    flipCardFront: { backgroundColor: "rgba(255,255,255,0.52)" },
+    flipCardBack: { backgroundColor: "rgba(255,255,255,0.52)", borderColor: '#27AE6040' },
     flipCardGradient: {
         flex: 1, padding: 28, alignItems: 'center', justifyContent: 'center',
     },
     flipCardQuestion: {
-        color: '#fff', fontSize: 17, fontWeight: '700', textAlign: 'center',
+        color: "#2D3043", fontSize: 17, fontWeight: '700', textAlign: 'center',
         lineHeight: 26,
     },
     flipCardLabel: {
@@ -921,14 +926,14 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     flipCardBack2: {
-        color: '#ccc', fontSize: 15, fontWeight: '600', textAlign: 'center',
+        color: "#636477", fontSize: 15, fontWeight: '600', textAlign: 'center',
         lineHeight: 24, fontStyle: 'italic',
     },
     flipHint: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
         marginTop: 24, opacity: 0.5,
     },
-    flipHintText: { color: '#555', fontSize: 12 },
+    flipHintText: { color: "#636477", fontSize: 12 },
     flipCardTouchable: {
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 24,
     },
@@ -943,21 +948,21 @@ const styles = StyleSheet.create({
     activityFooter: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
         paddingHorizontal: 20, paddingBottom: 36, paddingTop: 12,
-        backgroundColor: '#050505',
-        borderTopWidth: 1, borderTopColor: '#111',
+        backgroundColor: "#EAE5E0",
+        borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.82)",
     },
 
     // Result Phase
     resultContainer: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
     resultIconBg: { width: 100, height: 100, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
     resultTitle: { fontSize: 24, fontWeight: '900', letterSpacing: 2, textAlign: 'center', marginBottom: 8 },
-    resultDay: { color: '#777', fontSize: 15, textAlign: 'center', marginBottom: 30 },
+    resultDay: { color: "#636477", fontSize: 15, textAlign: 'center', marginBottom: 30 },
     rewardRow: { flexDirection: 'row', gap: 16 },
     rewardBox: {
-        backgroundColor: '#0A0A0A', padding: 24, borderRadius: 20,
+        backgroundColor: "rgba(255,255,255,0.52)", padding: 24, borderRadius: 20,
         borderWidth: 1, borderColor: '#1A1A1A', flex: 1, alignItems: 'center',
     },
-    rewardIconBg: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+    rewardIconBg: { width: 48, height: 48, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
     rewardNum: { fontSize: 28, fontWeight: '900' },
-    rewardLabel: { color: '#555', fontSize: 11, fontWeight: '800', marginTop: 4, textTransform: 'uppercase', letterSpacing: 1 },
+    rewardLabel: { color: "#636477", fontSize: 11, fontWeight: '800', marginTop: 4, textTransform: 'uppercase', letterSpacing: 1 },
 });

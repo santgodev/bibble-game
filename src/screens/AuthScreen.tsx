@@ -1,12 +1,13 @@
+import { GlassBackground, GlassSheen } from '../components/Glass';
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { theme } from '../theme';
 
-export const AuthScreen = ({ navigation }: any) => {
+export const AuthScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
-    const [isLogin, setIsLogin] = useState(true);
+    const [isLogin, setIsLogin] = useState(route?.params?.mode !== 'signup');
     const [loading, setLoading] = useState(false);
 
     // Form states
@@ -82,6 +83,7 @@ export const AuthScreen = ({ navigation }: any) => {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 20}
         >
+            <GlassBackground />
             <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 40, paddingTop: insets.top + 20, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
                 <View style={styles.content}>
                     <Text style={styles.title}>{isLogin ? 'Iniciar Sesión' : 'Registro'}</Text>
@@ -177,6 +179,7 @@ const styles = StyleSheet.create({
         backgroundColor: theme.colors.background,
     },
     content: {
+        width: '100%', maxWidth: 540, alignSelf: 'center',
         flex: 1,
         paddingHorizontal: 24,
         justifyContent: 'center',
@@ -205,11 +208,11 @@ const styles = StyleSheet.create({
     input: {
         borderWidth: 1,
         borderColor: theme.colors.border,
-        borderRadius: 12,
+        borderRadius: 24,
         padding: 16,
         color: theme.colors.text,
         fontSize: 16,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         marginBottom: 8,
     },
     submitBtn: {

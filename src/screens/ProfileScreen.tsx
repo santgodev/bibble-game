@@ -1,3 +1,4 @@
+import { GlassBackground } from '../components/Glass';
 import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -12,14 +13,14 @@ import { getEvolutionaryAvatar } from '../utils/avatarUtils';
 const { width } = Dimensions.get('window');
 
 // ─── Design tokens ────────────────────────────────────────
-const GOLD = '#F3C623';
+const GOLD = "#68A877";
 const SILVER = '#BDC3C7';
 const BRONZE = '#CD7F32';
-const BG = '#050510';
-const SURFACE = '#0F0F25';
-const ACCENT = '#3498DB';
-const PURPLE = '#8E44AD';
-const BORDER = 'rgba(255,255,255,0.08)';
+const BG = "#EAE5E0";
+const SURFACE = "rgba(255,255,255,0.55)";
+const ACCENT = '#8FCA97';
+const PURPLE = '#68A877';
+const BORDER = "rgba(255,255,255,0.82)";
 
 // ─── Leveling Logic ───────────────────────────────────────
 const LEVEL_TITLES = [
@@ -31,7 +32,7 @@ const getLevelInfo = (xp: number) => {
     let level = 1;
     let xpForNext = 100;
     let xpCurrentLevelStart = 0;
-    
+
     while (xp >= xpForNext && level < 100) {
         xpCurrentLevelStart = xpForNext;
         level++;
@@ -46,7 +47,7 @@ const getLevelInfo = (xp: number) => {
 
 // ─── Badges Mock Logic ────────────────────────────────────
 const BADGES = [
-    { id: 'early', icon: 'leaf', color: '#2ECC71', label: 'Primeros Pasos', desc: 'Completaste tu primer devocional' },
+    { id: 'early', icon: 'leaf', color: '#68A877', label: 'Primeros Pasos', desc: 'Completaste tu primer devocional' },
     { id: 'trivia', icon: 'extension-puzzle', color: ACCENT, label: 'Sabio de Trivia', desc: 'Responde 20 preguntas correctamente' },
     { id: 'streak', icon: 'flame', color: '#E67E22', label: 'Incombustible', desc: 'Racha de 7 días activa' },
     { id: 'church', icon: 'business', color: GOLD, label: 'Pilar de Iglesia', desc: 'Ayudaste a tu iglesia a subir de rango' },
@@ -58,13 +59,13 @@ const LabelInput = ({ label, icon, value, onChangeText, placeholder, keyboard }:
     <View style={inp.wrapper}>
         <Text style={inp.label}>{label}</Text>
         <View style={inp.row}>
-            <Ionicons name={icon} size={16} color="#555" style={{ marginRight: 10 }} />
+            <Ionicons name={icon} size={16} color="#636477" style={{ marginRight: 10 }} />
             <TextInput
                 style={inp.field}
                 value={value}
                 onChangeText={onChangeText}
                 placeholder={placeholder}
-                placeholderTextColor="#444"
+                placeholderTextColor="#636477"
                 keyboardType={keyboard || 'default'}
                 autoCapitalize="words"
             />
@@ -74,14 +75,14 @@ const LabelInput = ({ label, icon, value, onChangeText, placeholder, keyboard }:
 
 const inp = StyleSheet.create({
     wrapper: { marginBottom: 14 },
-    label: { color: '#888', fontSize: 11, fontWeight: '800', letterSpacing: 1.2, marginBottom: 8, textTransform: 'uppercase' },
+    label: { color: "#636477", fontSize: 11, fontWeight: '800', letterSpacing: 1.2, marginBottom: 8, textTransform: 'uppercase' },
     row: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.03)',
+        backgroundColor: "rgba(255,255,255,0.48)",
         borderWidth: 1, borderColor: BORDER,
         borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14,
     },
-    field: { flex: 1, color: '#fff', fontSize: 16 },
+    field: { flex: 1, color: "#2D3043", fontSize: 16 },
 });
 
 export const ProfileScreen = ({ navigation }: any) => {
@@ -151,7 +152,7 @@ export const ProfileScreen = ({ navigation }: any) => {
         try {
             const clean = inviteUsername.replace('@', '').trim();
             const { data: targets } = await supabase.from('users').select('id, username, church_id').ilike('username', clean).limit(1);
-            
+
             if (!targets || targets.length === 0) throw new Error('Jugador no encontrado.');
             const target = targets[0];
 
@@ -170,6 +171,7 @@ export const ProfileScreen = ({ navigation }: any) => {
     if (loading) {
         return (
             <View style={[s.container, { justifyContent: 'center', alignItems: 'center' }]}>
+            <GlassBackground />
                 <ActivityIndicator size="large" color={GOLD} />
             </View>
         );
@@ -186,8 +188,9 @@ export const ProfileScreen = ({ navigation }: any) => {
 
     return (
         <View style={s.container}>
-            <StatusBar barStyle="light-content" />
-            
+            <GlassBackground />
+            <StatusBar barStyle="dark-content" />
+
             {/* Header Flotante */}
             <Animated.View style={[s.floatingHeader, { opacity: headerOpacity, paddingTop: insets.top }]}>
                 <Text style={s.floatingTitle}>@{userStats?.username}</Text>
@@ -199,9 +202,9 @@ export const ProfileScreen = ({ navigation }: any) => {
                 showsVerticalScrollIndicator={false}
             >
                 {/* ── Top Identity Section ────────────────── */}
-                <LinearGradient colors={['#1A1A3F', BG]} style={[s.hero, { paddingTop: insets.top + 20 }]}>
+                <LinearGradient colors={["#D1E2DA", BG]} style={[s.hero, { paddingTop: insets.top + 20 }]}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-                        <Ionicons name="chevron-back" size={24} color="#fff" />
+                        <Ionicons name="chevron-back" size={24} color="#2D3043" />
                     </TouchableOpacity>
 
                     <View style={s.avatarContainer}>
@@ -216,7 +219,7 @@ export const ProfileScreen = ({ navigation }: any) => {
 
                     <Text style={s.displayName}>{userStats?.full_name || 'Guerrero de la Fe'}</Text>
                     <Text style={s.displayUsername}>@{userStats?.username}</Text>
-                    
+
                     <View style={s.titleChip}>
                         <Ionicons name="sparkles" size={14} color={GOLD} />
                         <Text style={s.titleChipText}>{title.toUpperCase()}</Text>
@@ -229,7 +232,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                         </View>
                         <View style={s.statDivider} />
                         <View style={s.mainStatItem}>
-                            <Text style={[s.mainStatVal, { color: '#FFD700' }]}>{userStats?.total_trophies || 0}</Text>
+                            <Text style={[s.mainStatVal, { color: "#68A877" }]}>{userStats?.total_trophies || 0}</Text>
                             <Text style={s.mainStatLabel}>TROFEOS</Text>
                         </View>
                         <View style={s.statDivider} />
@@ -250,10 +253,10 @@ export const ProfileScreen = ({ navigation }: any) => {
                         <Text style={s.xpTarget}>{userStats?.total_xp} / {xpForNext} XP</Text>
                     </View>
                     <View style={s.barBg}>
-                        <LinearGradient 
-                            colors={[GOLD, '#FF9900']} 
+                        <LinearGradient
+                            colors={[GOLD, '#FF9900']}
                             start={{x:0, y:0.5}} end={{x:1, y:0.5}}
-                            style={[s.barFill, { width: `${progress}%` }]} 
+                            style={[s.barFill, { width: `${progress}%` }]}
                         />
                     </View>
                 </View>
@@ -267,12 +270,12 @@ export const ProfileScreen = ({ navigation }: any) => {
                             return (
                                 <View key={b.id} style={[s.badgeCard, !isUnlocked && s.lockedBadge]}>
                                     <View style={[s.badgeIconBg, { backgroundColor: b.color + '20' }]}>
-                                        <Ionicons name={b.icon as any} size={28} color={isUnlocked ? b.color : '#444'} />
+                                        <Ionicons name={b.icon as any} size={28} color={isUnlocked ? b.color : "#C1D3CB"} />
                                     </View>
-                                    <Text style={[s.badgeLabel, !isUnlocked && { color: '#555' }]}>{b.label}</Text>
+                                    <Text style={[s.badgeLabel, !isUnlocked && { color: "#636477" }]}>{b.label}</Text>
                                     {!isUnlocked && (
                                         <View style={s.lockIconWrap}>
-                                            <Ionicons name="lock-closed" size={10} color="#000" />
+                                            <Ionicons name="lock-closed" size={10} color="#2D3043" />
                                         </View>
                                     )}
                                 </View>
@@ -287,22 +290,22 @@ export const ProfileScreen = ({ navigation }: any) => {
                     {!church ? (
                         <View style={s.glassCard}>
                             <View style={s.guildEmptyHead}>
-                                <Ionicons name="shield-outline" size={40} color="rgba(255,255,255,0.1)" />
+                                <Ionicons name="shield-outline" size={40} color="rgba(90,73,123,0.13)" />
                                 <Text style={s.cardHeadline}>Fundar Clan Bíblico</Text>
                             </View>
                             <Text style={s.cardBody}>No perteneces a ninguna iglesia o grupo. Lidera el tuyo y compite en el ranking mundial.</Text>
-                            
+
                             <LabelInput label="Nombre del Clan" icon="shield-checkmark-outline" value={churchName} onChangeText={setChurchName} placeholder="Ej. Guerreros de Sión" />
                             <LabelInput label="Ubicación" icon="location-outline" value={churchCity} onChangeText={setChurchCity} placeholder="Ciudad / Región" />
 
                             <TouchableOpacity style={s.actionBtn} onPress={handleCreateChurch} disabled={actionLoading}>
                                 <LinearGradient colors={[ACCENT, '#2980B9']} style={s.actionBtnInner}>
-                                    {actionLoading ? <ActivityIndicator color="#fff" /> : <Text style={s.actionBtnText}>CREAR CLAN</Text>}
+                                    {actionLoading ? <ActivityIndicator color="#2D3043" /> : <Text style={s.actionBtnText}>CREAR CLAN</Text>}
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        <LinearGradient colors={['#1F1F3D', '#0F0F25']} style={s.guildCardPremium}>
+                        <LinearGradient colors={["#D1E2DA", "#D1E2DA"]} style={s.guildCardPremium}>
                             <View style={s.guildHeader}>
                                 <View style={s.guildAvatarPremium}>
                                     <Ionicons name="home" size={24} color={GOLD} />
@@ -311,7 +314,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                                 <View style={{ flex: 1 }}>
                                     <Text style={s.guildName}>{church.name.toUpperCase()}</Text>
                                     <View style={s.churchStatsMini}>
-                                        <Ionicons name="location" size={12} color="#888" />
+                                        <Ionicons name="location" size={12} color="#636477" />
                                         <Text style={s.guildMeta}>{church.city || 'Ubicación'}</Text>
                                     </View>
                                 </View>
@@ -321,19 +324,19 @@ export const ProfileScreen = ({ navigation }: any) => {
                             </View>
 
                             <View style={s.guildDivider} />
-                            
+
                             <Text style={s.subLabel}>INVITAR NUEVO MIEMBRO</Text>
                             <View style={s.inviteRow}>
-                                <TextInput 
+                                <TextInput
                                     style={s.minimalInput}
                                     placeholder="Nombre de usuario..."
-                                    placeholderTextColor="#555"
+                                    placeholderTextColor="#636477"
                                     value={inviteUsername}
                                     onChangeText={setInviteUsername}
                                     autoCapitalize="none"
                                 />
                                 <TouchableOpacity style={s.miniBtn} onPress={handleInviteUser}>
-                                    <Ionicons name="paper-plane" size={18} color="#000" />
+                                    <Ionicons name="paper-plane" size={18} color="#2D3043" />
                                 </TouchableOpacity>
                             </View>
                         </LinearGradient>
@@ -341,7 +344,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                 </View>
 
                 {/* ── Danger Zone ─────────────────────── */}
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={s.logoutBtn}
                     onPress={() => {
                         Alert.alert('Cerrar Sesión', '¿Estás seguro?', [
@@ -371,12 +374,12 @@ const s = StyleSheet.create({
         alignItems: 'center', paddingHorizontal: 20, paddingBottom: 30,
         borderBottomLeftRadius: 40, borderBottomRightRadius: 40,
     },
-    backBtn: { alignSelf: 'flex-start', padding: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12 },
+    backBtn: { alignSelf: 'flex-start', padding: 8, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 12 },
     avatarContainer: { marginVertical: 20, position: 'relative' },
     avatarWrapper: {
         width: 120, height: 120, borderRadius: 60,
         backgroundColor: SURFACE, borderWidth: 4, borderColor: GOLD,
-        padding: 10, overflow: 'hidden', elevation: 20, shadowColor: GOLD, shadowOpacity: 0.3, shadowRadius: 20
+        padding: 10, overflow: 'hidden', elevation: 20, shadowColor: GOLD, shadowOpacity: 0.12, shadowRadius: 20
     },
     avatar: { width: '100%', height: '100%' },
     levelBadge: {
@@ -385,39 +388,39 @@ const s = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 3, borderColor: BG
     },
-    levelBadgeText: { color: '#000', fontWeight: '900', fontSize: 16 },
+    levelBadgeText: { color: "#2D3043", fontWeight: '900', fontSize: 16 },
     statusDot: {
         position: 'absolute', bottom: 10, right: 10,
         width: 18, height: 18, borderRadius: 9,
-        backgroundColor: '#2ECC71', borderWidth: 3, borderColor: BG
+        backgroundColor: '#68A877', borderWidth: 3, borderColor: BG
     },
-    displayName: { color: '#fff', fontSize: 24, fontWeight: '900' },
-    displayUsername: { color: '#888', fontSize: 16, marginTop: 4 },
+    displayName: { color: "#2D3043", fontSize: 24, fontWeight: '900' },
+    displayUsername: { color: "#636477", fontSize: 16, marginTop: 4 },
     titleChip: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: 'rgba(243, 198, 35, 0.1)', paddingHorizontal: 16, paddingVertical: 8,
-        borderRadius: 20, marginTop: 15, borderWidth: 1, borderColor: 'rgba(243, 198, 35, 0.2)'
+        backgroundColor: "rgba(11,138,94,0.1)", paddingHorizontal: 16, paddingVertical: 8,
+        borderRadius: 20, marginTop: 15, borderWidth: 1, borderColor: "rgba(11,138,94,0.2)"
     },
     titleChipText: { color: GOLD, fontSize: 12, fontWeight: '900', letterSpacing: 1.5 },
     mainStatsRow: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
-        width: '100%', marginTop: 30, backgroundColor: 'rgba(255,255,255,0.03)',
+        width: '100%', marginTop: 30, backgroundColor: "rgba(255,255,255,0.48)",
         paddingVertical: 20, borderRadius: 24, borderWidth: 1, borderColor: BORDER
     },
     mainStatItem: { alignItems: 'center' },
-    mainStatVal: { color: '#fff', fontSize: 20, fontWeight: '900' },
-    mainStatLabel: { color: '#666', fontSize: 10, fontWeight: '800', marginTop: 4, letterSpacing: 0.8 },
+    mainStatVal: { color: "#2D3043", fontSize: 20, fontWeight: '900' },
+    mainStatLabel: { color: "#636477", fontSize: 10, fontWeight: '800', marginTop: 4, letterSpacing: 0.8 },
     statDivider: { width: 1, height: 30, backgroundColor: BORDER },
 
     xpSection: { marginTop: -25, paddingHorizontal: 25 },
     xpInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-    xpLabel: { color: '#fff', fontWeight: '800', fontSize: 12 },
+    xpLabel: { color: "#2D3043", fontWeight: '800', fontSize: 12 },
     xpTarget: { color: GOLD, fontWeight: '900', fontSize: 12 },
-    barBg: { height: 12, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: BORDER },
+    barBg: { height: 12, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: BORDER },
     barFill: { height: '100%', borderRadius: 6 },
 
     sectionContainer: { marginTop: 35, paddingHorizontal: 20 },
-    sectionHeader: { color: '#555', fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 15 },
+    sectionHeader: { color: "#636477", fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 15 },
     badgeScroll: { paddingRight: 40, gap: 15 },
     badgeCard: {
         width: 110, height: 140, backgroundColor: SURFACE, borderRadius: 24,
@@ -425,30 +428,30 @@ const s = StyleSheet.create({
         borderWidth: 1, borderColor: BORDER
     },
     badgeIconBg: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-    badgeLabel: { color: '#fff', fontSize: 11, fontWeight: '800', textAlign: 'center' },
-    lockedBadge: { opacity: 0.5, backgroundColor: 'rgba(0,0,0,0.2)' },
+    badgeLabel: { color: "#2D3043", fontSize: 11, fontWeight: '800', textAlign: 'center' },
+    lockedBadge: { opacity: 0.5, backgroundColor: "rgba(255,255,255,0.55)" },
     lockIconWrap: { position: 'absolute', top: 10, right: 10, backgroundColor: GOLD, padding: 2, borderRadius: 4 },
 
     glassCard: {
         backgroundColor: SURFACE, borderRadius: 28, padding: 22,
         borderWidth: 1, borderColor: BORDER
     },
-    cardHeadline: { color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 8 },
-    cardBody: { color: '#888', fontSize: 14, lineHeight: 22, marginBottom: 20 },
+    cardHeadline: { color: "#2D3043", fontSize: 18, fontWeight: '900', marginBottom: 8 },
+    cardBody: { color: "#636477", fontSize: 14, lineHeight: 22, marginBottom: 20 },
     actionBtn: { marginTop: 10, borderRadius: 16, overflow: 'hidden' },
     actionBtnInner: { paddingVertical: 16, alignItems: 'center' },
-    actionBtnText: { color: '#fff', fontWeight: '900', letterSpacing: 1 },
+    actionBtnText: { color: '#FFFFFF', fontWeight: '900', letterSpacing: 1 },
 
     guildHeader: { flexDirection: 'row', alignItems: 'center', gap: 15 },
-    guildAvatar: { width: 50, height: 50, borderRadius: 15, backgroundColor: 'rgba(243, 198, 35, 0.1)', alignItems: 'center', justifyContent: 'center' },
-    guildName: { color: '#fff', fontSize: 18, fontWeight: '900' },
-    guildMeta: { color: '#555', fontSize: 13, marginTop: 2 },
+    guildAvatar: { width: 50, height: 50, borderRadius: 15, backgroundColor: "rgba(11,138,94,0.1)", alignItems: 'center', justifyContent: 'center' },
+    guildName: { color: "#2D3043", fontSize: 18, fontWeight: '900' },
+    guildMeta: { color: "#636477", fontSize: 13, marginTop: 2 },
     rankPill: { backgroundColor: GOLD, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-    rankPillText: { color: '#000', fontSize: 10, fontWeight: '900' },
+    rankPillText: { color: "#2D3043", fontSize: 10, fontWeight: '900' },
     divider: { height: 1, backgroundColor: BORDER, marginVertical: 20 },
-    subLabel: { color: '#444', fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15 },
+    subLabel: { color: "#636477", fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 15 },
     inviteRow: { flexDirection: 'row', gap: 10 },
-    minimalInput: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, paddingHorizontal: 15, color: '#fff', height: 48, borderWidth: 1, borderColor: BORDER },
+    minimalInput: { flex: 1, backgroundColor: "rgba(255,255,255,0.55)", borderRadius: 12, paddingHorizontal: 15, color: "#2D3043", height: 48, borderWidth: 1, borderColor: BORDER },
     miniBtn: { width: 48, height: 48, backgroundColor: GOLD, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
     logoutBtn: {
@@ -458,9 +461,9 @@ const s = StyleSheet.create({
     },
     logoutText: { color: '#e74c3c', fontWeight: '900', letterSpacing: 1 },
     guildEmptyHead: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 15 },
-    guildCardPremium: { borderRadius: 28, padding: 22, borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.2)' },
-    guildAvatarPremium: { width: 50, height: 50, borderRadius: 15, backgroundColor: 'rgba(243, 198, 35, 0.1)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-    guildGlow: { position: 'absolute', top: -10, left: -10, right: -10, bottom: -10, backgroundColor: 'rgba(243, 198, 35, 0.05)', borderRadius: 25 },
+    guildCardPremium: { borderRadius: 28, padding: 22, borderWidth: 1, borderColor: "rgba(11,138,94,0.2)" },
+    guildAvatarPremium: { width: 50, height: 50, borderRadius: 15, backgroundColor: "rgba(11,138,94,0.1)", alignItems: 'center', justifyContent: 'center', position: 'relative' },
+    guildGlow: { position: 'absolute', top: -10, left: -10, right: -10, bottom: -10, backgroundColor: "rgba(11,138,94,0.05)", borderRadius: 25 },
     churchStatsMini: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
     guildDivider: { height: 1, backgroundColor: BORDER, marginVertical: 20 },
 });

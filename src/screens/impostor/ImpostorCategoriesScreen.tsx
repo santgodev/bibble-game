@@ -1,5 +1,6 @@
+import { GlassBackground, GlassSheen } from '../../components/Glass';
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Image, Dimensions, Modal } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Image, Dimensions, Modal, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Container, AppText, Button } from '../../components';
 import { getCategories, Category, UnleashQuestion } from '../../data/categories';
@@ -8,12 +9,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../theme';
 import { getCategoryLockStatus } from '../../utils/categoryLock';
 
-const { width } = Dimensions.get('window');
-const SPACING = 20;
-const GAP = 16;
-const CARD_SIZE = (width - (SPACING * 2) - GAP) / 2;
+
 
 export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
+    const { width } = useWindowDimensions();
+    const columns = width >= 800 ? 3 : 2;
+    const cardSize = (Math.min(width, 1040) - 40 - (columns - 1) * 16) / columns;
     const [categories, setCategories] = useState<Category[]>([]);
     const [completedMissions, setCompletedMissions] = useState<string[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -31,29 +32,8 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
     }, [route.params?.selectedIds]);
 
     const loadData = async () => {
-        const data = await getCategories();
-        
-        // Flatten and include Supabase categories
-        const flatList: Category[] = [];
-        data.forEach(c => {
-            // For major sections, treat as a single category in Impostor to avoid clutter
-            if (c.slug === 'pentateuco' || c.id === 'pentateuco' || c.slug === 'nuevo_testamento' || c.id === 'nuevo_testamento') {
-                flatList.push(c);
-            } else if (c.subcategories && c.subcategories.length > 0) {
-                flatList.push(...c.subcategories);
-            } else {
-                flatList.push(c);
-            }
-        });
-
-        // IMPORTANTE: No filtramos si c.id es un UUID (lo que indica que viene de Supabase)
-        // ya que esas palabras las cargaremos en la siguiente pantalla si es necesario.
-        const cleanList = flatList.filter(c => 
-            (c.words && c.words.length > 0) || 
-            (c.id.length > 20) // Heurística simple para UUIDs de Supabase
-        );
-        
-        setCategories(cleanList);
+        const data = await getCategories('impostor');
+        setCategories(data.filter(c => c.words && c.words.length > 0));
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -65,7 +45,7 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
                     .like('description', 'MISSION:%');
 
                 if (events) {
-                    setCompletedMissions(events.map(e => e.description.replace('MISSION:', '')));
+                    setCompletedMissions(events.map((e: any) => e.description.replace('MISSION:', '')));
                 }
             }
         } catch (err) {
@@ -175,45 +155,44 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
         return (
             <TouchableOpacity
                 style={[
-                    styles.card,
-                    locked && { borderColor: '#333', borderWidth: 1 },
-                    selected && { borderColor: '#2ecc71', borderWidth: 2 }
+                    styles.card, { width: cardSize },
+                    locked && { borderColor: "rgba(255,255,255,0.82)", borderWidth: 1 },
+                    selected && { borderColor: '#68A877', borderWidth: 2 }
                 ]}
+                accessibilityRole="button" accessibilityLabel={item.title} accessibilityState={{ selected }}
                 onPress={() => toggleSelection(item)}
                 activeOpacity={locked ? 1 : 0.8}
             >
-                <LinearGradient
-                    colors={(item.gradientColors as any) || [item.color || '#1A1A1A', '#000']}
-                    style={[styles.minimalistCover, locked && { opacity: 0.3 }]}
-                >
+                <View style={styles.minimalistCover}>
+                    <GlassSheen tint={selected ? 'mint' : 'rose'} />
                     {item.icon && !locked && (
-                        <Ionicons 
-                            name={item.icon as any} 
-                            size={44} 
-                            color="rgba(255,255,255,0.15)" 
-                            style={styles.floatingIcon} 
+                        <Ionicons
+                            name={item.icon as any}
+                            size={30}
+                            color="#A25078"
+                            style={styles.floatingIcon}
                         />
                     )}
-                    <AppText style={[styles.minimalistTitle, locked && { color: '#555' }]} numberOfLines={2} adjustsFontSizeToFit>{item.title.toUpperCase()}</AppText>
+                    <AppText style={[styles.minimalistTitle, locked && { color: "#636477" }]} numberOfLines={2} adjustsFontSizeToFit>{item.title.toUpperCase()}</AppText>
                     {item.capitulo ? (
-                        <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]} numberOfLines={1}>{item.capitulo}</AppText>
+                        <AppText style={[styles.minimalistSubtitle, locked && { color: "#636477" }]} numberOfLines={1}>{item.capitulo}</AppText>
                     ) : (
-                        <AppText style={[styles.minimalistSubtitle, locked && { color: '#444' }]}>
-                            {item.difficulty === 'Fácil' ? '🌱 SEMILLA' : item.difficulty === 'Medio' ? '👣 DISCÍPULO' : '🕊️ MAESTRO'}
+                        <AppText style={[styles.minimalistSubtitle, locked && { color: "#636477" }]}>
+                            {(item.words?.length || 0) + ' palabras'}
                         </AppText>
                     )}
-                </LinearGradient>
+                </View>
 
                 {selected && (
                     <View style={styles.checkCircle}>
-                        <Ionicons name="checkmark" size={16} color="#000" />
+                        <Ionicons name="checkmark" size={16} color="#2D3043" />
                     </View>
                 )}
 
                 {locked && (
                     <View style={styles.lockOverlayAbsolute}>
                         <View style={styles.lockCircle}>
-                            <Ionicons name="lock-closed" size={24} color="#888" />
+                            <Ionicons name="lock-closed" size={24} color="#636477" />
                         </View>
                     </View>
                 )}
@@ -223,9 +202,10 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={styles.container}>
+            <GlassBackground />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    <Ionicons name="arrow-back" size={24} color="#2D3043" />
                 </TouchableOpacity>
                 <AppText variant="subheader" style={styles.mainTitle}>Seleccionar Paquetes</AppText>
                 <View style={{ width: 34 }} />
@@ -239,13 +219,14 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
                 renderItem={renderItem}
                 contentContainerStyle={styles.list}
                 showsVerticalScrollIndicator={false}
-                numColumns={2}
+                numColumns={columns}
+                key={columns}
                 columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 20 }}
             />
 
             <View style={styles.footer}>
                 <TouchableOpacity
-                    style={[styles.confirmBtn, selectedIds.length === 0 && { backgroundColor: '#555', shadowOpacity: 0 }]}
+                    style={[styles.confirmBtn, selectedIds.length === 0 && { backgroundColor: "rgba(255,255,255,0.52)", shadowOpacity: 0 }]}
                     onPress={handleConfirm}
                     disabled={selectedIds.length === 0}
                 >
@@ -261,17 +242,17 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <AppText variant="subheader" style={{ color: '#000' }}>Examen: {currentQuizCategory.title}</AppText>
+                                <AppText variant="subheader" style={{ color: "#2D3043" }}>Examen: {currentQuizCategory.title}</AppText>
                                 <TouchableOpacity onPress={() => setUnleashModalVisible(false)} style={{ padding: 5 }}>
-                                    <Ionicons name="close" size={24} color="#000" />
+                                    <Ionicons name="close" size={24} color="#2D3043" />
                                 </TouchableOpacity>
                             </View>
 
                             <View style={{ padding: 20 }}>
-                                <AppText style={{ color: '#000', marginBottom: 5 }}>
+                                <AppText style={{ color: "#2D3043", marginBottom: 5 }}>
                                     Pregunta {currentQuestionIndex + 1} de {currentQuizCategory.unleashQuiz.length}
                                 </AppText>
-                                <AppText style={{ color: '#333', fontSize: 13, marginBottom: 20 }}>
+                                <AppText style={{ color: "#636477", fontSize: 13, marginBottom: 20 }}>
                                     Vidas: {Array(3 - quizMistakes).fill('❤️').join(' ')}
                                 </AppText>
 
@@ -286,9 +267,9 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
                                         onPress={() => handleAnswerUnleash(i)}
                                     >
                                         <View style={styles.modalOptionLetter}>
-                                            <AppText style={{ color: '#000' }}>{['A', 'B', 'C', 'D'][i]}</AppText>
+                                            <AppText style={{ color: "#2D3043" }}>{['A', 'B', 'C', 'D'][i]}</AppText>
                                         </View>
-                                        <AppText style={{ color: '#000', flex: 1 }}>{opt}</AppText>
+                                        <AppText style={{ color: "#2D3043", flex: 1 }}>{opt}</AppText>
                                     </TouchableOpacity>
                                 ))}
                             </View>
@@ -301,7 +282,7 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0a0a0f', paddingTop: 60 },
+    container: { flex: 1, backgroundColor: "rgba(255,255,255,0.52)", paddingTop: 60 },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -309,10 +290,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         marginBottom: 10,
     },
-    backBtn: { padding: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 },
-    mainTitle: { color: '#fff' },
+    backBtn: { padding: 5, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 20 },
+    mainTitle: { color: "#2D3043" },
     subtitle: {
-        color: '#ccc',
+        color: "#636477",
         textAlign: 'center',
         paddingHorizontal: 30,
         marginBottom: 20,
@@ -320,16 +301,16 @@ const styles = StyleSheet.create({
     },
     list: { paddingBottom: 100 },
     card: {
-        backgroundColor: '#1E1E1E',
-        borderRadius: 16,
-        marginBottom: GAP,
+        backgroundColor: "rgba(255,255,255,0.52)",
+        borderRadius: 26,
+        marginBottom: 16,
         alignItems: 'center',
-        width: CARD_SIZE,
-        height: CARD_SIZE,
+        width: '100%',
+        height: 130,
         overflow: 'hidden'
     },
     minimalistCover: {
-        width: '100%', height: '100%',
+        flex: 1, width: '100%',
         justifyContent: 'center', alignItems: 'center', padding: 10,
     },
     floatingIcon: {
@@ -338,41 +319,41 @@ const styles = StyleSheet.create({
         right: 10,
     },
     minimalistTitle: {
-        color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', textAlign: 'center',
+        color: "#2D3043", fontSize: 18, fontWeight: 'bold', textAlign: 'center',
     },
     minimalistSubtitle: {
-        color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4, textAlign: 'center'
+        color: "#636477", fontSize: 12, marginTop: 4, textAlign: 'center'
     },
     lockOverlayAbsolute: {
-        ...StyleSheet.absoluteFillObject as any,
-        backgroundColor: 'rgba(5,5,5,0.7)',
+        ...StyleSheet.absoluteFill as any,
+        backgroundColor: "rgba(255,255,255,0.55)",
         justifyContent: 'center', alignItems: 'center',
     },
     lockCircle: {
         width: 50, height: 50, borderRadius: 25,
-        backgroundColor: '#1E1E1E', borderWidth: 1, borderColor: '#333',
+        backgroundColor: "rgba(255,255,255,0.52)", borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
         justifyContent: 'center', alignItems: 'center',
     },
     checkCircle: {
         position: 'absolute', top: 10, right: 10,
         width: 24, height: 24, borderRadius: 12,
-        backgroundColor: '#2ecc71',
+        backgroundColor: '#68A877',
         justifyContent: 'center', alignItems: 'center'
     },
     footer: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
         padding: 20, paddingBottom: 40,
-        backgroundColor: 'rgba(10, 10, 15, 0.9)'
+        backgroundColor: "rgba(229,224,233,0.94)"
     },
     confirmBtn: {
-        backgroundColor: '#2ecc71', paddingVertical: 18, borderRadius: 30, alignItems: 'center',
+        backgroundColor: '#68A877', paddingVertical: 18, borderRadius: 30, alignItems: 'center',
     },
     confirmBtnText: {
-        color: '#000', fontSize: 18, fontWeight: 'bold', textTransform: 'uppercase',
+        color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', textTransform: 'uppercase',
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.6)',
+        backgroundColor: "rgba(255,255,255,0.55)",
         justifyContent: 'flex-end',
     },
     modalContent: {
@@ -387,7 +368,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: "rgba(255,255,255,0.82)",
     },
     modalOptionBtn: {
         flexDirection: 'row',
@@ -402,7 +383,7 @@ const styles = StyleSheet.create({
         width: 28,
         height: 28,
         borderRadius: 14,
-        backgroundColor: '#D4AF37',
+        backgroundColor: "#68A877",
         justifyContent: 'center',
         alignItems: 'center',
     },
