@@ -31,7 +31,7 @@ export const Container: React.FC<ContainerProps> = ({
             ]}
             {...props}
         >
-            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
             <GlassBackground />
             {children}
         </SafeAreaView>

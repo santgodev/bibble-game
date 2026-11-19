@@ -1,25 +1,41 @@
-import { GlassBackground, GlassSheen } from '../../components/Glass';
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Image, Dimensions, Modal, useWindowDimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Container, AppText, Button } from '../../components';
-import { getCategories, Category, UnleashQuestion } from '../../data/categories';
-import { supabase } from '../../lib/supabase';
+import React, { useEffect, useState } from 'react';
+import {
+    Alert,
+    FlatList,
+    Modal,
+    Pressable,
+    StyleSheet,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppText } from '../../components';
+import { Category, getCategories } from '../../data/categories';
+import { supabase } from '../../lib/supabase';
 import { getCategoryLockStatus } from '../../utils/categoryLock';
+import { EditorialDoodle, getDoodleForThemeId } from '../../trivia/components/EditorialDoodle';
 
-
+const formatCategoryTitle = (raw: string): string => {
+    const trimmed = (raw || '').trim();
+    if (!trimmed) return '';
+    if (trimmed !== trimmed.toLocaleUpperCase()) return trimmed;
+    const lower = trimmed.toLocaleLowerCase();
+    return (lower.charAt(0).toLocaleUpperCase() + lower.slice(1))
+        .replace(/\bantiguo testamento\b/gi, 'Antiguo Testamento')
+        .replace(/\bnuevo testamento\b/gi, 'Nuevo Testamento')
+        .replace(/\bnavidad\b/gi, 'Navidad')
+        .replace(/\bpascua\b/gi, 'Pascua');
+};
 
 export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
-    const { width } = useWindowDimensions();
-    const columns = width >= 800 ? 3 : 2;
-    const cardSize = (Math.min(width, 1040) - 40 - (columns - 1) * 16) / columns;
+    const insets = useSafeAreaInsets();
+
     const [categories, setCategories] = useState<Category[]>([]);
     const [completedMissions, setCompletedMissions] = useState<string[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-    // Unleash Quiz state
     const [unleashModalVisible, setUnleashModalVisible] = useState(false);
     const [currentQuizCategory, setCurrentQuizCategory] = useState<Category | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -60,22 +76,21 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
     const isCategoryLocked = (category: Category): boolean =>
         getCategoryLockStatus(category, completedMissions).locked;
 
-
     const toggleSelection = (category: Category) => {
         const lockStatus = getCategoryLockStatus(category, completedMissions);
         if (lockStatus.locked) {
             if (lockStatus.reason === 'unstarted') {
                 Alert.alert(
-                    'Devocional no iniciado 🔒',
-                    `Para hacer el examen y usar este paquete en el Impostor, primero debes iniciar el devocional de la unidad en la sección "Rutas de Estudio".`
+                    'Devocional pendiente',
+                    'Inicia primero el devocional de la unidad en Estudio.'
                 );
                 return;
             }
 
             if (lockStatus.reason === 'path') {
                 Alert.alert(
-                    'Falta Plan de Estudio 🔒',
-                    'Completa primero la unidad anterior del plan "Jesús Real" en tu ruta.'
+                    'Plan de Estudio',
+                    'Completa primero la unidad anterior de tu ruta.'
                 );
                 return;
             }
@@ -88,16 +103,14 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
                 return;
             }
 
-            Alert.alert(
-                'Paquete Bloqueado 🔒',
-                'Debes completar el requisito de devocional para usar este paquete.'
-            );
+            Alert.alert('Paquete bloqueado', 'Completa el devocional para usar este paquete.');
             return;
         }
 
-        setSelectedIds(prev => prev.includes(category.id)
-            ? prev.filter(id => id !== category.id)
-            : [...prev, category.id]
+        setSelectedIds(prev =>
+            prev.includes(category.id)
+                ? prev.filter(id => id !== category.id)
+                : [...prev, category.id]
         );
     };
 
@@ -109,32 +122,31 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
             if (currentQuestionIndex < currentQuizCategory.unleashQuiz.length - 1) {
                 setCurrentQuestionIndex(prev => prev + 1);
             } else {
-                // All questions answered correctly — unlock!
                 try {
                     const { data: { user } } = await supabase.auth.getUser();
                     const newEvent = `MISSION:UNLEASHED_${currentQuizCategory.id}`;
                     if (user) {
                         await supabase.from('events').insert({
                             user_id: user.id,
-                            description: newEvent
+                            description: newEvent,
                         });
                     }
                     setCompletedMissions(prev => [...prev, newEvent.replace('MISSION:', '')]);
-                    Alert.alert('¡Módulo Desbloqueado!', 'Superaste la prueba. ¡Ya puedes usar este paquete en el Impostor!');
+                    Alert.alert('Módulo desbloqueado', 'Ya puedes usar este paquete en El impostor.');
                     setUnleashModalVisible(false);
                 } catch (e) {
                     console.error('Error Unleashing:', e);
-                    Alert.alert('Error', 'No se pudo guardar el progreso de desbloqueo.');
+                    Alert.alert('Error', 'No se pudo guardar el progreso.');
                 }
             }
         } else {
             const currentMistakes = quizMistakes + 1;
             setQuizMistakes(currentMistakes);
             if (currentMistakes >= 3) {
-                Alert.alert('¡Reprobaste!', 'Regresa a leer el devocional respectivo. Te equivocaste 3 veces.');
+                Alert.alert('Intenta de nuevo', 'Regresa a leer el devocional respectivo.');
                 setUnleashModalVisible(false);
             } else {
-                Alert.alert('❌ Incorrecto', `Pierdes 1 vida. Te quedan ${3 - currentMistakes} vidas.`);
+                Alert.alert('Incorrecto', `Te quedan ${3 - currentMistakes} intentos.`);
             }
         }
     };
@@ -144,247 +156,367 @@ export const ImpostorCategoriesScreen = ({ navigation, route }: any) => {
         navigation.navigate({
             name: 'ImpostorConfig',
             params: { selectedCategories: selectedObj },
-            merge: true
+            merge: true,
         });
     };
 
     const renderItem = ({ item }: { item: Category }) => {
         const locked = isCategoryLocked(item);
         const selected = selectedIds.includes(item.id);
+        const doodle = getDoodleForThemeId(item.id);
+        const displayTitle = formatCategoryTitle(item.title);
 
         return (
-            <TouchableOpacity
-                style={[
-                    styles.card, { width: cardSize },
-                    locked && { borderColor: "rgba(255,255,255,0.82)", borderWidth: 1 },
-                    selected && { borderColor: '#68A877', borderWidth: 2 }
-                ]}
-                accessibilityRole="button" accessibilityLabel={item.title} accessibilityState={{ selected }}
+            <Pressable
+                accessibilityRole="button"
                 onPress={() => toggleSelection(item)}
-                activeOpacity={locked ? 1 : 0.8}
+                style={({ pressed }) => [
+                    s.rowCard,
+                    selected && !locked && s.rowCardSelected,
+                    locked && { opacity: 0.65 },
+                    pressed && !locked && s.pressed,
+                ]}
             >
-                <View style={styles.minimalistCover}>
-                    <GlassSheen tint={selected ? 'mint' : 'rose'} />
-                    {item.icon && !locked && (
-                        <Ionicons
-                            name={item.icon as any}
-                            size={30}
-                            color="#A25078"
-                            style={styles.floatingIcon}
-                        />
-                    )}
-                    <AppText style={[styles.minimalistTitle, locked && { color: "#636477" }]} numberOfLines={2} adjustsFontSizeToFit>{item.title.toUpperCase()}</AppText>
-                    {item.capitulo ? (
-                        <AppText style={[styles.minimalistSubtitle, locked && { color: "#636477" }]} numberOfLines={1}>{item.capitulo}</AppText>
-                    ) : (
-                        <AppText style={[styles.minimalistSubtitle, locked && { color: "#636477" }]}>
-                            {(item.words?.length || 0) + ' palabras'}
-                        </AppText>
-                    )}
+                {locked ? (
+                    <View style={s.lockBadge}>
+                        <Ionicons name="lock-closed-outline" size={20} color="#6E7785" />
+                    </View>
+                ) : (
+                    <EditorialDoodle kind={doodle.kind} tint={doodle.tint} size={46} />
+                )}
+
+                <View style={{ flex: 1 }}>
+                    <AppText style={s.cardTitle} numberOfLines={2}>
+                        {displayTitle}
+                    </AppText>
                 </View>
 
-                {selected && (
-                    <View style={styles.checkCircle}>
-                        <Ionicons name="checkmark" size={16} color="#2D3043" />
+                {!locked && (
+                    <View style={[s.checkBadge, !selected && s.checkBadgeEmpty]}>
+                        {selected && <Ionicons name="checkmark" size={15} color="#FFFFFF" />}
                     </View>
                 )}
+            </Pressable>
+        );
+    };
 
-                {locked && (
-                    <View style={styles.lockOverlayAbsolute}>
-                        <View style={styles.lockCircle}>
-                            <Ionicons name="lock-closed" size={24} color="#636477" />
+    const renderUnleashModal = () => {
+        if (!currentQuizCategory || !currentQuizCategory.unleashQuiz) return null;
+        const q = currentQuizCategory.unleashQuiz[currentQuestionIndex];
+
+        return (
+            <Modal
+                onRequestClose={() => setUnleashModalVisible(false)}
+                visible={unleashModalVisible}
+                animationType="fade"
+                transparent
+            >
+                <View style={s.modalOverlay}>
+                    <View style={s.modalSheet}>
+                        <View style={s.modalHeader}>
+                            <View style={{ flex: 1 }}>
+                                <AppText style={s.modalEyebrow}>DESBLOQUEAR</AppText>
+                                <AppText style={s.modalTitle}>{currentQuizCategory.title}</AppText>
+                            </View>
+                            <TouchableOpacity
+                                accessibilityRole="button"
+                                onPress={() => setUnleashModalVisible(false)}
+                                style={s.closeBtn}
+                            >
+                                <Ionicons name="close" size={18} color="#1B1E23" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={s.modalMetaRow}>
+                            <AppText style={s.modalMeta}>
+                                {currentQuestionIndex + 1}/{currentQuizCategory.unleashQuiz.length}
+                            </AppText>
+                            <View style={s.livesRow}>
+                                {[0, 1, 2].map(i => (
+                                    <Ionicons
+                                        key={i}
+                                        name={i < 3 - quizMistakes ? 'heart' : 'heart-outline'}
+                                        size={15}
+                                        color="#C96A6A"
+                                    />
+                                ))}
+                            </View>
+                        </View>
+
+                        <AppText style={s.modalQuestion}>{q.q}</AppText>
+
+                        <View style={{ gap: 10 }}>
+                            {q.options.map((opt, i) => (
+                                <TouchableOpacity
+                                    key={i}
+                                    style={s.modalOptionBtn}
+                                    onPress={() => handleAnswerUnleash(i)}
+                                    activeOpacity={0.82}
+                                >
+                                    <View style={s.modalOptionLetter}>
+                                        <AppText style={s.modalOptionLetterText}>
+                                            {['A', 'B', 'C', 'D'][i]}
+                                        </AppText>
+                                    </View>
+                                    <AppText style={s.modalOptionText}>{opt}</AppText>
+                                </TouchableOpacity>
+                            ))}
                         </View>
                     </View>
-                )}
-            </TouchableOpacity>
+                </View>
+            </Modal>
         );
     };
 
     return (
-        <View style={styles.container}>
-            <GlassBackground />
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#2D3043" />
-                </TouchableOpacity>
-                <AppText variant="subheader" style={styles.mainTitle}>Seleccionar Paquetes</AppText>
-                <View style={{ width: 34 }} />
-            </View>
-
-            <AppText style={styles.subtitle}>Selecciona los temas de los que se tomarán las palabras.</AppText>
-
-            <FlatList
-                data={categories}
-                keyExtractor={(item) => item.id}
-                renderItem={renderItem}
-                contentContainerStyle={styles.list}
-                showsVerticalScrollIndicator={false}
-                numColumns={columns}
-                key={columns}
-                columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 20 }}
-            />
-
-            <View style={styles.footer}>
-                <TouchableOpacity
-                    style={[styles.confirmBtn, selectedIds.length === 0 && { backgroundColor: "rgba(255,255,255,0.52)", shadowOpacity: 0 }]}
-                    onPress={handleConfirm}
-                    disabled={selectedIds.length === 0}
-                >
-                    <AppText style={styles.confirmBtnText}>
-                        Confirmar {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
-                    </AppText>
-                </TouchableOpacity>
-            </View>
-
-            {/* Unleash Quiz Modal */}
-            {currentQuizCategory && currentQuizCategory.unleashQuiz && (
-                <Modal visible={unleashModalVisible} animationType="slide" transparent>
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContent}>
-                            <View style={styles.modalHeader}>
-                                <AppText variant="subheader" style={{ color: "#2D3043" }}>Examen: {currentQuizCategory.title}</AppText>
-                                <TouchableOpacity onPress={() => setUnleashModalVisible(false)} style={{ padding: 5 }}>
-                                    <Ionicons name="close" size={24} color="#2D3043" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={{ padding: 20 }}>
-                                <AppText style={{ color: "#2D3043", marginBottom: 5 }}>
-                                    Pregunta {currentQuestionIndex + 1} de {currentQuizCategory.unleashQuiz.length}
-                                </AppText>
-                                <AppText style={{ color: "#636477", fontSize: 13, marginBottom: 20 }}>
-                                    Vidas: {Array(3 - quizMistakes).fill('❤️').join(' ')}
-                                </AppText>
-
-                                <AppText style={{ color: theme.colors.primary, fontSize: 18, fontWeight: 'bold', marginBottom: 20 }}>
-                                    {currentQuizCategory.unleashQuiz[currentQuestionIndex].q}
-                                </AppText>
-
-                                {currentQuizCategory.unleashQuiz[currentQuestionIndex].options.map((opt, i) => (
-                                    <TouchableOpacity
-                                        key={i}
-                                        style={styles.modalOptionBtn}
-                                        onPress={() => handleAnswerUnleash(i)}
-                                    >
-                                        <View style={styles.modalOptionLetter}>
-                                            <AppText style={{ color: "#2D3043" }}>{['A', 'B', 'C', 'D'][i]}</AppText>
-                                        </View>
-                                        <AppText style={{ color: "#2D3043", flex: 1 }}>{opt}</AppText>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
+        <View style={[s.container, { paddingTop: insets.top }]}>
+            <View style={s.inner}>
+                <View style={s.header}>
+                    <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Volver"
+                        onPress={() => navigation.goBack()}
+                        style={s.backBtn}
+                    >
+                        <Ionicons name="chevron-back" size={20} color="#1B1E23" />
+                    </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                        <AppText style={s.eyebrow}>EL IMPOSTOR</AppText>
+                        <AppText style={s.title}>Paquetes</AppText>
                     </View>
-                </Modal>
-            )}
+                    <View style={s.countPill}>
+                        <AppText style={s.countText}>{selectedIds.length}</AppText>
+                    </View>
+                </View>
+
+                <FlatList
+                    data={categories}
+                    keyExtractor={item => item.id}
+                    renderItem={renderItem}
+                    contentContainerStyle={[s.list, { paddingBottom: insets.bottom + 110 }]}
+                    showsVerticalScrollIndicator={false}
+                />
+
+                <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+                    <Pressable
+                        accessibilityRole="button"
+                        onPress={handleConfirm}
+                        style={({ pressed }) => [s.confirmBtn, pressed && s.pressed]}
+                    >
+                        <AppText style={s.confirmText}>Confirmar ({selectedIds.length})</AppText>
+                    </Pressable>
+                </View>
+
+                {renderUnleashModal()}
+            </View>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "rgba(255,255,255,0.52)", paddingTop: 60 },
+const s = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    inner: {
+        flex: 1,
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        gap: 12,
         paddingHorizontal: 20,
-        marginBottom: 10,
+        paddingTop: 14,
+        paddingBottom: 16,
     },
-    backBtn: { padding: 5, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 20 },
-    mainTitle: { color: "#2D3043" },
-    subtitle: {
-        color: "#636477",
-        textAlign: 'center',
-        paddingHorizontal: 30,
-        marginBottom: 20,
-        fontSize: 14
-    },
-    list: { paddingBottom: 100 },
-    card: {
-        backgroundColor: "rgba(255,255,255,0.52)",
-        borderRadius: 26,
-        marginBottom: 16,
+    backBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#F3F7F6',
         alignItems: 'center',
-        width: '100%',
-        height: 130,
-        overflow: 'hidden'
+        justifyContent: 'center',
     },
-    minimalistCover: {
-        flex: 1, width: '100%',
-        justifyContent: 'center', alignItems: 'center', padding: 10,
+    eyebrow: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1.4,
+        color: '#2B6CB0',
+        marginBottom: 2,
     },
-    floatingIcon: {
-        position: 'absolute',
-        top: 10,
-        right: 10,
+    title: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#1B1E23',
+        letterSpacing: -0.5,
     },
-    minimalistTitle: {
-        color: "#2D3043", fontSize: 18, fontWeight: 'bold', textAlign: 'center',
+    countPill: {
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        borderRadius: 14,
+        backgroundColor: '#D6E8F8',
     },
-    minimalistSubtitle: {
-        color: "#636477", fontSize: 12, marginTop: 4, textAlign: 'center'
+    countText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#1E3A5F',
     },
-    lockOverlayAbsolute: {
-        ...StyleSheet.absoluteFill as any,
-        backgroundColor: "rgba(255,255,255,0.55)",
-        justifyContent: 'center', alignItems: 'center',
+    list: {
+        paddingTop: 4,
+        paddingHorizontal: 20,
+        gap: 11,
     },
-    lockCircle: {
-        width: 50, height: 50, borderRadius: 25,
-        backgroundColor: "rgba(255,255,255,0.52)", borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
-        justifyContent: 'center', alignItems: 'center',
+    rowCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        padding: 16,
+        borderRadius: 24,
+        backgroundColor: '#F7F9FB',
     },
-    checkCircle: {
-        position: 'absolute', top: 10, right: 10,
-        width: 24, height: 24, borderRadius: 12,
-        backgroundColor: '#68A877',
-        justifyContent: 'center', alignItems: 'center'
+    rowCardSelected: {
+        backgroundColor: '#D6E8F8',
+    },
+    checkBadge: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: '#1E3A5F',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkBadgeEmpty: {
+        backgroundColor: '#FFFFFF',
+    },
+    lockBadge: {
+        width: 46,
+        height: 46,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cardTitle: {
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: '800',
+        color: '#1B1E23',
     },
     footer: {
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: 20, paddingBottom: 40,
-        backgroundColor: "rgba(229,224,233,0.94)"
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        backgroundColor: 'rgba(255,255,255,0.92)',
     },
     confirmBtn: {
-        backgroundColor: '#68A877', paddingVertical: 18, borderRadius: 30, alignItems: 'center',
+        height: 54,
+        borderRadius: 27,
+        backgroundColor: '#1E3A5F',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    confirmBtnText: {
-        color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', textTransform: 'uppercase',
+    confirmText: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#FFFFFF',
+    },
+    pressed: {
+        opacity: 0.88,
+        transform: [{ scale: 0.985 }],
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: "rgba(255,255,255,0.55)",
-        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(27, 30, 35, 0.36)',
+        justifyContent: 'center',
+        padding: 22,
     },
-    modalContent: {
-        backgroundColor: '#fff',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        maxHeight: '85%',
+    modalSheet: {
+        width: '100%',
+        maxWidth: 440,
+        alignSelf: 'center',
+        borderRadius: 30,
+        backgroundColor: '#FFFFFF',
+        padding: 22,
     },
     modalHeader: {
         flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 16,
+    },
+    modalEyebrow: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1.3,
+        color: '#2B6CB0',
+        marginBottom: 2,
+    },
+    modalTitle: {
+        fontSize: 19,
+        fontWeight: '800',
+        color: '#1B1E23',
+    },
+    closeBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: '#F3F7F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalMetaRow: {
+        flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: "rgba(255,255,255,0.82)",
+        marginBottom: 12,
+    },
+    modalMeta: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#6E7785',
+    },
+    livesRow: {
+        flexDirection: 'row',
+        gap: 4,
+    },
+    modalQuestion: {
+        fontSize: 18,
+        lineHeight: 25,
+        fontWeight: '800',
+        color: '#1B1E23',
+        marginBottom: 18,
     },
     modalOptionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 10,
         gap: 12,
+        padding: 14,
+        borderRadius: 18,
+        backgroundColor: '#F6F8FA',
     },
     modalOptionLetter: {
         width: 28,
         height: 28,
         borderRadius: 14,
-        backgroundColor: "#68A877",
-        justifyContent: 'center',
+        backgroundColor: '#D6E8F8',
         alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalOptionLetterText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#1E3A5F',
+    },
+    modalOptionText: {
+        flex: 1,
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#1B1E23',
     },
 });

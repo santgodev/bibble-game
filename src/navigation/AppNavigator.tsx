@@ -21,6 +21,7 @@ import { useTheme } from '../context/ThemeContext';
 
 // Trivia
 import { TriviaGameScreen } from '../screens/TriviaGameScreen';
+import { TriviaNavigator } from '../trivia/navigation/TriviaNavigator';
 
 // Impostor Screens
 import { ImpostorConfigScreen } from '../screens/impostor/ImpostorConfigScreen';
@@ -74,6 +75,7 @@ export const AppNavigator = () => {
                 <Stack.Screen name="SystemGuide" component={SystemGuideScreen} />
 
                 {/* Trivia Flow */}
+                <Stack.Screen name="Trivia" component={TriviaNavigator} />
                 <Stack.Screen name="TriviaGame" component={TriviaGameScreen} />
 
                 {/* Impostor Flow */}

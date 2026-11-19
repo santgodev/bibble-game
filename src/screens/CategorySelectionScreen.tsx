@@ -1,40 +1,54 @@
-import { GlassBackground } from '../components/Glass';
 import React from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Image, Dimensions, ImageBackground, Platform, Modal, useWindowDimensions, TextInput } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Container, AppText, Button, GlassSheen } from '../components';
-import { getCategories, deleteCategory, Category, UnleashQuestion, TriviaQuestion, WordItem } from '../data/categories';
+import {
+    Alert,
+    FlatList,
+    Modal,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useLanguage } from '../context/LanguageContext';
-import { theme } from '../theme';
-import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
+import { AppText } from '../components';
+import { Category, getCategories, TriviaQuestion, WordItem } from '../data/categories';
+import { supabase } from '../lib/supabase';
 import { getCategoryLockStatus } from '../utils/categoryLock';
 import { useSound } from '../context/SoundContext';
+import { EditorialDoodle, getDoodleForThemeId } from '../trivia/components/EditorialDoodle';
 
-
+const formatCategoryTitle = (raw: string): string => {
+    const trimmed = (raw || '').trim();
+    if (!trimmed) return '';
+    if (trimmed !== trimmed.toLocaleUpperCase()) return trimmed;
+    const lower = trimmed.toLocaleLowerCase();
+    return (lower.charAt(0).toLocaleUpperCase() + lower.slice(1))
+        .replace(/\bantiguo testamento\b/gi, 'Antiguo Testamento')
+        .replace(/\bnuevo testamento\b/gi, 'Nuevo Testamento')
+        .replace(/\bnavidad\b/gi, 'Navidad')
+        .replace(/\bpascua\b/gi, 'Pascua');
+};
 
 export const CategorySelectionScreen = ({ navigation, route }: any) => {
-    const { t } = useLanguage();
-    const { width } = useWindowDimensions();
-    const columns = width >= 900 ? 4 : width >= 620 ? 3 : 2;
-    const cardSize = (Math.min(width, 1040) - 40 - (columns - 1) * 16) / columns;
+    const insets = useSafeAreaInsets();
+
     const [search, setSearch] = React.useState('');
     const { playSound, playHaptic } = useSound();
     const subcategories = route?.params?.subcategories;
     const parentTitle = route?.params?.parentTitle;
-    const targetGame = route?.params?.targetGame || 'charadas'; // Nuevo flag
+    const targetGame = route?.params?.targetGame || 'charadas';
 
     const [categories, setCategories] = React.useState<Category[]>([]);
     const [completedMissions, setCompletedMissions] = React.useState<string[]>([]);
 
-    // Unleash Quiz State
     const [unleashModalVisible, setUnleashModalVisible] = React.useState(false);
     const [currentQuizCategory, setCurrentQuizCategory] = React.useState<Category | null>(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [quizMistakes, setQuizMistakes] = React.useState(0);
 
-    // Trivia Difficulty Selection
     const [difficultyModalVisible, setDifficultyModalVisible] = React.useState(false);
     const [categoryForTrivia, setCategoryForTrivia] = React.useState<Category | null>(null);
 
@@ -70,27 +84,8 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         }, [])
     );
 
-    const handleDelete = (category: Category) => {
-        Alert.alert(
-            t('delete_category'),
-            t('delete_confirm', category.title),
-            [
-                { text: t('cancel'), style: "cancel" },
-                {
-                    text: t('delete'),
-                    style: "destructive",
-                    onPress: async () => {
-                        await deleteCategory(category.id);
-                        loadCategoriesAndProgress();
-                    }
-                }
-            ]
-        );
-    };
-
     const isCategoryLocked = (category: Category): boolean =>
         getCategoryLockStatus(category, completedMissions).locked;
-
 
     const handleAnswerUnleash = async (selectedIndex: number) => {
         if (!currentQuizCategory || !currentQuizCategory.unleashQuiz) return;
@@ -98,28 +93,23 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
 
         if (selectedIndex === q.correctIndex) {
             if (currentQuestionIndex < currentQuizCategory.unleashQuiz.length - 1) {
-                // Next question
                 setCurrentQuestionIndex(prev => prev + 1);
             } else {
-                // WON! Unlocked
                 try {
                     const { data: { user } } = await supabase.auth.getUser();
                     const newEvent = `MISSION:UNLEASHED_${currentQuizCategory.id}`;
                     if (user) {
                         await supabase.from('events').insert({
                             user_id: user.id,
-                            description: newEvent
+                            description: newEvent,
                         });
                     }
 
-                    // Update Local State so UI updates instantly
                     setCompletedMissions(prev => [...prev, newEvent.replace('MISSION:', '')]);
-
-                    // Celebrate unlock!
                     playSound('unlock');
                     playHaptic('victory');
 
-                    Alert.alert('✅ ¡Módulo Desbloqueado!', `"${currentQuizCategory.title}" ya está disponible. ¡A jugar!`);
+                    Alert.alert('Módulo desbloqueado', `"${currentQuizCategory.title}" ya está disponible.`);
                     setUnleashModalVisible(false);
                 } catch (e) {
                     console.error('Error Unleashing:', e);
@@ -127,20 +117,21 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                 }
             }
         } else {
-            // WRONG
             const currentMistakes = quizMistakes + 1;
             setQuizMistakes(currentMistakes);
             if (currentMistakes >= 3) {
-                Alert.alert('¡Reprobaste!', 'Regresa a leer el devocional respectivo. Te equivocaste 3 veces.');
+                Alert.alert('Intenta de nuevo', 'Regresa a leer el devocional respectivo.');
                 setUnleashModalVisible(false);
             } else {
-                Alert.alert('❌ Incorrecto', `Pierdes 1 vida. Te quedan ${3 - currentMistakes} vidas.`);
+                Alert.alert('Incorrecto', `Te quedan ${3 - currentMistakes} intentos.`);
             }
         }
     };
 
     const renderItem = ({ item }: { item: Category }) => {
         const locked = isCategoryLocked(item);
+        const doodle = getDoodleForThemeId(item.id);
+        const displayTitle = formatCategoryTitle(item.title);
 
         const proceedToGame = async (categoryWithData: Category) => {
             if (targetGame === 'trivia') {
@@ -151,13 +142,12 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                     category: categoryWithData.title,
                     categoryObj: categoryWithData,
                     totalPool: categoryWithData.words,
-                    canEarnTrophies: true
+                    canEarnTrophies: true,
                 });
             }
         };
 
         const loadContentAndStart = async () => {
-            // Si ya tiene datos (Local/Offline), ir directo
             if (targetGame === 'trivia' && item.trivia && item.trivia.length > 0) {
                 proceedToGame(item);
                 return;
@@ -167,7 +157,6 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                 return;
             }
 
-            // Si no tiene datos, intentar bajar de Supabase
             try {
                 if (targetGame === 'trivia') {
                     const { data: qs } = await supabase
@@ -183,11 +172,11 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                             correctIndex: q.correct_index,
                             difficulty: q.difficulty_level,
                             explanation: q.explanation,
-                            verseSupport: q.verse_support
+                            verseSupport: q.verse_support,
                         }));
                         proceedToGame({ ...item, trivia: mappedQs });
                     } else {
-                        Alert.alert('Próximamente 🚧', 'Esta categoría de Trivia no tiene preguntas aún.');
+                        Alert.alert('Próximamente', 'Esta categoría aún no tiene preguntas.');
                     }
                 } else {
                     const { data: ws } = await supabase
@@ -200,11 +189,11 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                             id: w.id,
                             word: w.word,
                             difficulty: w.difficulty_level,
-                            impostorHints: w.impostor_hints
+                            impostorHints: w.impostor_hints,
                         }));
                         proceedToGame({ ...item, words: mappedWords });
                     } else {
-                        Alert.alert('Próximamente 🚧', 'Esta categoría de Charadas no tiene palabras aún.');
+                        Alert.alert('Próximamente', 'Esta categoría aún no tiene palabras.');
                     }
                 }
             } catch (err) {
@@ -214,26 +203,25 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         };
 
         return (
-            <TouchableOpacity
+            <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={item.title + (locked ? ', bloqueado' : '')}
-                style={[styles.card, styles.gridCard, { width: cardSize, minHeight: cardSize + 18 }]}
                 onPress={() => {
                     if (locked) {
                         const lockStatus = getCategoryLockStatus(item, completedMissions);
 
                         if (lockStatus.reason === 'unstarted') {
                             Alert.alert(
-                                'Devocional no iniciado 🔒',
-                                `Para hacer el examen y desbloquear este paquete, primero debes iniciar el devocional de la unidad en la sección de "Rutas de Estudio".`
+                                'Devocional pendiente',
+                                'Inicia primero el devocional de la unidad en Estudio.'
                             );
                             return;
                         }
 
                         if (lockStatus.reason === 'path') {
                             Alert.alert(
-                                'Falta Plan de Estudio 🔒',
-                                'Completa primero la unidad anterior del plan "Jesús Real" en tu ruta.'
+                                'Plan de Estudio',
+                                'Completa primero la unidad anterior de tu ruta.'
                             );
                             return;
                         }
@@ -251,76 +239,101 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
                         navigation.push('CategorySelection', {
                             subcategories: item.subcategories,
                             parentTitle: item.title,
-                            targetGame: targetGame
+                            targetGame,
                         });
                     } else {
                         loadContentAndStart();
                     }
                 }}
-                activeOpacity={locked ? 1 : 0.8}
+                style={({ pressed }) => [
+                    s.rowCard,
+                    locked && { opacity: 0.65 },
+                    pressed && !locked && s.pressed,
+                ]}
             >
-
-                <GlassSheen tint={locked ? 'neutral' : targetGame === 'trivia' ? 'mint' : 'violet'} />
-                <View style={styles.categoryTop}>
-                    <View style={[styles.categoryIcon, { backgroundColor: locked ? '#D9D4DF66' : '#FFFFFF88' }]}>
-                        <Ionicons name={locked ? 'lock-closed-outline' : (item.icon as any) || 'book-outline'} size={28} color={locked ? '#797080' : theme.colors.primary} />
+                {locked ? (
+                    <View style={s.lockBadge}>
+                        <Ionicons name="lock-closed-outline" size={20} color="#6E7785" />
                     </View>
-                    <Ionicons name={locked ? 'lock-closed-outline' : 'arrow-forward'} size={16} color={theme.colors.textSecondary} />
-                </View>
-                <AppText style={styles.categoryTitle} numberOfLines={3}>{item.title}</AppText>
-                <AppText style={styles.categorySubtitle} numberOfLines={2}>
-                    {locked ? 'Completa la ruta para desbloquear' : item.capitulo || (item.difficulty === 'Fácil' ? 'Semilla · Para comenzar' : item.difficulty === 'Medio' ? 'Discípulo · Sigue creciendo' : 'Explora y aprende')}
-                </AppText>
+                ) : (
+                    <EditorialDoodle kind={doodle.kind} tint={doodle.tint} size={46} />
+                )}
 
-            </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                    <AppText style={s.cardTitle} numberOfLines={2}>
+                        {displayTitle}
+                    </AppText>
+                </View>
+
+                <Ionicons
+                    name={locked ? 'lock-closed-outline' : 'chevron-forward'}
+                    size={18}
+                    color="#9AA3AE"
+                />
+            </Pressable>
         );
     };
-
-    const renderHeader = () => null;
 
     const renderUnleashModal = () => {
         if (!currentQuizCategory || !currentQuizCategory.unleashQuiz) return null;
         const q = currentQuizCategory.unleashQuiz[currentQuestionIndex];
 
         return (
-            <Modal onRequestClose={() => setUnleashModalVisible(false)} visible={unleashModalVisible} animationType="slide" transparent>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        {/* Dark Header */}
-                        <View style={styles.modalHeader}>
+            <Modal
+                onRequestClose={() => setUnleashModalVisible(false)}
+                visible={unleashModalVisible}
+                animationType="fade"
+                transparent
+            >
+                <View style={s.modalOverlay}>
+                    <View style={s.modalSheet}>
+                        <View style={s.modalHeader}>
                             <View style={{ flex: 1 }}>
-                                <AppText style={{ color: "#636477", fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>EXAMEN DE DESBLOQUEO</AppText>
-                                <AppText variant="subheader" style={{ color: "#2D3043", fontSize: 17 }}>{currentQuizCategory.title}</AppText>
+                                <AppText style={s.modalEyebrow}>DESBLOQUEAR</AppText>
+                                <AppText style={s.modalTitle}>{currentQuizCategory.title}</AppText>
                             </View>
-                            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar examen" onPress={() => setUnleashModalVisible(false)} style={{ padding: 5, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 20 }}>
-                                <Ionicons name="close" size={20} color="#2D3043" />
+                            <TouchableOpacity
+                                accessibilityRole="button"
+                                accessibilityLabel="Cerrar examen"
+                                onPress={() => setUnleashModalVisible(false)}
+                                style={s.closeBtn}
+                            >
+                                <Ionicons name="close" size={18} color="#1B1E23" />
                             </TouchableOpacity>
                         </View>
 
-                        <View style={{ padding: 20 }}>
-                            {/* Progress */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-                                <AppText style={{ color: "#636477", fontSize: 13 }}>Pregunta {currentQuestionIndex + 1} / {currentQuizCategory.unleashQuiz.length}</AppText>
-                                <AppText style={{ color: '#e74c3c', fontSize: 13, letterSpacing: 2 }}>{'❤️'.repeat(3 - quizMistakes)}</AppText>
-                            </View>
-
-                            {/* Question */}
-                            <AppText style={{ color: theme.colors.primary, fontSize: 18, fontWeight: 'bold', marginBottom: 24, lineHeight: 26 }}>
-                                {q.q}
+                        <View style={s.modalMetaRow}>
+                            <AppText style={s.modalMeta}>
+                                {currentQuestionIndex + 1}/{currentQuizCategory.unleashQuiz.length}
                             </AppText>
+                            <View style={s.livesRow}>
+                                {[0, 1, 2].map(i => (
+                                    <Ionicons
+                                        key={i}
+                                        name={i < 3 - quizMistakes ? 'heart' : 'heart-outline'}
+                                        size={15}
+                                        color="#C96A6A"
+                                    />
+                                ))}
+                            </View>
+                        </View>
 
-                            {/* Options */}
+                        <AppText style={s.modalQuestion}>{q.q}</AppText>
+
+                        <View style={{ gap: 10 }}>
                             {q.options.map((opt, i) => (
                                 <TouchableOpacity
                                     key={i}
-                                    style={styles.modalOptionBtn}
+                                    style={s.modalOptionBtn}
                                     onPress={() => handleAnswerUnleash(i)}
-                                    activeOpacity={0.7}
+                                    activeOpacity={0.82}
                                 >
-                                    <View style={styles.modalOptionLetter}>
-                                        <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>{['A', 'B', 'C', 'D'][i]}</AppText>
+                                    <View style={s.modalOptionLetter}>
+                                        <AppText style={s.modalOptionLetterText}>
+                                            {['A', 'B', 'C', 'D'][i]}
+                                        </AppText>
                                     </View>
-                                    <AppText style={{ color: "#2D3043", flex: 1, fontSize: 15 }}>{opt}</AppText>
+                                    <AppText style={s.modalOptionText}>{opt}</AppText>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -336,76 +349,76 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         const startTrivia = (diff: number) => {
             setDifficultyModalVisible(false);
             if (targetGame === 'trivia') {
-                const durationByLevel = 90; // Standardized: 90 seconds
-                const limitByLevel = 15;    // Standardized: 15 questions
-
                 navigation.navigate('TriviaGame', {
                     categoryObj: categoryForTrivia,
                     questions: categoryForTrivia.trivia,
-                    duration: durationByLevel,
+                    duration: 90,
                     difficulty: diff,
-                    limit: limitByLevel,
-                    canEarnTrophies: true
+                    limit: 15,
+                    canEarnTrophies: true,
                 });
             } else {
-                // Charadas Flow
                 navigation.navigate('WordPreview', {
                     category: categoryForTrivia.title,
                     categoryObj: categoryForTrivia,
                     totalPool: categoryForTrivia.words,
                     difficulty: diff,
-                    canEarnTrophies: true
+                    canEarnTrophies: true,
                 });
             }
         };
 
+        const levels = [
+            { lvl: 1, name: 'Semilla', tag: 'Básico', bg: '#DCECE8', color: '#2E6F65', icon: 'leaf-outline' },
+            { lvl: 2, name: 'Discípulo', tag: 'Intermedio', bg: '#D6E8F8', color: '#1E3A5F', icon: 'compass-outline' },
+            { lvl: 3, name: 'Maestro', tag: 'Avanzado', bg: '#F5DA7C', color: '#6F5207', icon: 'ribbon-outline' },
+        ];
+
         return (
-            <Modal onRequestClose={() => setDifficultyModalVisible(false)} visible={difficultyModalVisible} animationType="fade" transparent>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <View style={{ flex: 1 }}>
-                                <AppText style={{ color: "#636477", fontSize: 11, letterSpacing: 2 }}>SELECCIONA NIVEL</AppText>
-                                <AppText variant="subheader" style={{ color: "#2D3043", fontSize: 17 }}>{categoryForTrivia.title}</AppText>
-                            </View>
-                            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Cerrar niveles" onPress={() => setDifficultyModalVisible(false)} style={{ padding: 5, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 20 }}>
-                                <Ionicons name="close" size={20} color="#2D3043" />
+            <Modal
+                onRequestClose={() => setDifficultyModalVisible(false)}
+                visible={difficultyModalVisible}
+                animationType="fade"
+                transparent
+            >
+                <View style={s.modalOverlay}>
+                    <View style={s.modalSheet}>
+                        <View style={s.modalHeader}>
+                            <AppText style={[s.modalTitle, { flex: 1 }]}>
+                                {categoryForTrivia.title}
+                            </AppText>
+                            <TouchableOpacity
+                                accessibilityRole="button"
+                                accessibilityLabel="Cerrar niveles"
+                                onPress={() => setDifficultyModalVisible(false)}
+                                style={s.closeBtn}
+                            >
+                                <Ionicons name="close" size={18} color="#1B1E23" />
                             </TouchableOpacity>
                         </View>
 
-                        <View style={{ padding: 20, gap: 12 }}>
-                            <TouchableOpacity accessibilityRole="button"
-                                style={[styles.modalOptionBtn, { borderColor: '#27AE60' }]} onPress={() => startTrivia(1)}>
-                                <View style={[styles.modalOptionLetter, { backgroundColor: '#27AE60' }]}>
-                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>🌱</AppText>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>Nivel Semilla</AppText>
-                                    <AppText style={{ color: "#636477", fontSize: 12 }}>Principios básicos y fundamentales.</AppText>
-                                </View>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity accessibilityRole="button"
-                                style={[styles.modalOptionBtn, { borderColor: '#8FCA97' }]} onPress={() => startTrivia(2)}>
-                                <View style={[styles.modalOptionLetter, { backgroundColor: '#8FCA97' }]}>
-                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>⚔️</AppText>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>Nivel Discípulo</AppText>
-                                    <AppText style={{ color: "#636477", fontSize: 12 }}>Conocimiento intermedio y reflexivo.</AppText>
-                                </View>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity accessibilityRole="button"
-                                style={[styles.modalOptionBtn, { borderColor: "#68A877" }]} onPress={() => startTrivia(3)}>
-                                <View style={[styles.modalOptionLetter, { backgroundColor: "#68A877" }]}>
-                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>👑</AppText>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <AppText style={{ color: "#2D3043", fontWeight: 'bold' }}>Nivel Apóstol</AppText>
-                                    <AppText style={{ color: "#636477", fontSize: 12 }}>Desafíos avanzados de sabiduría bíblica.</AppText>
-                                </View>
-                            </TouchableOpacity>
+                        <View style={{ gap: 12 }}>
+                            {levels.map(item => (
+                                <Pressable
+                                    key={item.lvl}
+                                    accessibilityRole="button"
+                                    onPress={() => startTrivia(item.lvl)}
+                                    style={({ pressed }) => [
+                                        s.levelCard,
+                                        { backgroundColor: item.bg },
+                                        pressed && s.pressed,
+                                    ]}
+                                >
+                                    <View style={s.levelIconBox}>
+                                        <Ionicons name={item.icon as any} size={20} color={item.color} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <AppText style={s.levelName}>{item.name}</AppText>
+                                        <AppText style={[s.levelTag, { color: item.color }]}>{item.tag}</AppText>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={18} color={item.color} />
+                                </Pressable>
+                            ))}
                         </View>
                     </View>
                 </View>
@@ -413,254 +426,293 @@ export const CategorySelectionScreen = ({ navigation, route }: any) => {
         );
     };
 
-    return (
-        <View style={styles.container}>
-            <GlassBackground />
-            <Container style={styles.innerContainer} noPadding>
-                <View style={[styles.headerRow, { paddingHorizontal: 20, paddingTop: 20, justifyContent: 'space-between' }]}>
+    const filtered = categories.filter(item =>
+        item.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
+    );
 
-                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Volver" onPress={() => navigation.goBack()} style={styles.backControl}>
-                        <Ionicons name="arrow-back" size={21} color={theme.colors.text} />
+    return (
+        <View style={[s.container, { paddingTop: insets.top }]}>
+            <View style={s.inner}>
+                <View style={s.headerRow}>
+                    <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Volver"
+                        onPress={() => navigation.goBack()}
+                        style={s.backBtn}
+                    >
+                        <Ionicons name="chevron-back" size={20} color="#1B1E23" />
                     </TouchableOpacity>
-                    <View style={{ flex: 1, marginLeft: 14 }}>
-                        <AppText style={styles.modeLabel}>{targetGame === 'trivia' ? 'TRIVIA BÍBLICA' : 'CHARADAS'}</AppText>
-                        <AppText variant="header" style={{ fontSize: 25 }}>{parentTitle || 'Elige tu aventura'}</AppText>
+
+                    <View style={{ flex: 1 }}>
+                        <AppText style={s.eyebrow}>
+                            {targetGame === 'trivia' ? 'TRIVIA BÍBLICA' : 'CHARADAS'}
+                        </AppText>
+                        <AppText style={s.headerTitle} numberOfLines={1}>
+                            {parentTitle || 'Elige un tema'}
+                        </AppText>
                     </View>
-                    <View style={styles.countPill}><AppText style={styles.countText}>{categories.length} temas</AppText></View>
+
+                    <View style={s.countPill}>
+                        <AppText style={s.countText}>{categories.length}</AppText>
+                    </View>
                 </View>
-                <View style={styles.searchBox}>
-                    <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} />
-                    <TextInput accessibilityLabel="Buscar un tema" placeholder="¿Qué quieres descubrir hoy?" placeholderTextColor={theme.colors.textSecondary}
-                        value={search} onChangeText={setSearch} style={styles.searchInput} />
-                    {search.length > 0 && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Limpiar búsqueda" onPress={() => setSearch('')} style={{ padding: 8 }}><Ionicons name="close" size={18} color={theme.colors.textSecondary} /></TouchableOpacity>}
+
+                <View style={s.searchBox}>
+                    <Ionicons name="search-outline" size={18} color="#6E7785" />
+                    <TextInput
+                        accessibilityLabel="Buscar tema"
+                        placeholder="Buscar tema..."
+                        placeholderTextColor="#8B94A1"
+                        value={search}
+                        onChangeText={setSearch}
+                        style={s.searchInput}
+                    />
+                    {search.length > 0 && (
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            accessibilityLabel="Limpiar búsqueda"
+                            onPress={() => setSearch('')}
+                            style={{ padding: 6 }}
+                        >
+                            <Ionicons name="close" size={17} color="#6E7785" />
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <FlatList
-                    data={categories.filter(item => item.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))}
-                    keyExtractor={(item) => item.id}
+                    data={filtered}
+                    keyExtractor={item => item.id}
                     renderItem={renderItem}
-                    ListHeaderComponent={renderHeader}
-                    ListEmptyComponent={<AppText centered style={{ padding: 32, color: theme.colors.textSecondary }}>No encontramos temas con ese nombre.</AppText>}
-                    contentContainerStyle={styles.list}
+                    ListEmptyComponent={
+                        <AppText centered style={s.emptyText}>
+                            No encontramos temas con ese nombre.
+                        </AppText>
+                    }
+                    contentContainerStyle={[s.list, { paddingBottom: insets.bottom + 36 }]}
                     showsVerticalScrollIndicator={false}
-                    numColumns={columns}
-                    key={columns} // Force re-render if we were switching dynamically
-                    columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 20 }}
                 />
 
                 {renderUnleashModal()}
                 {renderDifficultyModal()}
-            </Container>
+            </View>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    categoryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 },
-    categoryIcon: { width: 48, height: 48, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FFFFFF' },
-    categoryTitle: { fontSize: 17, lineHeight: 23, fontWeight: '600', letterSpacing: -0.4 },
-    categorySubtitle: { fontSize: 11, lineHeight: 17, marginTop: 8, color: theme.colors.textSecondary },
-    backControl: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF77', borderWidth: 1, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-    modeLabel: { fontSize: 9, letterSpacing: 1.6, color: theme.colors.primary, fontWeight: '700', marginBottom: 3 },
-    countPill: { backgroundColor: '#FFFFFF77', borderRadius: 15, paddingVertical: 6, paddingHorizontal: 10 },
-    countText: { fontSize: 10, color: theme.colors.textSecondary },
-    searchBox: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 17, minHeight: 51, borderRadius: 26, borderWidth: 1, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF66', marginHorizontal: 20, marginBottom: 24 },
-    searchInput: { flex: 1, color: theme.colors.text, fontSize: 14, minHeight: 48 },
-
+const s = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: theme.colors.background,
+        backgroundColor: '#FFFFFF',
     },
-    innerContainer: {
-        flex: 1, width: '100%', maxWidth: 1040, alignSelf: 'center',
-        backgroundColor: 'transparent',
+    inner: {
+        flex: 1,
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
     },
     headerRow: {
-        marginBottom: 20,
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
+        gap: 12,
+        paddingHorizontal: 20,
+        paddingTop: 14,
+        paddingBottom: 16,
     },
-    list: {
-        paddingBottom: 80, // Space for bottom
-    },
-    card: {
-        backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 28,
-        padding: 19, marginBottom: 16, borderWidth: 1, borderColor: '#FFFFFFDD',
-        ...theme.shadows.soft,
-    },
-    gridCard: { flexDirection: 'column' },
-    // categoryImage is unused now, removed
-    icon: {
-        fontSize: 32,
-        marginRight: 0,
-    },
-    textContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        paddingLeft: 10,
-    },
-    title: {
-        color: "#2D3043",
-        marginBottom: 4,
-    },
-    desc: {
-        color: "#636477",
-        marginBottom: 0,
-    },
-    arrow: {
-        paddingLeft: 10,
-    },
-    textOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: "rgba(255,255,255,0.55)",
-        padding: 10,
-        justifyContent: 'center',
+    backBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#F3F7F6',
         alignItems: 'center',
-    },
-    gridTitle: {
-        color: "#2D3043",
-        textAlign: 'center',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    deleteButton: {
-        position: 'absolute',
-        top: 5,
-        right: 5,
-        padding: 5,
-        backgroundColor: "rgba(255,255,255,0.55)",
-        borderRadius: 20,
-    },
-    createCard: {
-        flexDirection: 'row',
-        padding: 20,
-        borderLeftColor: "rgba(255,255,255,0.82)",
-        borderLeftWidth: 2,
-        borderStyle: 'dashed',
-        backgroundColor: "rgba(255,255,255,0.48)",
-        marginBottom: 24,
-    },
-    modalOptionLetter: {
-        width: 30, height: 30, borderRadius: 15,
-        backgroundColor: "#68A877",
-        justifyContent: 'center', alignItems: 'center',
-    },
-    minimalistCover: {
-        width: '100%',
-        minHeight: 170,
         justifyContent: 'center',
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: "rgba(255,255,255,0.52)",
     },
-    minimalistTitle: {
-        color: "#2D3043",
-        fontSize: 18, // Slightly smaller to fit better with adjustsFontSizeToFit
-        fontWeight: '900', // Bolder for more identity
-        letterSpacing: 2,
-        textAlign: 'center',
+    eyebrow: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1.4,
+        color: '#3D8A7B',
         marginBottom: 2,
     },
-    minimalistSubtitle: {
-        color: "#636477",
-        fontSize: 10,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: '800',
+        letterSpacing: -0.5,
+        color: '#1B1E23',
     },
-    lockOverlayAbsolute: {
-        ...StyleSheet.absoluteFill as any,
-        backgroundColor: "rgba(229,224,233,0.94)",
-        justifyContent: 'center',
+    countPill: {
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        borderRadius: 14,
+        backgroundColor: '#F3F7F6',
+    },
+    countText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#1E3A5F',
+    },
+    searchBox: {
+        flexDirection: 'row',
         alignItems: 'center',
-        zIndex: 10,
+        gap: 10,
+        paddingHorizontal: 16,
+        height: 48,
+        borderRadius: 20,
+        backgroundColor: '#F6F8FA',
+        marginHorizontal: 20,
+        marginBottom: 18,
     },
-    lockCircle: {
-        width: 60, height: 60, borderRadius: 30,
-        backgroundColor: "rgba(255,255,255,0.52)", borderWidth: 2, borderColor: "rgba(255,255,255,0.82)",
-        justifyContent: 'center', alignItems: 'center',
+    searchInput: {
+        flex: 1,
+        color: '#1B1E23',
+        fontSize: 15,
+    },
+    list: {
+        paddingTop: 4,
+        paddingHorizontal: 20,
+        gap: 11,
+    },
+    rowCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        padding: 16,
+        borderRadius: 24,
+        backgroundColor: '#F7F9FB',
+    },
+    lockBadge: {
+        width: 46,
+        height: 46,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cardTitle: {
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: '800',
+        color: '#1B1E23',
+    },
+    emptyText: {
+        padding: 32,
+        color: '#6E7785',
+    },
+    pressed: {
+        opacity: 0.88,
+        transform: [{ scale: 0.985 }],
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: "rgba(229,224,233,0.94)",
+        backgroundColor: 'rgba(27, 30, 35, 0.36)',
         justifyContent: 'center',
-        padding: 20,
+        padding: 22,
     },
-    modalContent: {
-        width: '100%', maxWidth: 540, alignSelf: 'center',
-        backgroundColor: "rgba(255,255,255,0.52)",
+    modalSheet: {
+        width: '100%',
+        maxWidth: 440,
+        alignSelf: 'center',
         borderRadius: 30,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.82)",
-        shadowColor: "#3E4C45",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.12,
-        shadowRadius: 20,
+        backgroundColor: '#FFFFFF',
+        padding: 22,
     },
     modalHeader: {
-        backgroundColor: "rgba(255,255,255,0.52)",
-        padding: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 16,
+    },
+    modalEyebrow: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1.3,
+        color: '#3D8A7B',
+        marginBottom: 2,
+    },
+    modalTitle: {
+        fontSize: 19,
+        fontWeight: '800',
+        color: '#1B1E23',
+    },
+    closeBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: '#F3F7F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalMetaRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: "rgba(255,255,255,0.82)",
+        marginBottom: 12,
+    },
+    modalMeta: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#6E7785',
+    },
+    livesRow: {
+        flexDirection: 'row',
+        gap: 4,
+    },
+    modalQuestion: {
+        fontSize: 18,
+        lineHeight: 25,
+        fontWeight: '800',
+        color: '#1B1E23',
+        marginBottom: 18,
     },
     modalOptionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: "rgba(255,255,255,0.48)",
-        padding: 18,
-        borderRadius: 20,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.82)",
+        gap: 12,
+        padding: 14,
+        borderRadius: 18,
+        backgroundColor: '#F6F8FA',
     },
-    // New Styles for Premium Cards
-    glassReflect: {
-        ...StyleSheet.absoluteFill as any,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-    },
-    topAccent: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 3,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-    },
-    watermarkIcon: {
-        position: 'absolute',
-        top: -10,
-        right: -10,
-        opacity: 0.5,
-    },
-    cardInfoContainer: {
-        flex: 1,
-        justifyContent: 'center',
+    modalOptionLetter: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#DCECE8',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        zIndex: 2,
+        justifyContent: 'center',
     },
-    divider: {
-        width: 30,
-        height: 1,
-        marginVertical: 10,
-        borderRadius: 1,
+    modalOptionLetterText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#1E3A5F',
     },
-    bottomGlow: {
-        position: 'absolute',
-        bottom: -20,
-        width: '80%',
+    modalOptionText: {
+        flex: 1,
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#1B1E23',
+    },
+    levelCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        borderRadius: 22,
+        padding: 16,
+    },
+    levelIconBox: {
+        width: 40,
         height: 40,
-        borderRadius: 20,
-        opacity: 0.4,
-    }
+        borderRadius: 14,
+        backgroundColor: 'rgba(255,255,255,0.68)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    levelName: {
+        fontSize: 17,
+        fontWeight: '800',
+        color: '#1B1E23',
+    },
+    levelTag: {
+        fontSize: 13,
+        fontWeight: '700',
+        marginTop: 2,
+    },
 });
-

@@ -1,96 +1,104 @@
 /**
  * useAccelerometer.ts
- * Detects phone tilt (UP = face-up/inclined forward, DOWN = face-down/tilted back).
- * 
- * Fix: Added a "warm-up" grace period (1.5s) after activation so that the
- * initial phone position (often face-up when handing the phone to forehead)
- * doesn't immediately trigger a false action.
+ * Detects phone tilt when held vertically on forehead in landscape:
+ * - Tilting screen DOWN toward floor (z > +threshold) -> 'DOWN' (Correct)
+ * - Tilting screen UP toward ceiling (z < -threshold) -> 'UP' (Pass)
+ *
+ * Handles:
+ * - Proper listener cleanup via ref (no leaked subscriptions)
+ * - Grace period + requiring an initial NEUTRAL position before arming
+ * - Light low-pass smoothing to avoid false triggers from hand jitter
  */
-import { useState, useEffect, useRef } from 'react';
-import { Accelerometer } from 'expo-sensors';
+import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+import { Accelerometer } from 'expo-sensors';
 
 export interface AccelerometerConfig {
     updateInterval?: number;
     triggerThreshold?: number;
     resetThreshold?: number;
-    /** Grace period in ms before tilt triggers are accepted (default 1500ms) */
     gracePeriodMs?: number;
 }
 
 export const useAccelerometer = (enabled: boolean = true, config: AccelerometerConfig = {}) => {
     const {
-        updateInterval = 100,
-        triggerThreshold = 0.65,
-        resetThreshold = 0.35,
-        gracePeriodMs = 1500, // 1.5 seconds grace before tilt counts
+        updateInterval = 80,
+        triggerThreshold = 0.62,
+        resetThreshold = 0.32,
+        gracePeriodMs = 1200,
     } = config;
 
     const [data, setData] = useState({ x: 0, y: 0, z: 0 });
     const [tilt, setTilt] = useState<'NEUTRAL' | 'UP' | 'DOWN'>('NEUTRAL');
-    const [subscription, setSubscription] = useState<any>(null);
 
-    // Grace period: don't accept tilt actions for gracePeriodMs after enabling
+    const subRef = useRef<{ remove: () => void } | null>(null);
     const readyRef = useRef(false);
-    const graceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const hasSeenNeutralRef = useRef(false);
+    const smoothedZRef = useRef(0);
+    const graceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const processingData = (sensorData: { x: number, y: number, z: number }) => {
-        setData(sensorData);
-
-        // During grace period just update data but don't fire tilt events
-        if (!readyRef.current) return;
-
-        const { z } = sensorData;
-
-        setTilt((currentTilt) => {
-            if (currentTilt === 'NEUTRAL') {
-                if (z < -triggerThreshold) return 'UP';
-                if (z > triggerThreshold) return 'DOWN';
-                return 'NEUTRAL';
-            } else {
-                // Must come ALL the way back to near-center to reset
-                if (Math.abs(z) < resetThreshold) return 'NEUTRAL';
-                return currentTilt;
+    useEffect(() => {
+        const cleanup = () => {
+            if (graceTimerRef.current) {
+                clearTimeout(graceTimerRef.current);
+                graceTimerRef.current = null;
             }
-        });
-    };
+            if (subRef.current) {
+                subRef.current.remove();
+                subRef.current = null;
+            }
+            readyRef.current = false;
+            hasSeenNeutralRef.current = false;
+            smoothedZRef.current = 0;
+            setTilt('NEUTRAL');
+        };
 
-    const _subscribe = () => {
-        // Reset ready flag and start grace period
+        if (!enabled || Platform.OS === 'web') {
+            cleanup();
+            return cleanup;
+        }
+
         readyRef.current = false;
-        if (graceTimerRef.current) clearTimeout(graceTimerRef.current);
+        hasSeenNeutralRef.current = false;
+        smoothedZRef.current = 0;
 
         graceTimerRef.current = setTimeout(() => {
             readyRef.current = true;
         }, gracePeriodMs);
 
-        const sub = Accelerometer.addListener(processingData);
-        setSubscription(sub);
         Accelerometer.setUpdateInterval(updateInterval);
-    };
+        subRef.current = Accelerometer.addListener(sensorData => {
+            setData(sensorData);
 
-    const _unsubscribe = () => {
-        // Clear grace timer on unsub
-        if (graceTimerRef.current) {
-            clearTimeout(graceTimerRef.current);
-            graceTimerRef.current = null;
-        }
-        readyRef.current = false;
+            // Light low-pass filter to ignore micro-shakes
+            const z = smoothedZRef.current * 0.45 + sensorData.z * 0.55;
+            smoothedZRef.current = z;
 
-        subscription && subscription.remove();
-        setSubscription(null);
-        setTilt('NEUTRAL');
-    };
+            if (!readyRef.current) return;
 
-    useEffect(() => {
-        if (enabled) {
-            _subscribe();
-        } else {
-            _unsubscribe();
-        }
+            // Require phone to pass through upright/neutral once before accepting tilts
+            if (!hasSeenNeutralRef.current) {
+                if (Math.abs(z) < resetThreshold) {
+                    hasSeenNeutralRef.current = true;
+                }
+                return;
+            }
 
-        return () => _unsubscribe();
-    }, [enabled]);
+            setTilt(currentTilt => {
+                if (currentTilt === 'NEUTRAL') {
+                    if (z < -triggerThreshold) return 'UP';
+                    if (z > triggerThreshold) return 'DOWN';
+                    return 'NEUTRAL';
+                }
+                if (Math.abs(z) < resetThreshold) {
+                    return 'NEUTRAL';
+                }
+                return currentTilt;
+            });
+        });
+
+        return cleanup;
+    }, [enabled, updateInterval, triggerThreshold, resetThreshold, gracePeriodMs]);
 
     return { data, tilt };
 };

@@ -60,10 +60,18 @@
       ],
       "expo-screen-orientation",
       "expo-localization",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-audio",
+      "expo-video"
     ],
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0bc74b91-6af4-439b-b821-f760e22dde42"
     },
     "extra": {
       "eas": {

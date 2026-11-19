@@ -1,117 +1,172 @@
-import React, { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Platform, AppState, AppStateStatus } from 'react-native';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { AppState, Platform, StyleSheet, View } from 'react-native';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
-import * as MediaLibrary from 'expo-media-library/legacy';
 
 export interface CameraManagerHandle {
     startRecording: () => Promise<void>;
-    stopRecording: () => Promise<string | null>;
+    stopRecording: () => Promise<boolean>;
 }
 
 interface CameraManagerProps {
     onRecordingStart?: () => void;
     onRecordingFinished?: (uri: string) => void;
+    onRecordingError?: (error: unknown) => void;
 }
 
 export const CameraManager = forwardRef<CameraManagerHandle, CameraManagerProps>((props, ref) => {
     const [cameraPermission, requestCameraPermission] = useCameraPermissions();
     const [microphonePermission, requestMicrophonePermission] = useMicrophonePermissions();
-    const [mediaLibPermission, requestMediaLibPermission] = MediaLibrary.usePermissions({ writeOnly: true });
 
     const cameraRef = useRef<CameraView>(null);
-    const [isRecording, setIsRecording] = useState(false);
+    const isRecordingRef = useRef(false);
+    const isCameraReadyRef = useRef(false);
+    const pendingRecordingRef = useRef(false);
+    const recordingStartTimeRef = useRef(0);
+    const stopRequestedRef = useRef(false);
+
+    const [hasPermissions, setHasPermissions] = useState(false);
 
     const onRecordingFinishedRef = useRef(props.onRecordingFinished);
     const onRecordingStartRef = useRef(props.onRecordingStart);
+    const onRecordingErrorRef = useRef(props.onRecordingError);
 
-    // AppState handling to stop recording if backgrounded
+    useEffect(() => {
+        onRecordingFinishedRef.current = props.onRecordingFinished;
+        onRecordingStartRef.current = props.onRecordingStart;
+        onRecordingErrorRef.current = props.onRecordingError;
+    });
+
+    useEffect(() => {
+        const granted = Boolean(cameraPermission?.granted && microphonePermission?.granted);
+        setHasPermissions(granted);
+    }, [cameraPermission?.granted, microphonePermission?.granted]);
+
+    useEffect(() => {
+        if (Platform.OS === 'web') return;
+        let active = true;
+        (async () => {
+            try {
+                if (!cameraPermission?.granted) await requestCameraPermission();
+                if (!active) return;
+                if (!microphonePermission?.granted) await requestMicrophonePermission();
+            } catch (e) {
+                console.warn('[CameraManager] Permission request error:', e);
+            }
+        })();
+        return () => {
+            active = false;
+        };
+    }, []);
+
     useEffect(() => {
         const subscription = AppState.addEventListener('change', nextAppState => {
-            if (nextAppState.match(/inactive|background/) && isRecording) {
-                console.log("App going background, stopping recording...");
-                if (cameraRef.current) {
-                    cameraRef.current.stopRecording();
-                    setIsRecording(false);
-                    // Also clear any pending flag
-                    if (pendingRecordingRef.current) {
-                        pendingRecordingRef.current = false;
+            if (nextAppState.match(/inactive|background/)) {
+                pendingRecordingRef.current = false;
+                if (isRecordingRef.current && cameraRef.current) {
+                    try {
+                        cameraRef.current.stopRecording();
+                    } catch (e) {
+                        console.warn('[CameraManager] Background stopRecording error:', e);
                     }
+                    isRecordingRef.current = false;
                 }
             }
         });
 
         return () => {
             subscription.remove();
+            pendingRecordingRef.current = false;
+            if (isRecordingRef.current && cameraRef.current) {
+                try {
+                    cameraRef.current.stopRecording();
+                } catch {
+                    // Ignore unmount stop errors
+                }
+                isRecordingRef.current = false;
+            }
         };
-    }, [isRecording]);
-
-    useEffect(() => {
-        onRecordingFinishedRef.current = props.onRecordingFinished;
-        onRecordingStartRef.current = props.onRecordingStart;
-    });
-
-    useEffect(() => {
-        (async () => {
-            if (!cameraPermission?.granted) await requestCameraPermission();
-            if (!microphonePermission?.granted) await requestMicrophonePermission();
-            if (!mediaLibPermission?.granted) await requestMediaLibPermission();
-        })();
     }, []);
 
-    const [isCameraReady, setIsCameraReady] = useState(false);
-    const pendingRecordingRef = useRef(false);
-
-    useImperativeHandle(ref, () => ({
-        startRecording: async () => {
-            // If camera is ready, start immediately
-            if (isCameraReady && cameraRef.current && !isRecording) {
-                await startRecordingInternal();
-            } else {
-                // Otherwise queue it
-                pendingRecordingRef.current = true;
-                console.log("Camera not ready, queuing startRecording...");
-            }
-        },
-        stopRecording: async () => {
-            pendingRecordingRef.current = false; // Cancel pending
-            if (cameraRef.current && isRecording) {
-                cameraRef.current.stopRecording();
-            }
-            return null;
-        }
-    }));
-
     const startRecordingInternal = async () => {
-        try {
-            if (!cameraRef.current) return;
+        if (Platform.OS === 'web') {
+            onRecordingErrorRef.current?.(new Error('Recording unsupported on web'));
+            return;
+        }
+        if (!cameraRef.current || isRecordingRef.current || stopRequestedRef.current) {
+            return;
+        }
 
-            setIsRecording(true);
+        try {
+            isRecordingRef.current = true;
+            recordingStartTimeRef.current = Date.now();
             onRecordingStartRef.current?.();
 
             const data = await cameraRef.current.recordAsync({
                 maxDuration: 300,
             });
 
+            isRecordingRef.current = false;
+
             if (data?.uri) {
                 onRecordingFinishedRef.current?.(data.uri);
+            } else {
+                onRecordingErrorRef.current?.(new Error('No video URI returned'));
             }
-            setIsRecording(false);
         } catch (error) {
-            console.error("Recording failed", error);
-            setIsRecording(false);
+            isRecordingRef.current = false;
+            console.warn('[CameraManager] Recording failed:', error);
+            onRecordingErrorRef.current?.(error);
         }
     };
 
+    useImperativeHandle(ref, () => ({
+        startRecording: async () => {
+            if (Platform.OS === 'web') return;
+            stopRequestedRef.current = false;
+            if (!hasPermissions) {
+                pendingRecordingRef.current = true;
+                return;
+            }
+            if (isCameraReadyRef.current && cameraRef.current && !isRecordingRef.current) {
+                await startRecordingInternal();
+            } else {
+                pendingRecordingRef.current = true;
+            }
+        },
+        stopRecording: async () => {
+            stopRequestedRef.current = true;
+            pendingRecordingRef.current = false;
+
+            if (!cameraRef.current || !isRecordingRef.current) {
+                return false;
+            }
+
+            // expo-camera throws if stopRecording is called immediately (< 450ms) after recordAsync starts
+            const elapsed = Date.now() - recordingStartTimeRef.current;
+            if (elapsed < 450) {
+                await new Promise(resolve => setTimeout(resolve, 450 - elapsed));
+            }
+
+            try {
+                cameraRef.current?.stopRecording();
+                return true;
+            } catch (e) {
+                console.warn('[CameraManager] stopRecording error:', e);
+                isRecordingRef.current = false;
+                return false;
+            }
+        },
+    }));
+
     const handleCameraReady = () => {
-        console.log("Camera is ready!");
-        setIsCameraReady(true);
-        if (pendingRecordingRef.current) {
+        isCameraReadyRef.current = true;
+        if (pendingRecordingRef.current && !stopRequestedRef.current) {
             pendingRecordingRef.current = false;
             startRecordingInternal();
         }
     };
 
-    if (!cameraPermission?.granted || !microphonePermission?.granted) {
+    if (Platform.OS === 'web' || !hasPermissions) {
         return null;
     }
 
@@ -131,10 +186,14 @@ export const CameraManager = forwardRef<CameraManagerHandle, CameraManagerProps>
 
 const styles = StyleSheet.create({
     container: {
-        ...StyleSheet.absoluteFill,
-        backgroundColor: 'black', // fallback
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        backgroundColor: '#1B1E23',
     },
     camera: {
         flex: 1,
-    }
+    },
 });

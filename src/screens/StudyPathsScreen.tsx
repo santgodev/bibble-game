@@ -1,35 +1,51 @@
-import { GlassBackground, GlassSheen } from '../components/Glass';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar
+    Pressable, ScrollView, StyleSheet, View, StatusBar, ActivityIndicator
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { AppText } from '../components';
 import { supabase } from '../lib/supabase';
 import { STUDY_PATHS, StudyPath } from '../data/studyPaths';
+import { EditorialDoodle, DoodleKind } from '../trivia/components/EditorialDoodle';
+import { useSound } from '../context/SoundContext';
+
+const BG = '#FFFFFF';
+const SURFACE = '#F6F8FA';
+const INK = '#1B1E23';
+const MUTED = '#5B6573';
+const NAVY = '#1E3A5F';
+const EUCALIPTO = '#2E6F65';
+
+const PATH_STYLES: { bg: string; doodle: DoodleKind; tint: string }[] = [
+    { bg: '#DCECE8', doodle: 'scroll', tint: '#68AEEB' },
+    { bg: '#D6E8F8', doodle: 'dove', tint: '#FFFFFF' },
+    { bg: '#F5DA7C', doodle: 'crown', tint: '#FFFFFF' },
+];
 
 export const StudyPathsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { playSound, playHaptic } = useSound();
     const [completedMissions, setCompletedMissions] = useState<string[]>([]);
-    const [username, setUsername] = useState('');
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadProgress();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadProgress();
+        }, [])
+    );
 
     const loadProgress = async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data: userData } = await supabase
-                .from('users').select('username').eq('id', user.id).single();
-            if (userData) setUsername(userData.username);
-
             const { data: events } = await supabase
-                .from('events').select('description')
-                .eq('user_id', user.id).like('description', 'MISSION:%');
+                .from('events')
+                .select('description')
+                .eq('user_id', user.id)
+                .like('description', 'MISSION:%');
 
             if (events) {
                 setCompletedMissions(events.map((e: any) => e.description.replace('MISSION:', '')));
@@ -63,231 +79,263 @@ export const StudyPathsScreen = ({ navigation }: any) => {
     }, 0);
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <GlassBackground />
-            <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
-
-            {/* HEADER */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-                    <Ionicons name="arrow-back" size={22} color="#2D3043" />
-                </TouchableOpacity>
-                <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>RUTAS DE ESTUDIO</Text>
-                    {username ? (
-                        <Text style={styles.headerSub}>Hola, {username}</Text>
-                    ) : null}
-                </View>
-                <View style={{ width: 40 }} />
-            </View>
+        <View style={[s.container, { paddingTop: insets.top }]}>
+            <StatusBar barStyle="dark-content" />
 
             <ScrollView
-                style={{ flex: 1 }}
-                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={[s.page, { paddingBottom: insets.bottom + 36 }]}
             >
-                {/* HERO STATS CARD */}
-                <View style={styles.heroCard}>
-                    <GlassSheen />
-                    <View style={styles.heroIconRow}>
-                        <View style={styles.heroIconBg}>
-                            <Ionicons name="library-outline" size={28} color="#68A877" />
-                        </View>
-                    </View>
-                    <Text style={styles.heroTitle}>Aprende. Juega. Crece.</Text>
-                    <Text style={styles.heroSub}>
-                        Lee el pasaje del día, supera el reto bíblico y acumula XP para tu iglesia.
-                    </Text>
-
-                    <View style={styles.statsRow}>
-                        <View style={styles.statBox}>
-                            <Ionicons name="checkmark-circle-outline" size={18} color="#68A877" style={{ marginBottom: 4 }} />
-                            <Text style={styles.statNum}>{completedMissions.length}</Text>
-                            <Text style={styles.statLabel}>Misiones</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statBox}>
-                            <Ionicons name="flash-outline" size={18} color="#68A877" style={{ marginBottom: 4 }} />
-                            <Text style={styles.statNum}>{totalXP}</Text>
-                            <Text style={styles.statLabel}>XP ganados</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statBox}>
-                            <Ionicons name="map-outline" size={18} color="#68A877" style={{ marginBottom: 4 }} />
-                            <Text style={styles.statNum}>{STUDY_PATHS.length}</Text>
-                            <Text style={styles.statLabel}>Rutas</Text>
-                        </View>
+                {/* Header editorial idéntico a TriviaHomeScreen */}
+                <View style={s.header}>
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Volver"
+                        onPress={() => {
+                            playSound('tap');
+                            navigation.goBack();
+                        }}
+                        style={({ pressed }) => [s.backBtn, pressed && s.pressed]}
+                    >
+                        <Ionicons name="arrow-back" size={20} color={INK} />
+                    </Pressable>
+                    <View style={{ flex: 1 }}>
+                        <AppText style={s.eyebrow}>ESTUDIO BÍBLICO</AppText>
+                        <AppText style={s.title}>Rutas de estudio</AppText>
                     </View>
                 </View>
 
-                <Text style={styles.sectionTitle}>SELECCIONA UNA RUTA</Text>
+                {/* Bloque compacto de avance (estilo progressCard de HomeScreen) */}
+                <View style={s.summaryCard}>
+                    <View style={s.summaryLeft}>
+                        <AppText style={s.summaryTitle}>
+                            {completedMissions.length} misiones · {totalXP} XP
+                        </AppText>
+                        <AppText style={s.summarySub}>
+                            Avanza paso a paso en cada libro
+                        </AppText>
+                    </View>
+                    <EditorialDoodle kind="olive" tint="#DCECE8" size={50} />
+                </View>
 
-                {STUDY_PATHS.map((path, index) => {
-                    const progress = getPathProgress(path);
-                    const locked = isPathLocked(index);
-                    const completed = progress.pct === 1.0;
+                {loading && (
+                    <ActivityIndicator size="small" color={NAVY} style={{ marginBottom: 16 }} />
+                )}
 
-                    return (
-                        <TouchableOpacity
-                            key={path.id}
-                            style={[
-                                styles.pathCard,
-                                { borderLeftColor: locked ? "#D1E2DA" : path.accentColor },
-                            ]}
-                            onPress={() => {
-                                if (!locked) navigation.navigate('StudyMissions', { path });
-                            }}
-                            activeOpacity={locked ? 1 : 0.75}
-                        >
-                            {locked && (
-                                <View style={styles.lockOverlay}>
-                                    <View style={styles.lockIconBg}>
-                                        <Ionicons name="lock-closed" size={22} color="#636477" />
+                {/* Tarjetas hero por ruta (estilo TriviaHomeScreen) */}
+                <View style={s.cardsColumn}>
+                    {STUDY_PATHS.map((path, index) => {
+                        const progress = getPathProgress(path);
+                        const locked = isPathLocked(index);
+                        const completed = progress.pct === 1.0;
+                        const palette = PATH_STYLES[index % PATH_STYLES.length];
+
+                        return (
+                            <Pressable
+                                key={path.id}
+                                accessibilityRole="button"
+                                accessibilityLabel={path.title}
+                                onPress={() => {
+                                    if (locked) return;
+                                    playSound('select');
+                                    playHaptic('selection');
+                                    navigation.navigate('StudyMissions', { path });
+                                }}
+                                style={({ pressed }) => [
+                                    s.pathCard,
+                                    { backgroundColor: locked ? SURFACE : palette.bg },
+                                    locked && s.lockedCard,
+                                    !locked && pressed && s.pressed,
+                                ]}
+                            >
+                                <View style={s.cardHeaderRow}>
+                                    <View style={s.pillWhite}>
+                                        <AppText style={s.pillWhiteText}>
+                                            {path.book.toUpperCase()}
+                                        </AppText>
                                     </View>
-                                    <Text style={styles.lockText}>
-                                        Completa primero: {STUDY_PATHS[index - 1].title}
-                                    </Text>
+                                    <EditorialDoodle
+                                        kind={palette.doodle}
+                                        tint={locked ? '#D5DCE2' : palette.tint}
+                                        size={58}
+                                    />
                                 </View>
-                            )}
 
-                            <View style={styles.pathContent}>
-                    <GlassSheen />
-                                {/* Icon + Title row */}
-                                <View style={styles.pathTop}>
-                                    <View style={[styles.pathIconBg, { backgroundColor: path.accentColor + '22' }]}>
-                                        <Ionicons
-                                            name={path.iconName as any}
-                                            size={22}
-                                            color={locked ? "#C1D3CB" : path.accentColor}
+                                <AppText style={[s.cardTitle, locked && { color: MUTED }]}>
+                                    {path.title}
+                                </AppText>
+
+                                <View style={s.progressRow}>
+                                    <View style={s.progressTrack}>
+                                        <View
+                                            style={[
+                                                s.progressFill,
+                                                {
+                                                    width: `${progress.pct * 100}%` as any,
+                                                    backgroundColor: locked ? '#C5CED6' : EUCALIPTO,
+                                                },
+                                            ]}
                                         />
                                     </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={[styles.pathTitle, locked && { color: "#636477" }]}>
-                                            {path.title}
-                                        </Text>
-                                        <Text style={[styles.pathBook, { color: locked ? "#A9C1B6" : path.accentColor }]}>
-                                            {path.book}
-                                        </Text>
-                                    </View>
-                                    {completed ? (
-                                        <View style={[styles.completedBadge, { backgroundColor: path.accentColor }]}>
-                                            <Ionicons name="checkmark" size={14} color="#2D3043" />
-                                        </View>
-                                    ) : (
-                                        <Ionicons name="chevron-forward" size={18} color={locked ? "#A9C1B6" : "#A9C1B6"} />
-                                    )}
-                                </View>
-
-                                <Text style={[styles.pathDesc, locked && { color: "#636477" }]} numberOfLines={2}>
-                                    {path.description}
-                                </Text>
-
-                                {/* Progress */}
-                                <View style={styles.progressRow}>
-                                    <View style={styles.progressBg}>
-                                        <View style={[
-                                            styles.progressFill,
-                                            {
-                                                width: `${progress.pct * 100}%` as any,
-                                                backgroundColor: locked ? "#D1E2DA" : path.accentColor,
-                                            }
-                                        ]} />
-                                    </View>
-                                    <Text style={[styles.progressText, locked && { color: "#636477" }]}>
+                                    <AppText style={s.progressText}>
                                         {progress.done}/{progress.total}
-                                    </Text>
+                                    </AppText>
                                 </View>
-                            </View>
-                        </TouchableOpacity>
-                    );
-                })}
 
-                <View style={{ height: 40 }} />
+                                <View style={s.cardFooter}>
+                                    <AppText style={[s.footerAction, locked && { color: MUTED }]}>
+                                        {locked
+                                            ? `Completa ${STUDY_PATHS[index - 1].title}`
+                                            : completed
+                                                ? 'Ruta completada'
+                                                : 'Continuar ruta'}
+                                    </AppText>
+                                    <View style={[s.navyCircle, locked && { backgroundColor: '#D5DCE2' }]}>
+                                        <Ionicons
+                                            name={locked ? 'lock-closed' : completed ? 'checkmark' : 'arrow-forward'}
+                                            size={16}
+                                            color={locked ? MUTED : '#FFFFFF'}
+                                        />
+                                    </View>
+                                </View>
+                            </Pressable>
+                        );
+                    })}
+                </View>
             </ScrollView>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#EAE5E0" },
+const s = StyleSheet.create({
+    container: { flex: 1, backgroundColor: BG },
+    page: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        padding: 20,
+    },
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, paddingVertical: 14,
-        borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.82)",
-    },
-    headerCenter: { flex: 1, alignItems: 'center' },
-    headerTitle: { color: "#2D3043", fontSize: 13, fontWeight: '800', letterSpacing: 3 },
-    headerSub: { color: "#636477", fontSize: 12, marginTop: 2, letterSpacing: 1 },
-    iconBtn: {
-        width: 40, height: 40, borderRadius: 12,
-        backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: '#FFFFFFCC',
-    },
-    scrollContent: { padding: 20 },
-
-    // Hero
-    heroCard: {
-        backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 20, padding: 24,
-        marginBottom: 28, borderWidth: 1, borderColor: '#FFFFFFCC',
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: 14,
+        marginBottom: 22,
     },
-    heroIconRow: { marginBottom: 16 },
-    heroIconBg: {
-        width: 60, height: 60, borderRadius: 18,
-        backgroundColor: "rgba(11,138,94,0.1)", borderWidth: 1,
-        borderColor: "rgba(11,138,94,0.3)", alignItems: 'center', justifyContent: 'center',
+    backBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: SURFACE,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    heroTitle: {
-        color: "#2D3043", fontSize: 20, fontWeight: '800',
-        letterSpacing: 0.5, textAlign: 'center', marginBottom: 8,
+    eyebrow: {
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 1.4,
+        color: EUCALIPTO,
     },
-    heroSub: {
-        color: "#636477", fontSize: 13, textAlign: 'center', lineHeight: 20, marginBottom: 24,
+    title: {
+        fontSize: 26,
+        fontWeight: '800',
+        color: INK,
+        marginTop: 2,
     },
-    statsRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-    statBox: { alignItems: 'center', flex: 1 },
-    statNum: { color: "#68A877", fontSize: 22, fontWeight: '900' },
-    statLabel: { color: "#636477", fontSize: 10, marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 },
-    statDivider: { width: 1, height: 40, backgroundColor: "rgba(255,255,255,0.52)" },
-
-    // Section
-    sectionTitle: {
-        color: "#636477", fontSize: 10, fontWeight: '800',
-        letterSpacing: 3, marginBottom: 14, textTransform: 'uppercase',
+    summaryCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: SURFACE,
+        borderRadius: 22,
+        paddingHorizontal: 18,
+        paddingVertical: 14,
+        marginBottom: 20,
+        gap: 12,
     },
-
-    // Path card
+    summaryLeft: { flex: 1 },
+    summaryTitle: { fontSize: 16, fontWeight: '800', color: INK },
+    summarySub: { fontSize: 13, color: MUTED, marginTop: 2 },
+    cardsColumn: { gap: 16 },
     pathCard: {
-        backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 16,
-        marginBottom: 14, borderWidth: 1, borderColor: '#FFFFFFCC',
-        borderLeftWidth: 3, overflow: 'hidden', minHeight: 120,
+        borderRadius: 28,
+        padding: 22,
+        shadowColor: NAVY,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.08,
+        shadowRadius: 20,
+        elevation: 4,
     },
-    pathContent: { padding: 18 },
-    lockOverlay: {
-        ...StyleSheet.absoluteFill as any,
-        backgroundColor: "rgba(234,229,224,0.94)",
-        alignItems: 'center', justifyContent: 'center', zIndex: 10, gap: 10,
+    lockedCard: {
+        shadowOpacity: 0,
+        elevation: 0,
     },
-    lockIconBg: {
-        width: 44, height: 44, borderRadius: 12,
-        backgroundColor: "rgba(255,255,255,0.52)", borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
-        alignItems: 'center', justifyContent: 'center',
+    pressed: {
+        transform: [{ scale: 0.985 }],
+        opacity: 0.94,
     },
-    lockText: { color: "#636477", fontSize: 12, textAlign: 'center', paddingHorizontal: 30 },
-    pathTop: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
-    pathIconBg: {
-        width: 44, height: 44, borderRadius: 12,
-        alignItems: 'center', justifyContent: 'center',
+    cardHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        marginBottom: 6,
     },
-    pathTitle: { color: "#2D3043", fontSize: 15, fontWeight: '700' },
-    pathBook: { fontSize: 11, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1.5 },
-    completedBadge: {
-        width: 26, height: 26, borderRadius: 8,
-        alignItems: 'center', justifyContent: 'center',
+    pillWhite: {
+        backgroundColor: 'rgba(255,255,255,0.85)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
     },
-    pathDesc: { color: "#636477", fontSize: 13, lineHeight: 18, marginBottom: 14 },
-    progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    progressBg: { flex: 1, height: 4, backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 4, overflow: 'hidden' },
-    progressFill: { height: '100%', borderRadius: 4 },
-    progressText: { color: "#636477", fontSize: 11, fontWeight: '700', minWidth: 28 },
+    pillWhiteText: {
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 0.8,
+        color: NAVY,
+    },
+    cardTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: INK,
+        marginBottom: 14,
+    },
+    progressRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 16,
+    },
+    progressTrack: {
+        flex: 1,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        overflow: 'hidden',
+    },
+    progressFill: {
+        height: '100%',
+        borderRadius: 3,
+    },
+    progressText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: INK,
+        minWidth: 32,
+        textAlign: 'right',
+    },
+    cardFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    footerAction: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: NAVY,
+    },
+    navyCircle: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: NAVY,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 });

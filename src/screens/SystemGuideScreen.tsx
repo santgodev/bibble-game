@@ -37,7 +37,7 @@ export const SystemGuideScreen = ({ navigation }: any) => {
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <GlassBackground />
-            <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
+            <StatusBar barStyle="dark-content" />
 
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>

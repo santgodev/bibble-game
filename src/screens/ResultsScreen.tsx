@@ -1,17 +1,21 @@
-import { GlassBackground } from '../components/Glass';
-import React, { useRef, useState, useEffect } from 'react';
-import { View, StyleSheet, BackHandler, Animated, TouchableOpacity } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {
+    Animated,
+    BackHandler,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    View,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../components';
 import { Confetti } from '../components/Confetti';
-import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../theme';
 import { calculateCharadasRewards } from '../lib/gamification/pointsSystem';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSound } from '../context/SoundContext';
-import { LinearGradient } from 'expo-linear-gradient';
-import { DEFAULT_CATEGORIES } from '../data/categories';
+import { EditorialDoodle } from '../trivia/components/EditorialDoodle';
 
 export const ResultsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -21,32 +25,17 @@ export const ResultsScreen = ({ navigation, route }: any) => {
         videoUri,
         category,
         wordHistory,
-        playingMembers = [],
         canEarnTrophies = true,
         duration = 60,
         isTrivia = false,
     } = route.params || {};
 
-    const categoryObj = DEFAULT_CATEGORIES.find(c => c.id === category || c.title === category);
-    const themeGradients = (categoryObj?.gradientColors && categoryObj.gradientColors.length >= 2)
-        ? (categoryObj.gradientColors as [string, string, ...string[]])
-        : (["#D1E2DA", "#D1E2DA"] as [string, string, ...string[]]);
-    const primaryColor = theme.colors.primary;
-
     const rewards = calculateCharadasRewards(score, total, canEarnTrophies, duration);
     const { playSound, playHaptic } = useSound();
 
     const [showConfetti, setShowConfetti] = useState(false);
-    const scoreAnim = useRef(new Animated.Value(0)).current;
-    const xpAnim = useRef(new Animated.Value(0)).current;
     const fadeIn = useRef(new Animated.Value(0)).current;
-    const scaleIn = useRef(new Animated.Value(0.7)).current;
-    const xpBadgeScale = useRef(new Animated.Value(0)).current;
-    const trophyBadgeScale = useRef(new Animated.Value(0)).current;
-
-    const [displayScore, setDisplayScore] = useState(0);
-    const [displayXP, setDisplayXP] = useState(0);
-    const [showRewards, setShowRewards] = useState(false);
+    const accuracy = total > 0 ? score / total : 0;
 
     useFocusEffect(
         React.useCallback(() => {
@@ -57,265 +46,240 @@ export const ResultsScreen = ({ navigation, route }: any) => {
             };
             const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
 
-            Animated.parallel([
-                Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }),
-                Animated.spring(scaleIn, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
-            ]).start();
+            Animated.timing(fadeIn, {
+                toValue: 1,
+                duration: 380,
+                useNativeDriver: true,
+            }).start();
 
-            const accuracy = total > 0 ? score / total : 0;
             if (accuracy >= 0.5) {
                 setTimeout(() => {
                     playSound('win');
                     playHaptic('victory');
                     setShowConfetti(true);
                     setTimeout(() => setShowConfetti(false), 3000);
-                }, 600);
+                }, 400);
             }
-
-            scoreAnim.addListener(({ value }) => setDisplayScore(Math.round(value)));
-            Animated.timing(scoreAnim, {
-                toValue: score,
-                duration: 1000,
-                delay: 400,
-                useNativeDriver: false,
-            }).start();
-
-            setTimeout(() => {
-                setShowRewards(true);
-                xpAnim.addListener(({ value }) => setDisplayXP(Math.round(value)));
-                Animated.timing(xpAnim, {
-                    toValue: rewards.xp,
-                    duration: 800,
-                    useNativeDriver: false,
-                }).start();
-
-                Animated.spring(xpBadgeScale, { toValue: 1, friction: 5, useNativeDriver: true }).start();
-                if (rewards.trophies > 0) {
-                    setTimeout(() => {
-                        Animated.spring(trophyBadgeScale, { toValue: 1, friction: 5, useNativeDriver: true }).start();
-                    }, 200);
-                }
-            }, 1500);
 
             return () => {
                 subscription.remove();
-                scoreAnim.removeAllListeners();
-                xpAnim.removeAllListeners();
             };
         }, [score, total])
     );
 
     return (
-        <View style={styles.container}>
-            <GlassBackground />
-
-
-
+        <View style={[s.container, { paddingTop: insets.top }]}>
             <Confetti visible={showConfetti} />
 
-            <Animated.View style={[styles.inner, { opacity: fadeIn, transform: [{ scale: scaleIn }] }]}>
-                <AppText style={styles.finishedLabel}>Partida Finalizada</AppText>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[s.page, { paddingBottom: insets.bottom + 36 }]}
+            >
+                <Animated.View style={[s.inner, { opacity: fadeIn }]}>
+                    <EditorialDoodle
+                        kind={accuracy >= 0.5 ? 'trophy' : 'charades'}
+                        tint={accuracy >= 0.5 ? '#F5DA7C' : '#DCECE8'}
+                        size={92}
+                    />
 
-                <View style={[styles.scoreCircle, { borderColor: primaryColor + '60', backgroundColor: "rgba(255,255,255,0.48)" }]}>
-                    <AppText style={styles.scoreValue}>{displayScore}</AppText>
-                    <View style={styles.scoreDivider} />
-                    <AppText style={styles.scoreTotal}>{total}</AppText>
-                    <AppText style={[styles.scoreLabel, { color: primaryColor }]}>ACIERTOS</AppText>
-                </View>
+                    <AppText style={s.eyebrow}>PARTIDA FINALIZADA</AppText>
+                    <AppText style={s.title}>
+                        {accuracy >= 0.7 ? '¡Gran ronda!' : 'Buen intento'}
+                    </AppText>
+                    {!!category && <AppText style={s.subtitle}>{category}</AppText>}
 
-                <View style={styles.rewardsContainer}>
-                    {showRewards && (
-                        <>
-                            <Animated.View style={[styles.rewardBadgePremium, { transform: [{ scale: xpBadgeScale }] }]}>
-                                <LinearGradient colors={["#68A877", "#45834D"]} style={styles.badgeGlow} />
-                                <Ionicons name="flash" size={20} color="#2D3043" />
-                                <AppText style={styles.rewardValuePremium}>+{displayXP} XP</AppText>
-                            </Animated.View>
+                    <View style={s.scoreCard}>
+                        <AppText style={s.scoreBig}>
+                            {score}/{total}
+                        </AppText>
+                        <AppText style={s.scoreMeta}>aciertos</AppText>
 
+                        <View style={s.rewardsRow}>
+                            <View style={[s.rewardChip, { backgroundColor: '#D6E8F8' }]}>
+                                <Ionicons name="flash" size={15} color="#1E3A5F" />
+                                <AppText style={[s.rewardText, { color: '#1E3A5F' }]}>
+                                    +{rewards.xp} XP
+                                </AppText>
+                            </View>
                             {rewards.trophies > 0 && (
-                                <Animated.View style={[styles.rewardBadgePremium, { transform: [{ scale: trophyBadgeScale }], marginLeft: 10 }]}>
-                                    <LinearGradient colors={["#68A877", "#68A877"]} style={[styles.badgeGlow, { opacity: 0.8 }]} />
-                                    <Ionicons name="trophy" size={20} color="#2D3043" />
-                                    <AppText style={styles.rewardValuePremium}>+{rewards.trophies} Trofeos</AppText>
-                                </Animated.View>
+                                <View style={[s.rewardChip, { backgroundColor: '#F5DA7C' }]}>
+                                    <Ionicons name="trophy" size={15} color="#6F5207" />
+                                    <AppText style={[s.rewardText, { color: '#6F5207' }]}>
+                                        +{rewards.trophies} Trofeos
+                                    </AppText>
+                                </View>
                             )}
-                        </>
-                    )}
-                </View>
+                        </View>
+                    </View>
 
-                <View style={styles.actions}>
-                    {videoUri && (
-                        <TouchableOpacity
-                            style={[styles.btn, styles.btnSecondary, { borderColor: primaryColor + '40' }]}
-                            onPress={() => navigation.navigate('VideoReview', { videoUri, category, score, total, wordHistory })}
-                            activeOpacity={0.8}
+                    <View style={s.actions}>
+                        {!!videoUri && (
+                            <Pressable
+                                accessibilityRole="button"
+                                onPress={() =>
+                                    navigation.navigate('VideoReview', {
+                                        videoUri,
+                                        category,
+                                        score,
+                                        total,
+                                        wordHistory,
+                                    })
+                                }
+                                style={({ pressed }) => [s.goldBtn, pressed && s.pressed]}
+                            >
+                                <Ionicons name="videocam-outline" size={18} color="#1B1E23" />
+                                <AppText style={s.goldBtnText}>Revisar video</AppText>
+                            </Pressable>
+                        )}
+
+                        <Pressable
+                            accessibilityRole="button"
+                            onPress={() =>
+                                navigation.navigate('CategorySelection', {
+                                    targetGame: isTrivia ? 'trivia' : 'charadas',
+                                })
+                            }
+                            style={({ pressed }) => [s.primaryBtn, pressed && s.pressed]}
                         >
-                            <Ionicons name="videocam" size={20} color="#2D3043" style={{ marginRight: 10 }} />
-                            <AppText style={styles.btnSecondaryText}>Revisar Video</AppText>
-                        </TouchableOpacity>
-                    )}
+                            <AppText style={s.primaryBtnText}>Jugar otra vez</AppText>
+                            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                        </Pressable>
 
-                    <TouchableOpacity
-                        style={[styles.btn, styles.btnPrimary, { backgroundColor: primaryColor }, isTrivia && { backgroundColor: theme.colors.secondary }]}
-                        onPress={() => navigation.navigate('CategorySelection', { targetGame: isTrivia ? 'trivia' : 'charadas' })}
-                        activeOpacity={0.8}
-                    >
-                        <Ionicons name="refresh" size={20} color="#2D3043" style={{ marginRight: 10 }} />
-                        <AppText style={styles.btnPrimaryText}>JUGAR OTRA VEZ</AppText>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.btn, styles.btnOutline]}
-                        onPress={() => navigation.navigate('Home')}
-                        activeOpacity={0.8}
-                    >
-                        <Ionicons name="home" size={20} color="#636477" style={{ marginRight: 10 }} />
-                        <AppText style={styles.btnOutlineText}>VOLVER AL INICIO</AppText>
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
+                        <Pressable
+                            accessibilityRole="button"
+                            onPress={() => navigation.navigate('Home')}
+                            style={({ pressed }) => [s.secondaryBtn, pressed && s.pressed]}
+                        >
+                            <AppText style={s.secondaryBtnText}>Volver al inicio</AppText>
+                        </Pressable>
+                    </View>
+                </Animated.View>
+            </ScrollView>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+    },
+    page: {
+        flexGrow: 1,
         justifyContent: 'center',
+        padding: 24,
     },
     inner: {
         width: '100%',
-        paddingHorizontal: 40,
+        maxWidth: 520,
+        alignSelf: 'center',
         alignItems: 'center',
     },
-    finishedLabel: {
-        fontSize: 12,
-        color: "#636477",
-        letterSpacing: 4,
-        textTransform: 'uppercase',
-        marginBottom: 40,
-        fontWeight: '800'
+    eyebrow: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1.5,
+        color: '#3D8A7B',
+        marginTop: 12,
+        marginBottom: 4,
     },
-    scoreCircle: {
-        width: 200,
-        height: 200,
-        borderRadius: 100,
-        borderWidth: 3,
+    title: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: '#1B1E23',
+        letterSpacing: -0.6,
+    },
+    subtitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#6E7785',
+        marginTop: 4,
+    },
+    scoreCard: {
+        width: '100%',
+        marginTop: 24,
+        borderRadius: 28,
+        padding: 24,
+        backgroundColor: '#DCECE8',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 30,
-        shadowColor: "#3E4C45",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.12,
-        shadowRadius: 20,
-        elevation: 10,
     },
-    scoreValue: {
-        fontSize: 72,
-        fontWeight: '900',
-        color: "#2D3043",
-        lineHeight: 80,
+    scoreBig: {
+        fontSize: 52,
+        lineHeight: 58,
+        fontWeight: '800',
+        color: '#1B1E23',
+        letterSpacing: -1,
     },
-    scoreDivider: {
-        width: 40,
-        height: 2,
-        backgroundColor: "rgba(255,255,255,0.48)",
-        marginVertical: 4,
-    },
-    scoreTotal: {
-        fontSize: 24,
-        color: "#636477",
+    scoreMeta: {
+        fontSize: 14,
         fontWeight: '700',
+        color: '#3D8A7B',
+        marginTop: 2,
     },
-    scoreLabel: {
-        fontSize: 11,
-        fontWeight: '900',
-        marginTop: 5,
-        letterSpacing: 1
-    },
-    rewardsContainer: {
+    rewardsRow: {
         flexDirection: 'row',
-        gap: 12,
-        marginBottom: 40,
-        height: 50,
-        alignItems: 'center'
+        gap: 10,
+        marginTop: 16,
     },
-    rewardBadge: {
+    rewardChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
-        gap: 8,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.82)"
+        gap: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 16,
     },
-    rewardValue: {
-        color: "#2D3043",
-        fontSize: 16,
-        fontWeight: '900',
-    },
-    rewardBadgePremium: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 25,
-        gap: 8,
-        overflow: 'hidden',
-        elevation: 10,
-        shadowColor: "#68A877",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
-    },
-    badgeGlow: {
-        ...StyleSheet.absoluteFill,
-        opacity: 0.9,
-    },
-    rewardValuePremium: {
-        color: "#2D3043",
-        fontSize: 18,
-        fontWeight: '900',
-        zIndex: 1,
+    rewardText: {
+        fontSize: 13,
+        fontWeight: '800',
     },
     actions: {
         width: '100%',
-        gap: 12,
+        gap: 11,
+        marginTop: 24,
     },
-    btn: {
-        width: '100%',
-        height: 60,
-        borderRadius: 30,
+    primaryBtn: {
+        height: 54,
+        borderRadius: 27,
+        backgroundColor: '#1E3A5F',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 8,
     },
-    btnPrimary: {
-        backgroundColor: '#fff',
-    },
-    btnPrimaryText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '900',
-    },
-    btnSecondary: {
-        backgroundColor: "rgba(255,255,255,0.48)",
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.82)",
-    },
-    btnSecondaryText: {
-        color: "#2D3043",
-        fontSize: 18,
+    primaryBtnText: {
+        fontSize: 16,
         fontWeight: '800',
+        color: '#FFFFFF',
     },
-    btnOutline: {
-        height: 50,
+    secondaryBtn: {
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: '#F3F7F6',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    btnOutlineText: {
-        color: "#636477",
-        fontSize: 14,
+    secondaryBtnText: {
+        fontSize: 15,
         fontWeight: '700',
+        color: '#1E3A5F',
+    },
+    goldBtn: {
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: '#F5DA7C',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    goldBtnText: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: '#1B1E23',
+    },
+    pressed: {
+        opacity: 0.88,
+        transform: [{ scale: 0.985 }],
     },
 });

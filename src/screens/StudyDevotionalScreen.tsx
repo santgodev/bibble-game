@@ -1,4 +1,3 @@
-import { GlassBackground } from '../components/Glass';
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -7,7 +6,6 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import { StudyNode, StudyPath } from '../data/studyPaths';
 import { Confetti } from '../components/Confetti';
@@ -231,16 +229,16 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
 
     const getColors = () => {
         switch (node.type) {
-            case 'intro': return { c: '#8FCA97', i: 'book-outline' };
-            case 'devotional': return { c: '#E67E22', i: 'sunny-outline' };
-            case 'practice': return { c: '#8FCA97', i: 'color-palette-outline' };
-            case 'quiz': return { c: '#F1C40F', i: 'trophy-outline' };
-            default: return { c: path.accentColor, i: 'ellipse-outline' };
+            case 'intro': return { c: '#2E6F65', soft: '#DCECE8', i: 'book-outline' };
+            case 'devotional': return { c: '#1E3A5F', soft: '#D6E8F8', i: 'sunny-outline' };
+            case 'practice': return { c: '#2E6F65', soft: '#DCECE8', i: 'compass-outline' };
+            case 'quiz': return { c: '#8A6408', soft: '#FBF2D0', i: 'trophy-outline' };
+            default: return { c: '#1E3A5F', soft: '#D6E8F8', i: 'ellipse-outline' };
         }
     };
     const nodeTheme = getColors();
 
-    const DIFF_COLOR = { facil: '#27AE60', medio: "#68A877", dificil: '#E74C3C' };
+    const DIFF_COLOR = { facil: '#2E6F65', medio: '#1E3A5F', dificil: '#9E3A3A' };
 
     // ===================================
     // PHASE: RESULT
@@ -248,8 +246,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     if (phase === 'result') {
         return (
             <View style={[styles.container, styles.resultContainer, { paddingTop: insets.top + 20 }]}>
-            <GlassBackground />
-                <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
+                <StatusBar barStyle="dark-content" />
                 <Confetti visible={showConfetti} duration={3200} />
 
                 <View style={[styles.resultIconBg, { backgroundColor: nodeTheme.c + '15' }]}>
@@ -309,8 +306,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     if (phase === 'microQuiz' && node.microQuiz) {
         return (
              <View style={[styles.container, { paddingTop: insets.top }]}>
-            <GlassBackground />
-                 <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
+                 <StatusBar barStyle="dark-content" />
                  <View style={styles.header}>
                      <TouchableOpacity onPress={() => setPhase('content')} style={styles.iconBtn}>
                          <Ionicons name="arrow-back" size={22} color="#2D3043" />
@@ -399,8 +395,8 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                      <TouchableOpacity
                          style={[
                              styles.ctaBtn,
-                             { backgroundColor: (answered && isCorrect) ? nodeTheme.c : "#D1E2DA" },
-                             (!answered || !isCorrect) && { borderWidth: 1, borderColor: "rgba(255,255,255,0.82)", opacity: 0.5 }
+                             { backgroundColor: (answered && isCorrect) ? nodeTheme.c : "#E4EAEF" },
+                             (!answered || !isCorrect) && { opacity: 0.65 }
                          ]}
                          onPress={handleAction}
                          disabled={!answered || !isCorrect}
@@ -426,8 +422,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
 
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
-            <GlassBackground />
-                <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
+                <StatusBar barStyle="dark-content" />
 
                 {/* Header */}
                 <View style={styles.header}>
@@ -451,42 +446,38 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                     </View>
 
                     <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                        <Text style={styles.activityLabel}>💭 REFLEXIONA Y ESCRIBE</Text>
+                        <Text style={styles.activityLabel}>Reflexiona y escribe</Text>
                         <Text style={[styles.activityInstruction, { textAlign: 'center' }]}>
-                            {isValidEntry ? '¡Excelente reflexión! Ya puedes reclamar tus recompensas.' : 'Plasma tus pensamientos. Esto quedará guardado solo para ti.'}
+                            {isValidEntry ? 'Excelente reflexión. Ya puedes reclamar tus recompensas.' : 'Plasma tus pensamientos. Esto quedará guardado solo para ti.'}
                         </Text>
                     </View>
 
-                    <LinearGradient
-                        colors={[nodeTheme.c + '18', nodeTheme.c + '06']}
+                    <View
                         style={{
-                            padding: 24,
-                            borderRadius: 16,
-                            borderWidth: 1,
-                            borderColor: nodeTheme.c + '40',
+                            padding: 20,
+                            borderRadius: 20,
+                            backgroundColor: nodeTheme.soft,
                             marginBottom: 20
                         }}
                     >
-                        <Ionicons name="help-circle" size={28} color={nodeTheme.c} style={{ marginBottom: 12 }} />
-                        <Text style={{ fontSize: 18, color: "#2D3043", fontWeight: 'bold', lineHeight: 26, marginBottom: 16 }}>
+                        <Ionicons name="help-circle-outline" size={24} color={nodeTheme.c} style={{ marginBottom: 10 }} />
+                        <Text style={{ fontSize: 17, color: "#1B1E23", fontWeight: '800', lineHeight: 24, marginBottom: 14 }}>
                             {activity.data.question}
                         </Text>
 
                         <View style={{
-                            backgroundColor: "rgba(255,255,255,0.55)",
-                            borderRadius: 12,
+                            backgroundColor: "#FFFFFF",
+                            borderRadius: 14,
                             padding: 12,
-                            borderWidth: 1,
-                            borderColor: isValidEntry ? nodeTheme.c : "#C1D3CB"
                         }}>
                             <TextInput
                                 style={{
-                                    color: "#2D3043",
+                                    color: "#1B1E23",
                                     fontSize: 16,
                                     lineHeight: 24,
                                     minHeight: 120,
                                 }}
-                                placeholderTextColor="#636477"
+                                placeholderTextColor="#5B6573"
                                 placeholder="Escribe tu reflexión aquí..."
                                 multiline
                                 textAlignVertical="top"
@@ -499,16 +490,16 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                             />
                         </View>
                         {!isValidEntry && (
-                            <Text style={{ color: "#636477", fontSize: 12, marginTop: 10, textAlign: 'right' }}>
+                            <Text style={{ color: "#5B6573", fontSize: 12, marginTop: 10, textAlign: 'right' }}>
                                 Escribe al menos 10 caracteres...
                             </Text>
                         )}
-                    </LinearGradient>
+                    </View>
 
                     {isValidEntry && (
                         <Animated.View style={[styles.sharePrompt]}>
                             <Text style={styles.sharePromptText}>
-                                ✅ {activity.data.application}
+                                {activity.data.application}
                             </Text>
                         </Animated.View>
                     )}
@@ -521,8 +512,8 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                     <TouchableOpacity
                         style={[
                             styles.ctaBtn,
-                            { backgroundColor: isValidEntry ? nodeTheme.c : "#D1E2DA" },
-                            !isValidEntry && { borderWidth: 1, borderColor: "rgba(255,255,255,0.82)", opacity: 0.5 }
+                            { backgroundColor: isValidEntry ? nodeTheme.c : "#E4EAEF" },
+                            !isValidEntry && { opacity: 0.65 }
                         ]}
                         onPress={handleAction}
                         disabled={!isValidEntry || saving}
@@ -554,8 +545,7 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
     // ===================================
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <GlassBackground />
-            <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
+            <StatusBar barStyle="dark-content" />
 
             {/* Header */}
             <View style={styles.header}>
@@ -607,20 +597,19 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
                             <View style={styles.devoWrapper}>
                                 {/* Teaser de la actividad — solo muestra la pregunta */}
                                 {node.question && (
-                                    <LinearGradient
-                                        colors={[nodeTheme.c + '18', nodeTheme.c + '05']}
-                                        style={[styles.teaser, { borderColor: nodeTheme.c + '40' }]}
+                                    <View
+                                        style={[styles.teaser, { backgroundColor: '#FBF2D0' }]}
                                     >
                                         <View style={styles.teaserHeader}>
-                                            <Ionicons name="chatbubble-ellipses" size={16} color={nodeTheme.c} />
-                                            <Text style={[styles.teaserLabel, { color: nodeTheme.c }]}>PREGUNTA DE REFLEXIÓN</Text>
+                                            <Ionicons name="chatbubble-ellipses-outline" size={16} color="#8A6408" />
+                                            <Text style={[styles.teaserLabel, { color: '#8A6408' }]}>Pregunta de reflexión</Text>
                                         </View>
                                         <Text style={styles.teaserText}>{node.question}</Text>
                                         <View style={styles.teaserFooter}>
-                                            <Ionicons name="lock-closed" size={12} color="#636477" />
+                                            <Ionicons name="lock-closed-outline" size={12} color="#5B6573" />
                                             <Text style={styles.teaserLocked}>Completa la lectura para acceder al reto</Text>
                                         </View>
-                                    </LinearGradient>
+                                    </View>
                                 )}
                             </View>
                         )}
@@ -788,181 +777,177 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#EAE5E0" },
+    container: { flex: 1, backgroundColor: '#FFFFFF' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, paddingVertical: 14,
-        borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.82)",
+        paddingHorizontal: 20, paddingVertical: 12,
     },
     headerCenter: { flex: 1, alignItems: 'center' },
-    headerSub: { fontSize: 11, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' },
+    headerSub: { fontSize: 12, fontWeight: '700', letterSpacing: 1 },
     iconBtn: {
-        width: 40, height: 40, borderRadius: 12,
-        backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center',
+        width: 40, height: 40, borderRadius: 20,
+        backgroundColor: '#F6F8FA', alignItems: 'center', justifyContent: 'center',
     },
-    scrollContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 60 },
+    scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 60 },
 
     // Step tracker
-    stepRow: { flexDirection: 'row', gap: 8, alignSelf: 'center', marginBottom: 24 },
+    stepRow: { flexDirection: 'row', gap: 8, alignSelf: 'center', marginBottom: 20 },
     stepDot: { width: 8, height: 8, borderRadius: 4 },
 
-    nodeMainTitle: { color: "#2D3043", fontSize: 26, fontWeight: '900', marginBottom: 24, lineHeight: 32 },
+    nodeMainTitle: { color: '#1B1E23', fontSize: 24, fontWeight: '800', marginBottom: 18, lineHeight: 30 },
 
     // Reading
     refPill: {
         flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 16, paddingVertical: 10,
-        borderRadius: 16, borderWidth: 1, alignSelf: 'flex-start',
+        paddingHorizontal: 14, paddingVertical: 8,
+        borderRadius: 14, alignSelf: 'flex-start',
+        marginBottom: 14,
+    },
+    refText: { fontSize: 13, fontWeight: '700', marginLeft: 8 },
+    readingCard: {
+        backgroundColor: '#F6F8FA', padding: 20, borderRadius: 20,
         marginBottom: 16,
     },
-    refText: { fontSize: 14, fontWeight: '800', marginLeft: 8 },
-    readingCard: {
-        backgroundColor: "rgba(255,255,255,0.52)", padding: 24, borderRadius: 20,
-        borderWidth: 1, borderColor: '#1A1A1A', marginBottom: 20,
-    },
-    readingText: { color: "#2D3043", fontSize: 16, lineHeight: 28, fontWeight: '500' },
+    readingText: { color: '#1B1E23', fontSize: 16, lineHeight: 27, fontWeight: '500' },
     insightBox: {
-        flexDirection: 'row', backgroundColor: "rgba(255,255,255,0.52)", padding: 16,
-        borderRadius: 14, borderWidth: 1, borderColor: '#1A1A1A',
-        marginTop: 10, alignItems: 'center',
+        flexDirection: 'row', backgroundColor: '#FBF2D0', padding: 16,
+        borderRadius: 16, marginTop: 8, alignItems: 'center',
     },
-    insightText: { color: "#636477", fontSize: 14, lineHeight: 22, flex: 1 },
+    insightText: { color: '#1B1E23', fontSize: 14, lineHeight: 22, flex: 1 },
 
-    // Teaser (replaced flat actionCard)
-    devoWrapper: { gap: 16, marginTop: 10 },
+    // Teaser
+    devoWrapper: { gap: 14, marginTop: 8 },
     teaser: {
-        borderRadius: 20, borderWidth: 1, overflow: 'hidden',
+        borderRadius: 20, overflow: 'hidden',
     },
     teaserHeader: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        paddingTop: 16, paddingHorizontal: 16, paddingBottom: 8,
+        paddingTop: 16, paddingHorizontal: 16, paddingBottom: 6,
     },
-    teaserLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, textTransform: 'uppercase' },
-    teaserText: { color: "#2D3043", fontSize: 15, lineHeight: 24, fontStyle: 'italic', fontWeight: '500', paddingHorizontal: 16, paddingBottom: 12 },
+    teaserLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+    teaserText: { color: '#1B1E23', fontSize: 15, lineHeight: 23, fontWeight: '500', paddingHorizontal: 16, paddingBottom: 12 },
     teaserFooter: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.82)",
         paddingVertical: 10, paddingHorizontal: 16,
+        backgroundColor: 'rgba(255,255,255,0.55)',
     },
-    teaserLocked: { color: "#636477", fontSize: 11, fontWeight: '600' },
+    teaserLocked: { color: '#5B6573', fontSize: 12, fontWeight: '600' },
 
     // Practice
-    practiceHeader: { alignItems: 'center', paddingVertical: 20 },
-    iconCircleBig: { width: 70, height: 70, borderRadius: 35, backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-    practiceTitle: { color: "#2D3043", fontSize: 22, fontWeight: '900', marginBottom: 12 },
-    practiceDesc: { color: "#636477", fontSize: 15, textAlign: 'center', lineHeight: 24, paddingHorizontal: 20 },
+    practiceHeader: { alignItems: 'center', paddingVertical: 16 },
+    iconCircleBig: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#DCECE8', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+    practiceTitle: { color: '#1B1E23', fontSize: 21, fontWeight: '800', marginBottom: 10 },
+    practiceDesc: { color: '#5B6573', fontSize: 15, textAlign: 'center', lineHeight: 23, paddingHorizontal: 16 },
 
     charadasBox: {
-        backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 20, padding: 20, marginTop: 30, borderWidth: 1, borderColor: '#1A1A1A'
+        backgroundColor: '#F6F8FA', borderRadius: 20, padding: 18, marginTop: 24,
     },
     charadasTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-    charadasTitle: { color: "#2D3043", fontSize: 16, fontWeight: '800' },
-    charadasSub: { color: "#636477", fontSize: 13, marginBottom: 20, lineHeight: 20 },
+    charadasTitle: { color: '#1B1E23', fontSize: 16, fontWeight: '800' },
+    charadasSub: { color: '#5B6573', fontSize: 13, marginBottom: 16, lineHeight: 20 },
     charadaItem: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: "rgba(255,255,255,0.52)", padding: 14, borderRadius: 12, marginBottom: 8,
+        backgroundColor: '#FFFFFF', padding: 14, borderRadius: 14, marginBottom: 8,
     },
-    cWord: { color: "#2D3043", fontSize: 15, fontWeight: '700', flex: 1 },
-    cCatBg: { backgroundColor: "rgba(255,255,255,0.52)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    cCat: { color: "#636477", fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
-    cDiffBg: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    cDiff: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
+    cWord: { color: '#1B1E23', fontSize: 15, fontWeight: '700', flex: 1 },
+    cCatBg: { backgroundColor: '#F6F8FA', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    cCat: { color: '#5B6573', fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+    cDiffBg: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    cDiff: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
 
     // Quiz
     quizCard: {
-        alignItems: 'center', padding: 20, backgroundColor: "rgba(255,255,255,0.52)",
-        borderRadius: 24, borderWidth: 1, borderColor: '#1A1A1A', marginBottom: 24,
+        alignItems: 'center', padding: 20, backgroundColor: '#F6F8FA',
+        borderRadius: 22, marginBottom: 20,
     },
-    quizQuestion: { color: "#2D3043", fontSize: 18, fontWeight: '800', textAlign: 'center', lineHeight: 28 },
-    optionsContainer: { gap: 12 },
+    quizQuestion: { color: '#1B1E23', fontSize: 18, fontWeight: '800', textAlign: 'center', lineHeight: 27 },
+    optionsContainer: { gap: 10 },
     optionCard: {
         flexDirection: 'row', alignItems: 'center', gap: 14,
-        padding: 16, borderRadius: 16, borderWidth: 1.5,
+        padding: 16, borderRadius: 16,
     },
     optionLetterBox: {
-        width: 32, height: 32, borderRadius: 10, borderWidth: 1,
+        width: 32, height: 32, borderRadius: 16,
         alignItems: 'center', justifyContent: 'center',
     },
-    optionLetter: { fontSize: 14, fontWeight: '900' },
+    optionLetter: { fontSize: 14, fontWeight: '800' },
     optionText: { flex: 1, fontSize: 15, fontWeight: '600' },
 
-    feedbackCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, marginTop: 20 },
-    feedbackTitle: { fontSize: 16, fontWeight: '800' },
-    feedbackText: { color: "#636477", fontSize: 13, marginTop: 4 },
+    feedbackCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, marginTop: 18 },
+    feedbackTitle: { fontSize: 15, fontWeight: '800' },
+    feedbackText: { color: '#5B6573', fontSize: 13, marginTop: 3 },
 
-    footerSpacer: { marginTop: 40 },
+    footerSpacer: { marginTop: 32 },
     ctaBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        padding: 20, borderRadius: 18,
+        padding: 18, borderRadius: 18,
     },
-    ctaBtnText: { color: "#2D3043", fontSize: 16, fontWeight: '900' },
-    ctaBtnSub: { color: "#636477", fontSize: 12, fontWeight: '700', marginTop: 2 },
+    ctaBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+    ctaBtnSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600', marginTop: 2 },
 
     // Activity / Flip Card
     activityLabel: {
-        color: "#2D3043", fontSize: 22, fontWeight: '900', textAlign: 'center', marginBottom: 8,
+        color: '#1B1E23', fontSize: 21, fontWeight: '800', textAlign: 'center', marginBottom: 6,
     },
     activityInstruction: {
-        color: "#636477", fontSize: 14, textAlign: 'center', marginBottom: 32, paddingHorizontal: 20,
+        color: '#5B6573', fontSize: 14, textAlign: 'center', marginBottom: 24, paddingHorizontal: 16,
     },
     flipCardContainer: {
         width: '100%', height: 280, position: 'relative', alignItems: 'center',
     },
     flipCard: {
-        width: '100%', height: 280, borderRadius: 24, borderWidth: 1,
+        width: '100%', height: 280, borderRadius: 24,
         overflow: 'hidden', backfaceVisibility: 'hidden',
     },
-    flipCardFront: { backgroundColor: "rgba(255,255,255,0.52)" },
-    flipCardBack: { backgroundColor: "rgba(255,255,255,0.52)", borderColor: '#27AE6040' },
+    flipCardFront: { backgroundColor: '#F6F8FA' },
+    flipCardBack: { backgroundColor: '#DCECE8' },
     flipCardGradient: {
-        flex: 1, padding: 28, alignItems: 'center', justifyContent: 'center',
+        flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center',
     },
     flipCardQuestion: {
-        color: "#2D3043", fontSize: 17, fontWeight: '700', textAlign: 'center',
+        color: '#1B1E23', fontSize: 17, fontWeight: '700', textAlign: 'center',
         lineHeight: 26,
     },
     flipCardLabel: {
-        fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 12,
+        fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 10,
         textTransform: 'uppercase',
     },
     flipCardBack2: {
-        color: "#636477", fontSize: 15, fontWeight: '600', textAlign: 'center',
-        lineHeight: 24, fontStyle: 'italic',
+        color: '#5B6573', fontSize: 15, fontWeight: '600', textAlign: 'center',
+        lineHeight: 24,
     },
     flipHint: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
-        marginTop: 24, opacity: 0.5,
+        marginTop: 20, opacity: 0.6,
     },
-    flipHintText: { color: "#636477", fontSize: 12 },
+    flipHintText: { color: '#5B6573', fontSize: 12 },
     flipCardTouchable: {
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 24,
     },
     sharePrompt: {
-        backgroundColor: 'rgba(39,174,96,0.08)', borderRadius: 16,
-        borderWidth: 1, borderColor: 'rgba(39,174,96,0.25)',
-        padding: 16, marginTop: 24, width: '100%',
+        backgroundColor: '#DCECE8', borderRadius: 16,
+        padding: 16, marginTop: 20, width: '100%',
     },
     sharePromptText: {
-        color: '#27AE60', fontSize: 14, textAlign: 'center', fontWeight: '600', lineHeight: 22,
+        color: '#2E6F65', fontSize: 14, textAlign: 'center', fontWeight: '600', lineHeight: 22,
     },
     activityFooter: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        paddingHorizontal: 20, paddingBottom: 36, paddingTop: 12,
-        backgroundColor: "#EAE5E0",
-        borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.82)",
+        paddingHorizontal: 20, paddingBottom: 32, paddingTop: 12,
+        backgroundColor: '#FFFFFF',
     },
 
     // Result Phase
-    resultContainer: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
-    resultIconBg: { width: 100, height: 100, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
-    resultTitle: { fontSize: 24, fontWeight: '900', letterSpacing: 2, textAlign: 'center', marginBottom: 8 },
-    resultDay: { color: "#636477", fontSize: 15, textAlign: 'center', marginBottom: 30 },
-    rewardRow: { flexDirection: 'row', gap: 16 },
+    resultContainer: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
+    resultIconBg: { width: 88, height: 88, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+    resultTitle: { fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 6 },
+    resultDay: { color: '#5B6573', fontSize: 15, textAlign: 'center', marginBottom: 26 },
+    rewardRow: { flexDirection: 'row', gap: 14 },
     rewardBox: {
-        backgroundColor: "rgba(255,255,255,0.52)", padding: 24, borderRadius: 20,
-        borderWidth: 1, borderColor: '#1A1A1A', flex: 1, alignItems: 'center',
+        backgroundColor: '#F6F8FA', padding: 20, borderRadius: 20,
+        flex: 1, alignItems: 'center',
     },
-    rewardIconBg: { width: 48, height: 48, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-    rewardNum: { fontSize: 28, fontWeight: '900' },
-    rewardLabel: { color: "#636477", fontSize: 11, fontWeight: '800', marginTop: 4, textTransform: 'uppercase', letterSpacing: 1 },
+    rewardIconBg: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+    rewardNum: { fontSize: 26, fontWeight: '800' },
+    rewardLabel: { color: '#5B6573', fontSize: 11, fontWeight: '700', marginTop: 4, textTransform: 'uppercase' },
 });

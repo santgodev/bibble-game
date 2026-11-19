@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
-import { AppState, Alert } from 'react-native';
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 
@@ -11,13 +11,47 @@ export interface Track {
     isLocal?: boolean;
 }
 
+export type SoundEffect =
+    | 'correct'
+    | 'wrong'
+    | 'tick'
+    | 'end'
+    | 'win'
+    | 'unlock'
+    | 'tap'
+    | 'select';
+
+export type HapticEffect = 'success' | 'impact' | 'selection' | 'victory';
+
 const BACKGROUND_TRACKS: Track[] = [
-    { id: 'ancient_arpeggios', name: 'Paz Biblica (Arpegios)', source: require('../../assets/sounds/main-screan.mp3') },
+    { id: 'ancient_arpeggios', name: 'Paz Bíblica (Arpegios)', source: require('../../assets/sounds/main-screan.mp3') },
 ];
 
+const SFX_SOURCES: Record<SoundEffect, any> = {
+    tap: require('../../assets/sounds/sfx_tap.wav'),
+    select: require('../../assets/sounds/sfx_select.wav'),
+    tick: require('../../assets/sounds/sfx_tick.wav'),
+    end: require('../../assets/sounds/sfx_end.wav'),
+    correct: require('../../assets/sounds/sfx_correct.wav'),
+    wrong: require('../../assets/sounds/sfx_wrong.wav'),
+    win: require('../../assets/sounds/sfx_win.wav'),
+    unlock: require('../../assets/sounds/sfx_unlock.wav'),
+};
+
+const SFX_VOLUME_SCALE: Record<SoundEffect, number> = {
+    tap: 0.55,
+    select: 0.65,
+    tick: 0.5,
+    end: 0.85,
+    correct: 0.9,
+    wrong: 0.8,
+    win: 1.0,
+    unlock: 0.9,
+};
+
 interface SoundContextType {
-    playSound: (type: 'correct' | 'wrong' | 'tick' | 'end' | 'win' | 'unlock') => Promise<void>;
-    playHaptic: (type: 'success' | 'impact' | 'selection' | 'victory') => void;
+    playSound: (type: SoundEffect) => Promise<void>;
+    playHaptic: (type: HapticEffect) => void;
     enableMusic: boolean;
     toggleMusic: () => void;
     pauseMusic: () => void;
@@ -57,15 +91,12 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     const [isTemporarilyPaused, setIsTemporarilyPaused] = useState(false);
     const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-    const [musicVolume, setMusicVolume] = useState(1.0); // Máximo volumen equilibrado
-    const [sfxVolume, setSFXVolume] = useState(1.0); // Máximo volumen equilibrado
+    const [musicVolume, setMusicVolume] = useState(0.65);
+    const [sfxVolume, setSFXVolume] = useState(0.95);
     const [volumeModifier, setVolumeModifier] = useState(1.0);
 
     const musicSound = useRef<AudioPlayer | null>(null);
-    const correctSound = useRef<AudioPlayer | null>(null);
-    const wrongSound = useRef<AudioPlayer | null>(null);
-    const victorySound = useRef<AudioPlayer | null>(null);
-    const unlockSound = useRef<AudioPlayer | null>(null);
+    const sfxPlayers = useRef<Partial<Record<SoundEffect, AudioPlayer>>>({});
 
     const enableMusicRef = useRef(enableMusic);
     const isPausedRef = useRef(isTemporarilyPaused);
@@ -76,35 +107,48 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         setCurrentTrackIndex(Math.floor(Math.random() * BACKGROUND_TRACKS.length));
 
+        let settled = false;
+        const timeout = setTimeout(() => {
+            if (!settled) {
+                settled = true;
+                console.warn('Settings load timeout, forcing defaults');
+                setSettingsLoaded(true);
+            }
+        }, 5000);
+
         const init = async () => {
-            await setAudioModeAsync({
-                playsInSilentMode: true,
-                shouldPlayInBackground: false,
-                interruptionMode: 'duckOthers'
-
-            });
-
-            await loadSettings();
-            setSettingsLoaded(true);
+            try {
+                await setAudioModeAsync({
+                    playsInSilentMode: true,
+                    shouldPlayInBackground: false,
+                    interruptionMode: 'duckOthers',
+                });
+                await loadSettings();
+            } finally {
+                if (!settled) {
+                    settled = true;
+                    clearTimeout(timeout);
+                    setSettingsLoaded(true);
+                }
+            }
         };
         init();
 
-        const timeout = setTimeout(() => {
-            if (!settingsLoaded) {
-                console.warn("Settings load timeout, forcing defaults");
-                setSettingsLoaded(true);
-            }
-        }, 5000); // Increased timeout to 5s for slower devices/loading
-
-        return () => { clearTimeout(timeout); unloadAll(); };
+        return () => {
+            clearTimeout(timeout);
+            unloadAll();
+        };
     }, []);
 
-    const unloadAll = async () => {
-        if (musicSound.current) musicSound.current.remove();
-        if (correctSound.current) correctSound.current.remove();
-        if (wrongSound.current) wrongSound.current.remove();
-        if (victorySound.current) victorySound.current.remove();
-        if (unlockSound.current) unlockSound.current.remove();
+    const unloadAll = () => {
+        if (musicSound.current) {
+            musicSound.current.remove();
+            musicSound.current = null;
+        }
+        for (const key of Object.keys(sfxPlayers.current) as SoundEffect[]) {
+            sfxPlayers.current[key]?.remove();
+        }
+        sfxPlayers.current = {};
     };
 
     useEffect(() => {
@@ -122,7 +166,9 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     }, [enableMusic, isTemporarilyPaused]);
 
     useEffect(() => {
-        if (musicSound.current) musicSound.current.volume = musicVolume * volumeModifier;
+        if (musicSound.current) {
+            musicSound.current.volume = musicVolume * volumeModifier;
+        }
     }, [musicVolume, volumeModifier]);
 
     useEffect(() => {
@@ -145,24 +191,26 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
 
     const loadSettings = async () => {
         try {
-            const music = await AsyncStorage.getItem('setting_music');
-            const sfx = await AsyncStorage.getItem('setting_sfx');
-            const vib = await AsyncStorage.getItem('setting_vibration');
-            const rec = await AsyncStorage.getItem('setting_music_rec');
-            const musVol = await AsyncStorage.getItem('setting_music_vol');
-            const sfxVol = await AsyncStorage.getItem('setting_sfx_vol');
+            const [music, sfx, vib, rec, musVol, sfxVol] = await Promise.all([
+                AsyncStorage.getItem('setting_music'),
+                AsyncStorage.getItem('setting_sfx'),
+                AsyncStorage.getItem('setting_vibration'),
+                AsyncStorage.getItem('setting_music_rec'),
+                AsyncStorage.getItem('setting_music_vol'),
+                AsyncStorage.getItem('setting_sfx_vol'),
+            ]);
 
             setEnableMusic(music !== null ? music === 'true' : true);
             if (sfx !== null) setEnableSFX(sfx === 'true');
             if (vib !== null) setEnableVibration(vib === 'true');
             if (rec !== null) setEnableMusicInVideo(rec === 'true');
-
-            // Forzar volúmenes altos y equilibrados (1.0)
-            setMusicVolume(1.0);
-            setSFXVolume(1.0);
+            if (musVol !== null && !Number.isNaN(Number(musVol))) setMusicVolume(Number(musVol));
+            if (sfxVol !== null && !Number.isNaN(Number(sfxVol))) setSFXVolume(Number(sfxVol));
 
             loadSFX();
-        } catch (e) { console.error("Error loading settings", e); }
+        } catch (e) {
+            console.error('Error loading settings', e);
+        }
     };
 
     const loadBackgroundMusic = async () => {
@@ -171,12 +219,9 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
             musicSound.current = null;
         }
 
-        let source;
-        if (localTrack) {
-            source = { uri: localTrack.source };
-        } else {
-            source = BACKGROUND_TRACKS[currentTrackIndex].source;
-        }
+        const source = localTrack
+            ? { uri: localTrack.source }
+            : BACKGROUND_TRACKS[currentTrackIndex].source;
 
         try {
             const shouldPlay = enableMusicRef.current && !isPausedRef.current;
@@ -186,70 +231,54 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
             if (shouldPlay) player.play();
             musicSound.current = player;
         } catch (e) {
-            console.warn("Error loading bg music", e);
+            console.warn('Error loading bg music', e);
         }
     };
 
-    const loadSFX = async () => {
-        try {
-            if (correctSound.current) correctSound.current.remove();
-            if (wrongSound.current) wrongSound.current.remove();
-            if (victorySound.current) victorySound.current.remove();
-            if (unlockSound.current) unlockSound.current.remove();
-
+    const loadSFX = () => {
+        for (const key of Object.keys(SFX_SOURCES) as SoundEffect[]) {
             try {
-                correctSound.current = createAudioPlayer(require('../../assets/sounds/correct.mp3'));
-
-            } catch (e) { }
-
-            try {
-                wrongSound.current = createAudioPlayer(require('../../assets/sounds/wrong.mp3'));
-
-            } catch (e) { }
-
-            // Victory = correct sound played 3x rapidly at full volume (no extra asset needed)
-            try {
-                victorySound.current = createAudioPlayer(require('../../assets/sounds/correct.mp3'));
-
-            } catch (e) { }
-
-            // Unlock = correct at lower pitch feel
-            try {
-                unlockSound.current = createAudioPlayer(require('../../assets/sounds/correct.mp3'));
-
-            } catch (e) { }
-        } catch (e) { }
+                sfxPlayers.current[key]?.remove();
+                sfxPlayers.current[key] = createAudioPlayer(SFX_SOURCES[key]);
+            } catch {
+                // Ignore individual SFX load failure
+            }
+        }
     };
 
-    const playSound = async (type: 'correct' | 'wrong' | 'tick' | 'end' | 'win' | 'unlock') => {
+    const playSound = async (type: SoundEffect) => {
         if (!enableSFX) return;
         try {
-            if (type === 'correct' && correctSound.current) {
-                correctSound.current.volume = sfxVolume;
-                await correctSound.current.seekTo(0); correctSound.current.play();
-            } else if (type === 'wrong' && wrongSound.current) {
-                wrongSound.current.volume = sfxVolume;
-                await wrongSound.current.seekTo(0); wrongSound.current.play();
-            } else if (type === 'win' && victorySound.current) {
-                // Play correct sound once for a clean victory signal
-                victorySound.current.volume = sfxVolume;
-                await victorySound.current.seekTo(0); victorySound.current.play();
-            } else if (type === 'unlock' && unlockSound.current) {
-                unlockSound.current.volume = sfxVolume * 0.9;
-                await unlockSound.current.seekTo(0); unlockSound.current.play();
+            let player = sfxPlayers.current[type];
+            if (!player) {
+                player = createAudioPlayer(SFX_SOURCES[type]);
+                sfxPlayers.current[type] = player;
             }
-        } catch (e) { }
+            player.volume = Math.max(0, Math.min(1, sfxVolume * (SFX_VOLUME_SCALE[type] ?? 1)));
+            await player.seekTo(0);
+            player.play();
+        } catch {
+            // Ignore transient playback errors
+        }
     };
 
-    const playHaptic = (type: 'success' | 'impact' | 'selection' | 'victory') => {
+    const playHaptic = (type: HapticEffect) => {
         if (!enableVibration) return;
-        switch (type) {
-            case 'success': Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); break;
-            case 'impact': Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); break;
-            case 'selection': Haptics.selectionAsync(); break;
-            case 'victory':
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                break;
+        try {
+            switch (type) {
+                case 'success':
+                case 'victory':
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    break;
+                case 'impact':
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    break;
+                case 'selection':
+                    Haptics.selectionAsync();
+                    break;
+            }
+        } catch {
+            // Haptics unsupported on some web/desktop environments
         }
     };
 
@@ -292,7 +321,7 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
             enableMusicInVideo, toggleMusicInVideo,
             musicVolume, setMusicVolume,
             sfxVolume, setSFXVolume,
-            setVolumeModifier
+            setVolumeModifier,
         }}>
             {children}
         </SoundContext.Provider>
@@ -301,6 +330,6 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useSound = () => {
     const context = useContext(SoundContext);
-    if (!context) throw new Error("useSound must be used within a SoundProvider");
+    if (!context) throw new Error('useSound must be used within a SoundProvider');
     return context;
 };

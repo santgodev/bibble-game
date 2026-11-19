@@ -1,22 +1,27 @@
-import { GlassBackground } from '../components/Glass';
 import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, Animated, Image
+    ActivityIndicator, Animated, Image, StatusBar
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { getEvolutionaryAvatar } from '../utils/avatarUtils';
+import { EditorialDoodle } from '../trivia/components/EditorialDoodle';
 
-// ─── Design tokens ────────────────────────────────────────
-const GOLD = "#68A877";
-const SILVER = '#C0C0C0';
-const BRONZE = '#CD7F32';
-const BG = "#EAE5E0";
-const SURFACE = "rgba(255,255,255,0.55)";
-const BORDER = "rgba(255,255,255,0.82)";
+// ─── Paleta oficial Berea (- es +) ────────────────────────
+const BG = '#FFFFFF';
+const SURFACE = '#F6F8FA';
+const INK = '#1B1E23';
+const MUTED = '#5B6573';
+const ZAFIRO = '#1E3A5F';
+const EUCALIPTO = '#2E6F65';
+const EUCALIPTO_SOFT = '#DCECE8';
+const ACUARELA_SOFT = '#D6E8F8';
+const ORO = '#8A6408';
+const ORO_SOFT = '#FBF2D0';
+const ERROR = '#9E3A3A';
+const ERROR_SOFT = '#F7E6E6';
 
 // ─── Helper: Level from XP ────────────────────────────────
 const getLevel = (xp: number) => Math.floor(Math.sqrt(xp / 50)) + 1;
@@ -27,36 +32,52 @@ const getLevelProgress = (xp: number) => {
     return ((xp - xpForLevel) / (xpForNext - xpForLevel)) * 100;
 };
 
-// ─── Medal component ──────────────────────────────────────
-const Medal = ({ rank }: { rank: number }) => {
-    const colors: Record<number, string[]> = {
-        1: ["#68A877", "#68A877", "#45834D"],
-        2: ['#E8E8E8', '#C0C0C0', '#A8A8A8'],
-        3: ['#E8A060', '#CD7F32', '#A0602A'],
-    };
-    const labels: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-
-    if (rank <= 3) {
+// ─── Rank badge (sin emojis, sin bordes) ──────────────────
+const RankBadge = ({ rank }: { rank: number }) => {
+    if (rank === 1) {
         return (
-            <View style={medals.wrapper}>
-                <Text style={{ fontSize: 22 }}>{labels[rank]}</Text>
+            <View style={[badges.wrapper, { backgroundColor: '#F5DA7C' }]}>
+                <Ionicons name="trophy" size={18} color={ORO} />
+            </View>
+        );
+    }
+    if (rank === 2) {
+        return (
+            <View style={[badges.wrapper, { backgroundColor: ACUARELA_SOFT }]}>
+                <Ionicons name="medal" size={18} color={ZAFIRO} />
+            </View>
+        );
+    }
+    if (rank === 3) {
+        return (
+            <View style={[badges.wrapper, { backgroundColor: EUCALIPTO_SOFT }]}>
+                <Ionicons name="ribbon" size={18} color={EUCALIPTO} />
             </View>
         );
     }
     return (
-        <View style={[medals.wrapper, medals.plain]}>
-            <Text style={medals.num}>#{rank}</Text>
+        <View style={[badges.wrapper, { backgroundColor: '#FFFFFF' }]}>
+            <Text style={badges.num}>{rank}</Text>
         </View>
     );
 };
 
-const medals = StyleSheet.create({
-    wrapper: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-    plain: { backgroundColor: "rgba(255,255,255,0.48)", borderWidth: 1, borderColor: BORDER },
-    num: { color: "#636477", fontWeight: '800', fontSize: 14 },
+const badges = StyleSheet.create({
+    wrapper: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    num: {
+        color: MUTED,
+        fontWeight: '800',
+        fontSize: 13,
+    },
 });
 
-// ─── Profile Hero Card ─────────────────────────────────────
+// ─── Profile Hero Card ────────────────────────────────────
 const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
     const level = getLevel(userStats?.total_xp || 0);
     const progress = getLevelProgress(userStats?.total_xp || 0);
@@ -65,8 +86,8 @@ const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
     useEffect(() => {
         Animated.timing(progressAnim, {
             toValue: progress,
-            duration: 1000,
-            delay: 300,
+            duration: 900,
+            delay: 200,
             useNativeDriver: false,
         }).start();
     }, [progress]);
@@ -74,52 +95,38 @@ const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
     const avatarUri = getEvolutionaryAvatar(userStats?.username || 'jugador', userStats?.total_xp || 0);
 
     return (
-        <LinearGradient
-            colors={["#D1E2DA", "#D1E2DA", "#D1E2DA"]}
-            style={card.container}
-        >
-            {/* Decorative glow */}
-            <View style={card.glow} />
-
-            {/* Avatar + Identity */}
+        <View style={card.container}>
             <View style={card.topRow}>
-                <View style={card.avatarShell}>
-                    <LinearGradient colors={[GOLD, "#45834D"]} style={card.avatarGradientBorder}>
-                        <View style={card.avatarInner}>
-                            <Image
-                                source={{ uri: avatarUri }}
-                                style={card.avatar}
-                                defaultSource={require('../../assets/icon-light.png')}
-                            />
-                        </View>
-                    </LinearGradient>
+                <View style={card.avatarWrap}>
+                    <Image
+                        source={{ uri: avatarUri }}
+                        style={card.avatar}
+                        defaultSource={require('../../assets/icon-light.png')}
+                    />
                     <View style={card.levelChip}>
-                        <Text style={card.levelChipText}>Lv {level}</Text>
+                        <Text style={card.levelChipText}>Nv {level}</Text>
                     </View>
                 </View>
 
                 <View style={card.identity}>
-                    <Text style={card.username}>@{userStats?.username || 'Jugador'}</Text>
-                    {church && (
-                        <View style={card.churchRow}>
-                            <Ionicons name="home" size={12} color={GOLD} />
-                            <Text style={card.churchName} numberOfLines={1}>{church.name}</Text>
-                        </View>
-                    )}
-                    <View style={card.roleChip}>
-                        <Text style={card.roleText}>{userStats?.role || 'GUERRERO'}</Text>
-                    </View>
+                    <Text style={card.username} numberOfLines={1}>
+                        @{userStats?.username || 'Jugador'}
+                    </Text>
+                    {church ? (
+                        <Text style={card.churchName} numberOfLines={1}>
+                            {church.name}
+                        </Text>
+                    ) : null}
                 </View>
 
-                <TouchableOpacity onPress={onNavigate} style={card.settingsBtn}>
-                    <Ionicons name="settings-outline" size={20} color={GOLD} />
+                <TouchableOpacity onPress={onNavigate} style={card.profileBtn} activeOpacity={0.8}>
+                    <Ionicons name="person-outline" size={18} color={ZAFIRO} />
                 </TouchableOpacity>
             </View>
 
-            {/* XP Progress Bar */}
             <View style={card.xpSection}>
                 <View style={card.xpRow}>
-                    <Text style={card.xpLabel}>NIVEL {level} → {level + 1}</Text>
+                    <Text style={card.xpLabel}>Nivel {level} → {level + 1}</Text>
                     <Text style={card.xpVal}>{Math.round(progress)}%</Text>
                 </View>
                 <View style={card.progressBg}>
@@ -132,221 +139,162 @@ const ProfileHeroCard = ({ userStats, church, onNavigate }: any) => {
                 </View>
             </View>
 
-            {/* Stats row */}
             <View style={card.statsRow}>
                 <View style={card.statBox}>
-                    <LinearGradient colors={["rgba(11,138,94,0.15)", "rgba(11,138,94,0.03)"]} style={card.statGrad}>
-                        <Ionicons name="flash" size={18} color={GOLD} />
-                        <Text style={card.statNum}>{(userStats?.total_xp || 0).toLocaleString()}</Text>
-                        <Text style={card.statLabel}>XP TOTAL</Text>
-                    </LinearGradient>
+                    <Text style={card.statNum}>{(userStats?.total_xp || 0).toLocaleString()}</Text>
+                    <Text style={card.statLabel}>XP</Text>
                 </View>
                 <View style={card.statBox}>
-                    <LinearGradient colors={["rgba(11,138,94,0.15)", "rgba(11,138,94,0.03)"]} style={card.statGrad}>
-                        <Ionicons name="trophy" size={18} color="#68A877" />
-                        <Text style={[card.statNum, { color: "#68A877" }]}>{userStats?.total_trophies || 0}</Text>
-                        <Text style={card.statLabel}>TROFEOS</Text>
-                    </LinearGradient>
+                    <Text style={[card.statNum, { color: EUCALIPTO }]}>{userStats?.total_trophies || 0}</Text>
+                    <Text style={card.statLabel}>Trofeos</Text>
                 </View>
                 <View style={card.statBox}>
-                    <LinearGradient colors={['rgba(69,131,77,0.2)', 'rgba(69,131,77,0.04)']} style={card.statGrad}>
-                        <Ionicons name="medal" size={18} color="#8FCA97" />
-                        <Text style={[card.statNum, { color: '#8FCA97' }]}>{userStats?.level || level}</Text>
-                        <Text style={card.statLabel}>NIVEL</Text>
-                    </LinearGradient>
+                    <Text style={[card.statNum, { color: ZAFIRO }]}>{userStats?.level || level}</Text>
+                    <Text style={card.statLabel}>Nivel</Text>
                 </View>
             </View>
-        </LinearGradient>
+        </View>
     );
 };
 
 const card = StyleSheet.create({
     container: {
-        marginHorizontal: 16,
+        marginHorizontal: 20,
         borderRadius: 24,
-        borderWidth: 1,
-        borderColor: "rgba(11,138,94,0.2)",
-        overflow: 'hidden',
-        marginBottom: 28,
+        backgroundColor: EUCALIPTO_SOFT,
+        marginBottom: 24,
         padding: 20,
     },
-    glow: {
-        position: 'absolute', top: -40, right: -40,
-        width: 150, height: 150, borderRadius: 75,
-        backgroundColor: "rgba(11,138,94,0.06)",
-    },
     topRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
-    avatarShell: { position: 'relative', marginRight: 14 },
-    avatarGradientBorder: {
-        width: 72, height: 72, borderRadius: 36,
-        alignItems: 'center', justifyContent: 'center',
+    avatarWrap: { position: 'relative', marginRight: 14 },
+    avatar: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        backgroundColor: '#FFFFFF',
     },
-    avatarInner: {
-        width: 66, height: 66, borderRadius: 33,
-        backgroundColor: "rgba(255,255,255,0.52)", overflow: 'hidden',
-    },
-    avatar: { width: '100%', height: '100%' },
     levelChip: {
-        position: 'absolute', bottom: -4, right: -4,
-        backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 20,
-        borderWidth: 1.5, borderColor: GOLD,
-        paddingHorizontal: 6, paddingVertical: 2,
+        position: 'absolute',
+        bottom: -4,
+        right: -4,
+        backgroundColor: ZAFIRO,
+        borderRadius: 12,
+        paddingHorizontal: 7,
+        paddingVertical: 2,
     },
-    levelChipText: { color: GOLD, fontSize: 10, fontWeight: '900' },
+    levelChipText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
     identity: { flex: 1 },
-    username: { color: "#2D3043", fontSize: 20, fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 },
-    churchRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
-    churchName: { color: GOLD, fontSize: 12, fontWeight: '600', maxWidth: 150 },
-    roleChip: {
-        backgroundColor: "rgba(255,255,255,0.48)", alignSelf: 'flex-start',
-        paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-        borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
+    username: { color: INK, fontSize: 19, fontWeight: '800' },
+    churchName: { color: EUCALIPTO, fontSize: 13, fontWeight: '600', marginTop: 2 },
+    profileBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    roleText: { color: "#636477", fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-    settingsBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: "rgba(11,138,94,0.1)",
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: "rgba(11,138,94,0.2)",
-    },
-    xpSection: { marginBottom: 18 },
-    xpRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-    xpLabel: { color: "#636477", fontSize: 11, fontWeight: '700', letterSpacing: 1 },
-    xpVal: { color: GOLD, fontSize: 11, fontWeight: '900' },
-    progressBg: { height: 6, backgroundColor: "rgba(255,255,255,0.48)", borderRadius: 3, overflow: 'hidden' },
-    progressFill: {
-        height: '100%', borderRadius: 3,
-        backgroundColor: GOLD,
-    },
+    xpSection: { marginBottom: 16 },
+    xpRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+    xpLabel: { color: MUTED, fontSize: 12, fontWeight: '600' },
+    xpVal: { color: EUCALIPTO, fontSize: 12, fontWeight: '800' },
+    progressBg: { height: 6, backgroundColor: '#FFFFFF', borderRadius: 3, overflow: 'hidden' },
+    progressFill: { height: '100%', borderRadius: 3, backgroundColor: EUCALIPTO },
     statsRow: { flexDirection: 'row', gap: 10 },
-    statBox: { flex: 1 },
-    statGrad: {
-        borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8,
-        alignItems: 'center', borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
+    statBox: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        alignItems: 'center',
     },
-    statNum: { color: GOLD, fontSize: 18, fontWeight: '900', marginTop: 4 },
-    statLabel: { color: "#636477", fontSize: 9, fontWeight: '700', letterSpacing: 1, marginTop: 2 },
+    statNum: { color: INK, fontSize: 18, fontWeight: '800' },
+    statLabel: { color: MUTED, fontSize: 11, fontWeight: '600', marginTop: 2 },
 });
 
-// ─── Rank Item ─────────────────────────────────────────────
+// ─── Rank Item ────────────────────────────────────────────
 const RankRow = ({ item, index, isMe, isGlobal }: any) => {
-    const scaleAnim = useRef(new Animated.Value(0.96)).current;
-    useEffect(() => {
-        Animated.spring(scaleAnim, {
-            toValue: 1, delay: index * 60, friction: 8, tension: 100, useNativeDriver: true
-        }).start();
-    }, []);
-
-    const isTop3 = index < 3;
-    const rankColors = [
-        ["rgba(11,138,94,0.12)", "rgba(11,138,94,0.03)", GOLD],
-        ['rgba(192,192,192,0.1)', 'rgba(192,192,192,0.02)', SILVER],
-        ['rgba(205,127,50,0.1)', 'rgba(205,127,50,0.02)', BRONZE],
-    ];
-    const [c1, c2, border] = isTop3 ? rankColors[index] : ['rgba(255,255,255,0.02)', 'rgba(255,255,255,0.01)', 'rgba(255,255,255,0.06)'];
-
     const label = isGlobal ? item.church_name : item.username;
-    const sub = isGlobal && item.city ? item.city : (isGlobal ? '' : '');
+    const sub = isGlobal ? (item.city || '') : `Nivel ${Math.floor(Math.sqrt((item.total_xp || 0) / 50)) + 1}`;
     const score = isGlobal ? (item.total_church_trophies || 0) : (item.total_trophies || 0);
-    const xp = !isGlobal ? (item.total_xp || 0) : null;
-    const level = !isGlobal ? Math.floor(Math.sqrt((item.total_xp || 0) / 50)) + 1 : null;
-    const avatarUri = getEvolutionaryAvatar(isGlobal ? item.church_name : item.username, isGlobal ? 0 : item.total_xp || 0);
+    const avatarUri = getEvolutionaryAvatar(
+        isGlobal ? item.church_name : item.username,
+        isGlobal ? 0 : item.total_xp || 0
+    );
+
+    const rowBg = isMe
+        ? EUCALIPTO_SOFT
+        : index === 0
+            ? ORO_SOFT
+            : index === 1
+                ? ACUARELA_SOFT
+                : SURFACE;
 
     return (
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <LinearGradient
-                colors={isMe
-                    ? ["rgba(11,138,94,0.22)", "rgba(11,138,94,0.08)"]
-                    : [c1 as string, c2 as string]
-                }
-                style={[
-                    row.container,
-                    isMe && row.meHighlight,
-                    { borderColor: isMe ? GOLD : border as string },
-                ]}
-            >
-                {/* Barra lateral izquierda para 'Yo' */}
-                {isMe && <View style={row.meBar} />}
+        <View style={[row.container, { backgroundColor: rowBg }]}>
+            <RankBadge rank={index + 1} />
 
-                <Medal rank={index + 1} />
+            <Image source={{ uri: avatarUri }} style={row.avatar} />
 
-                {/* Avatar */}
-                <View style={row.avatarWrap}>
-                    <Image source={{ uri: avatarUri }} style={[row.avatar, isMe && row.avatarMe]} />
-                    {isMe && <View style={row.meDot} />}
+            <View style={row.info}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[row.name, isMe && { color: EUCALIPTO }]} numberOfLines={1}>
+                        {label}
+                    </Text>
+                    {isMe && (
+                        <View style={row.meBadge}>
+                            <Text style={row.meBadgeText}>TÚ</Text>
+                        </View>
+                    )}
                 </View>
+                {sub ? <Text style={row.sub}>{sub}</Text> : null}
+            </View>
 
-                {/* Name + meta */}
-                <View style={row.info}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={[row.name, isMe && row.nameMe]} numberOfLines={1}>{label}</Text>
-                        {isMe && (
-                            <View style={row.meBadge}>
-                                <Text style={row.meBadgeText}>YO</Text>
-                            </View>
-                        )}
-                    </View>
-                    {sub ? <Text style={row.sub}>{sub}</Text> : null}
-                    {level && <Text style={row.sub}>Nivel {level} · {xp?.toLocaleString()} XP</Text>}
-                </View>
-
-                {/* Score */}
-                <View style={[row.scoreBox, isMe && row.scoreBoxMe]}>
-                    <Text style={[row.scoreVal, isMe && { fontSize: 18 }]}>{score}</Text>
-                    <Ionicons name="trophy" size={14} color="#68A877" />
-                </View>
-            </LinearGradient>
-        </Animated.View>
+            <View style={row.scoreBox}>
+                <Ionicons name="trophy" size={14} color={index === 0 ? ORO : EUCALIPTO} />
+                <Text style={row.scoreVal}>{score}</Text>
+            </View>
+        </View>
     );
 };
 
 const row = StyleSheet.create({
     container: {
-        flexDirection: 'row', alignItems: 'center', borderRadius: 18,
-        marginBottom: 10, paddingVertical: 12, paddingHorizontal: 14,
-        borderWidth: 1, gap: 10, overflow: 'hidden',
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 18,
+        marginBottom: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        gap: 12,
     },
-    meHighlight: {
-        borderColor: GOLD,
-        borderWidth: 1.5,
-    },
-    // Barra de acento izquierda — el indicador más fácil de distinguir
-    meBar: {
-        position: 'absolute', left: 0, top: 0, bottom: 0,
-        width: 4, backgroundColor: GOLD, borderTopLeftRadius: 18, borderBottomLeftRadius: 18,
-    },
-    avatarWrap: { position: 'relative' },
-    avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.52)" },
-    avatarMe: { borderWidth: 2, borderColor: GOLD },
-    meDot: {
-        position: 'absolute', bottom: 0, right: 0,
-        width: 12, height: 12, borderRadius: 6,
-        backgroundColor: GOLD, borderWidth: 1.5, borderColor: BG,
+    avatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#FFFFFF',
     },
     info: { flex: 1 },
-    name: { color: "#2D3043", fontSize: 15, fontWeight: '800' },
-    nameMe: { color: GOLD, fontSize: 16, fontWeight: '900' },
-    sub: { color: "#636477", fontSize: 11, marginTop: 2 },
+    name: { color: INK, fontSize: 15, fontWeight: '700' },
+    sub: { color: MUTED, fontSize: 12, marginTop: 2 },
     meBadge: {
-        backgroundColor: GOLD, borderRadius: 6,
-        paddingHorizontal: 7, paddingVertical: 2,
+        backgroundColor: EUCALIPTO,
+        borderRadius: 8,
+        paddingHorizontal: 7,
+        paddingVertical: 2,
     },
-    meBadgeText: { color: "#2D3043", fontSize: 9, fontWeight: '900', letterSpacing: 1.5 },
-    // Legacy (kept for compat)
-    meTag: {
-        backgroundColor: GOLD, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1,
-        color: "#2D3043", fontSize: 9, fontWeight: '900', letterSpacing: 1,
-    },
+    meBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
     scoreBox: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        backgroundColor: "rgba(255,255,255,0.55)", paddingHorizontal: 10,
-        paddingVertical: 6, borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 12,
     },
-    scoreBoxMe: {
-        backgroundColor: "rgba(11,138,94,0.15)",
-        borderWidth: 1, borderColor: "rgba(11,138,94,0.4)",
-    },
-    scoreVal: { color: "#68A877", fontWeight: '900', fontSize: 16 },
+    scoreVal: { color: INK, fontWeight: '800', fontSize: 14 },
 });
 
 // ─── Main Screen ──────────────────────────────────────────
@@ -358,14 +306,8 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
     const [userStats, setUserStats] = useState<any>(null);
     const [church, setChurch] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const slideAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => { loadData(); }, []);
-
-    const switchTab = (tab: 'LOCAL' | 'GLOBAL') => {
-        Animated.timing(slideAnim, { toValue: tab === 'LOCAL' ? 0 : 1, duration: 200, useNativeDriver: true }).start();
-        setActiveTab(tab);
-    };
 
     const loadData = async () => {
         try {
@@ -389,7 +331,6 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
             const { data: globalData } = await supabase.from('church_global_ranking')
                 .select('*').order('total_church_trophies', { ascending: false });
             if (globalData) setGlobalRanking(globalData as never[]);
-
         } catch (e) {
             console.error('Error loading dashboard:', e);
         } finally {
@@ -400,8 +341,8 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
     if (loading) {
         return (
             <View style={[s.container, { justifyContent: 'center', alignItems: 'center' }]}>
-            <GlassBackground />
-                <ActivityIndicator size="large" color={GOLD} />
+                <StatusBar barStyle="dark-content" />
+                <ActivityIndicator size="large" color={ZAFIRO} />
             </View>
         );
     }
@@ -410,30 +351,25 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
 
     return (
         <View style={s.container}>
-            <GlassBackground />
+            <StatusBar barStyle="dark-content" />
             <ScrollView
                 style={{ flex: 1 }}
-                contentContainerStyle={{ paddingBottom: insets.bottom + 30 }}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Header */}
-                <LinearGradient colors={[BG, 'transparent']} style={[s.header, { paddingTop: insets.top + 10 }]}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn}>
-                        <Ionicons name="arrow-back" size={22} color="#2D3043" />
+                <View style={[s.header, { paddingTop: insets.top + 12 }]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.iconBtn} activeOpacity={0.8}>
+                        <Ionicons name="chevron-back" size={22} color={INK} />
                     </TouchableOpacity>
-                    <View style={s.headerCenter}>
-                        <Text style={s.headerTitle}>RANKING</Text>
-                        <Text style={s.headerSub}>ADN Impact System</Text>
-                    </View>
-                    <TouchableOpacity onPress={async () => { await supabase.auth.signOut(); navigation.replace('Home'); }} style={s.iconBtn}>
-                        <Ionicons name="log-out-outline" size={22} color="#e74c3c" />
+                    <Text style={s.headerTitle}>Ranking</Text>
+                    <TouchableOpacity
+                        onPress={async () => { await supabase.auth.signOut(); navigation.replace('Home'); }}
+                        style={[s.iconBtn, { backgroundColor: ERROR_SOFT }]}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="log-out-outline" size={20} color={ERROR} />
                     </TouchableOpacity>
-                </LinearGradient>
-
-                {/* Season Countdown */}
-                <View style={s.seasonCard}>
-                    <Ionicons name="time-outline" size={14} color={GOLD} />
-                    <Text style={s.seasonText}>TEMPORADA DE CUARESMA: FINALIZA EN 5 DÍAS</Text>
                 </View>
 
                 {/* Profile Hero */}
@@ -445,51 +381,46 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
                     />
                 )}
 
-                {/* Tab Switcher */}
+                {/* Tab Switcher (máx 2 botones) */}
                 <View style={s.tabBar}>
-                    {(['LOCAL', 'GLOBAL'] as const).map(tab => (
-                        <TouchableOpacity
-                            key={tab}
-                            style={[s.tab, activeTab === tab && s.tabActive]}
-                            onPress={() => switchTab(tab)}
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons
-                                name={tab === 'LOCAL' ? 'people' : 'earth'}
-                                size={16}
-                                color={activeTab === tab ? GOLD : "#C1D3CB"}
-                                style={{ marginRight: 6 }}
-                            />
-                            <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>
-                                {tab === 'LOCAL' ? 'MI IGLESIA' : 'GLOBAL'}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                {/* Section label */}
-                <View style={s.sectionHeader}>
-                    <View style={s.sectionLine} />
-                    <Text style={s.sectionTitle}>
-                        {activeTab === 'LOCAL' ? '🏠 Clasificación Local' : '🌍 Ranking Mundial'}
-                    </Text>
-                    <View style={s.sectionLine} />
+                    {(['LOCAL', 'GLOBAL'] as const).map(tab => {
+                        const active = activeTab === tab;
+                        return (
+                            <TouchableOpacity
+                                key={tab}
+                                style={[s.tab, active && s.tabActive]}
+                                onPress={() => setActiveTab(tab)}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons
+                                    name={tab === 'LOCAL' ? 'people-outline' : 'earth-outline'}
+                                    size={16}
+                                    color={active ? '#FFFFFF' : MUTED}
+                                />
+                                <Text style={[s.tabText, active && s.tabTextActive]}>
+                                    {tab === 'LOCAL' ? 'Mi iglesia' : 'Global'}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
 
                 {/* No church warning */}
                 {activeTab === 'LOCAL' && !userStats?.church_id && (
                     <View style={s.emptyBox}>
-                        <Ionicons name="home-outline" size={40} color={GOLD} style={{ marginBottom: 12 }} />
-                        <Text style={s.emptyTitle}>Sin Iglesia Registrada</Text>
-                        <Text style={s.emptySub}>Ve a tu perfil, crea una iglesia o pide que te inviten para aparecer en el ranking local.</Text>
-                        <TouchableOpacity style={s.emptyBtn} onPress={() => navigation.navigate('Profile')}>
-                            <Text style={s.emptyBtnText}>Ir a Perfil →</Text>
+                        <EditorialDoodle kind="dove" size={56} tint="#68AEEB" />
+                        <Text style={s.emptyTitle}>Sin iglesia asignada</Text>
+                        <Text style={s.emptySub}>
+                            Únete o crea una iglesia en tu perfil para ver la clasificación local.
+                        </Text>
+                        <TouchableOpacity style={s.emptyBtn} onPress={() => navigation.navigate('Profile')} activeOpacity={0.85}>
+                            <Text style={s.emptyBtnText}>Ir a perfil</Text>
                         </TouchableOpacity>
                     </View>
                 )}
 
                 {/* Ranking list */}
-                <View style={{ paddingHorizontal: 16 }}>
+                <View style={{ paddingHorizontal: 20 }}>
                     {activeList.length > 0 ? (
                         activeList.map((item: any, index: number) => (
                             <RankRow
@@ -503,8 +434,8 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
                     ) : (
                         activeTab === 'LOCAL' && userStats?.church_id ? (
                             <View style={s.emptyBox}>
-                                <Text style={s.emptyTitle}>Ranking vacío</Text>
-                                <Text style={s.emptySub}>¡Juega para ser el primero!</Text>
+                                <Text style={s.emptyTitle}>Sin registros aún</Text>
+                                <Text style={s.emptySub}>Juega una partida para estrenar el ranking.</Text>
                             </View>
                         ) : activeTab === 'GLOBAL' ? (
                             <View style={s.emptyBox}>
@@ -517,14 +448,9 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
 
                 {/* Guide link */}
                 <TouchableOpacity style={s.guideBtn} onPress={() => navigation.navigate('SystemGuide')} activeOpacity={0.8}>
-                    <LinearGradient colors={["rgba(11,138,94,0.12)", "rgba(11,138,94,0.04)"]} style={s.guideBtnInner}>
-                        <Ionicons name="information-circle" size={22} color={GOLD} />
-                        <View style={{ flex: 1, marginLeft: 12 }}>
-                            <Text style={s.guideTitle}>¿Cómo ganar XP y Trofeos?</Text>
-                            <Text style={s.guideSub}>Guía completa del sistema de impacto</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={18} color="#636477" />
-                    </LinearGradient>
+                    <Ionicons name="help-circle-outline" size={22} color={ZAFIRO} />
+                    <Text style={s.guideTitle}>Cómo ganar XP y trofeos</Text>
+                    <Ionicons name="chevron-forward" size={18} color={MUTED} />
                 </TouchableOpacity>
             </ScrollView>
         </View>
@@ -534,59 +460,70 @@ export const RankingDashboardScreen = ({ navigation }: any) => {
 const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: BG },
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 16, paddingBottom: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingBottom: 18,
     },
-    headerCenter: { alignItems: 'center' },
-    headerTitle: { color: "#2D3043", fontSize: 18, fontWeight: '900', letterSpacing: 2 },
-    headerSub: { color: "#636477", fontSize: 10, fontWeight: '600', letterSpacing: 1 },
+    headerTitle: { color: INK, fontSize: 18, fontWeight: '800' },
     iconBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: "rgba(255,255,255,0.48)",
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: BORDER,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: SURFACE,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     tabBar: {
-        flexDirection: 'row', marginHorizontal: 16, marginBottom: 24,
-        backgroundColor: "rgba(255,255,255,0.48)",
-        borderRadius: 16, padding: 4, borderWidth: 1, borderColor: BORDER,
+        flexDirection: 'row',
+        marginHorizontal: 20,
+        marginBottom: 20,
+        backgroundColor: SURFACE,
+        borderRadius: 16,
+        padding: 4,
+        gap: 4,
     },
     tab: {
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 11, borderRadius: 12,
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 11,
+        borderRadius: 12,
     },
-    tabActive: { backgroundColor: "rgba(11,138,94,0.1)", borderWidth: 1, borderColor: "rgba(11,138,94,0.25)" },
-    tabText: { color: "#636477", fontWeight: '700', fontSize: 13 },
-    tabTextActive: { color: GOLD, fontWeight: '900' },
-    sectionHeader: {
-        flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 16, marginBottom: 16, gap: 12,
-    },
-    sectionLine: { flex: 1, height: 1, backgroundColor: BORDER },
-    sectionTitle: { color: "#2D3043", fontSize: 14, fontWeight: '800' },
+    tabActive: { backgroundColor: ZAFIRO },
+    tabText: { color: MUTED, fontWeight: '700', fontSize: 14 },
+    tabTextActive: { color: '#FFFFFF', fontWeight: '700' },
     emptyBox: {
-        alignItems: 'center', marginHorizontal: 16, marginTop: 20,
-        padding: 30, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.48)",
-        borderWidth: 1, borderColor: BORDER,
+        alignItems: 'center',
+        marginHorizontal: 20,
+        marginTop: 8,
+        padding: 28,
+        borderRadius: 22,
+        backgroundColor: SURFACE,
+        gap: 8,
     },
-    emptyTitle: { color: "#2D3043", fontSize: 18, fontWeight: '800', marginBottom: 8 },
-    emptySub: { color: "#636477", fontSize: 14, textAlign: 'center', lineHeight: 20 },
+    emptyTitle: { color: INK, fontSize: 17, fontWeight: '800', marginTop: 4 },
+    emptySub: { color: MUTED, fontSize: 14, textAlign: 'center', lineHeight: 20 },
     emptyBtn: {
-        marginTop: 16, backgroundColor: GOLD, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12,
+        marginTop: 10,
+        backgroundColor: ZAFIRO,
+        paddingHorizontal: 22,
+        paddingVertical: 12,
+        borderRadius: 14,
     },
-    emptyBtnText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
-    guideBtn: { marginHorizontal: 16, marginTop: 32 },
-    guideBtnInner: {
-        flexDirection: 'row', alignItems: 'center', padding: 18,
-        borderRadius: 20, borderWidth: 1, borderColor: "rgba(11,138,94,0.15)",
+    emptyBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+    guideBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 20,
+        marginTop: 20,
+        padding: 18,
+        borderRadius: 18,
+        backgroundColor: ACUARELA_SOFT,
+        gap: 12,
     },
-    guideTitle: { color: "#2D3043", fontSize: 15, fontWeight: '800' },
-    guideSub: { color: "#636477", fontSize: 12, marginTop: 2 },
-    seasonCard: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        backgroundColor: "rgba(11,138,94,0.05)", marginHorizontal: 16,
-        paddingVertical: 10, borderRadius: 12, marginBottom: 20,
-        borderWidth: 1, borderColor: "rgba(11,138,94,0.1)"
-    },
-    seasonText: { color: GOLD, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+    guideTitle: { flex: 1, color: ZAFIRO, fontSize: 15, fontWeight: '700' },
 });

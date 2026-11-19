@@ -1,42 +1,64 @@
-import { GlassBackground } from '../../components/Glass';
-import React, { useState, useRef, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Modal, Animated } from 'react-native';
-import { AppText } from '../../components';
-import { Confetti } from '../../components/Confetti';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+    Animated,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppText } from '../../components';
+import { Confetti } from '../../components/Confetti';
 import { supabase } from '../../lib/supabase';
 import { calculateImpostorRewards } from '../../lib/gamification/pointsSystem';
 import { useSound } from '../../context/SoundContext';
+import { EditorialDoodle } from '../../trivia/components/EditorialDoodle';
 
-// ─── Types ────────────────────────────────────────────────
 type FeedbackType = 'accusation' | 'hit' | 'miss' | 'impostorWin' | null;
 interface FeedbackState {
     type: FeedbackType;
     title: string;
     subtitle: string;
     body: string;
+    bgColor: string;
     accentColor: string;
     icon: string;
 }
 
-// ─── Premium Feedback Modal ───────────────────────────────
 const FeedbackModal = ({
-    visible, feedback, onClose,
-}: { visible: boolean; feedback: FeedbackState; onClose: () => void }) => {
-    const scaleAnim = useRef(new Animated.Value(0.85)).current;
+    visible,
+    feedback,
+    onClose,
+}: {
+    visible: boolean;
+    feedback: FeedbackState;
+    onClose: () => void;
+}) => {
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
     React.useEffect(() => {
         if (visible) {
             Animated.parallel([
-                Animated.spring(scaleAnim, { toValue: 1, friction: 6, tension: 100, useNativeDriver: true }),
-                Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+                Animated.spring(scaleAnim, {
+                    toValue: 1,
+                    friction: 7,
+                    tension: 100,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(opacityAnim, {
+                    toValue: 1,
+                    duration: 180,
+                    useNativeDriver: true,
+                }),
             ]).start();
         } else {
-            scaleAnim.setValue(0.85);
+            scaleAnim.setValue(0.9);
             opacityAnim.setValue(0);
         }
     }, [visible]);
@@ -46,24 +68,36 @@ const FeedbackModal = ({
     return (
         <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
             <View style={fm.overlay}>
-                <Animated.View style={[fm.card, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
-                    {/* Glow halo */}
-                    <View style={[fm.halo, { backgroundColor: feedback.accentColor + '18' }]} />
-
-                    {/* Icon circle */}
-                    <View style={[fm.iconCircle, { borderColor: feedback.accentColor + '50', backgroundColor: feedback.accentColor + '15' }]}>
-                        <Ionicons name={feedback.icon as any} size={44} color={feedback.accentColor} />
+                <Animated.View
+                    style={[
+                        fm.card,
+                        { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
+                    ]}
+                >
+                    <View style={[fm.iconCircle, { backgroundColor: feedback.bgColor }]}>
+                        <Ionicons
+                            name={feedback.icon as any}
+                            size={34}
+                            color={feedback.accentColor}
+                        />
                     </View>
 
-                    <AppText style={[fm.title, { color: feedback.accentColor }]}>{feedback.title}</AppText>
-                    <AppText style={fm.subtitle}>{feedback.subtitle}</AppText>
+                    <AppText style={[fm.title, { color: '#1B1E23' }]}>
+                        {feedback.title}
+                    </AppText>
+                    <AppText style={[fm.subtitle, { color: feedback.accentColor }]}>
+                        {feedback.subtitle}
+                    </AppText>
                     <AppText style={fm.body}>{feedback.body}</AppText>
 
-                    <TouchableOpacity style={[fm.btn, { backgroundColor: feedback.accentColor }]} onPress={onClose} activeOpacity={0.85}>
+                    <Pressable
+                        style={({ pressed }) => [fm.btn, pressed && { opacity: 0.88 }]}
+                        onPress={onClose}
+                    >
                         <AppText style={fm.btnText}>
-                            {feedback.type === 'hit' ? 'CONTINUAR VOTANDO →' : feedback.type === 'miss' ? 'SEGUIR JUGANDO →' : 'ENTENDIDO'}
+                            {feedback.type === 'hit' ? 'Seguir votando' : 'Continuar'}
                         </AppText>
-                    </TouchableOpacity>
+                    </Pressable>
                 </Animated.View>
             </View>
         </Modal>
@@ -72,43 +106,73 @@ const FeedbackModal = ({
 
 const fm = StyleSheet.create({
     overlay: {
-        flex: 1, backgroundColor: "rgba(229,224,233,0.94)",
-        justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24,
+        flex: 1,
+        backgroundColor: 'rgba(27, 30, 35, 0.36)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
     },
     card: {
-        backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 28, padding: 28,
-        width: '100%', alignItems: 'center',
-        borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
-        shadowColor: "#3E4C45", shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.12, shadowRadius: 30, elevation: 20,
-    },
-    halo: {
-        position: 'absolute', top: 0, left: 0, right: 0,
-        height: 120, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 30,
+        padding: 26,
+        width: '100%',
+        maxWidth: 400,
+        alignItems: 'center',
     },
     iconCircle: {
-        width: 90, height: 90, borderRadius: 45,
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1.5, marginBottom: 18,
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
     },
-    title: { fontSize: 26, fontWeight: '900', marginBottom: 6, textAlign: 'center', letterSpacing: 0.5 },
-    subtitle: { color: "#2D3043", fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 10 },
-    body: { color: "#636477", fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 28 },
+    title: {
+        fontSize: 22,
+        fontWeight: '800',
+        marginBottom: 4,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    body: {
+        color: '#5B6573',
+        fontSize: 14,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 22,
+    },
     btn: {
-        borderRadius: 16, paddingVertical: 14, paddingHorizontal: 30,
-        width: '100%', alignItems: 'center',
+        borderRadius: 24,
+        height: 50,
+        width: '100%',
+        backgroundColor: '#1E3A5F',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    btnText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
+    btnText: {
+        color: '#FFFFFF',
+        fontWeight: '800',
+        fontSize: 15,
+    },
 });
 
-// ─── Accusation Confirm Modal ─────────────────────────────
 const AccuseModal = ({ visible, playerName, onConfirm, onCancel }: any) => {
-    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    const scaleAnim = useRef(new Animated.Value(0.92)).current;
     React.useEffect(() => {
         if (visible) {
-            Animated.spring(scaleAnim, { toValue: 1, friction: 7, useNativeDriver: true }).start();
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                friction: 7,
+                useNativeDriver: true,
+            }).start();
         } else {
-            scaleAnim.setValue(0.9);
+            scaleAnim.setValue(0.92);
         }
     }, [visible]);
 
@@ -116,24 +180,24 @@ const AccuseModal = ({ visible, playerName, onConfirm, onCancel }: any) => {
         <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
             <View style={am.overlay}>
                 <Animated.View style={[am.card, { transform: [{ scale: scaleAnim }] }]}>
-                    <LinearGradient colors={['rgba(231,76,60,0.1)', 'transparent']} style={am.banner} />
                     <View style={am.warningIcon}>
-                        <Ionicons name="warning" size={40} color="#e74c3c" />
+                        <Ionicons name="hand-right-outline" size={30} color="#9E3A3A" />
                     </View>
-                    <AppText style={am.title}>Acusación Final</AppText>
-                    <AppText style={am.body}>
-                        ¿Todo el grupo acusa oficialmente a{' '}
-                        <AppText style={{ color: '#e74c3c', fontWeight: '900' }}>{playerName}</AppText>?{'\n'}
-                        Esta decisión es irreversible.
-                    </AppText>
+                    <AppText style={am.title}>¿Acusar a {playerName}?</AppText>
+                    <AppText style={am.body}>Esta decisión no se puede deshacer.</AppText>
                     <View style={am.actions}>
-                        <TouchableOpacity style={am.cancelBtn} onPress={onCancel} activeOpacity={0.8}>
+                        <Pressable
+                            style={({ pressed }) => [am.cancelBtn, pressed && { opacity: 0.85 }]}
+                            onPress={onCancel}
+                        >
                             <AppText style={am.cancelText}>Cancelar</AppText>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={am.confirmBtn} onPress={onConfirm} activeOpacity={0.85}>
-                            <Ionicons name="hand-right" size={16} color="#2D3043" style={{ marginRight: 6 }} />
-                            <AppText style={am.confirmText}>¡ACUSAR!</AppText>
-                        </TouchableOpacity>
+                        </Pressable>
+                        <Pressable
+                            style={({ pressed }) => [am.confirmBtn, pressed && { opacity: 0.85 }]}
+                            onPress={onConfirm}
+                        >
+                            <AppText style={am.confirmText}>Acusar</AppText>
+                        </Pressable>
                     </View>
                 </Animated.View>
             </View>
@@ -143,56 +207,96 @@ const AccuseModal = ({ visible, playerName, onConfirm, onCancel }: any) => {
 
 const am = StyleSheet.create({
     overlay: {
-        flex: 1, backgroundColor: "rgba(229,224,233,0.94)",
-        justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24,
+        flex: 1,
+        backgroundColor: 'rgba(27, 30, 35, 0.36)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
     },
     card: {
-        backgroundColor: "rgba(255,255,255,0.52)", borderRadius: 28, padding: 28,
-        width: '100%', alignItems: 'center',
-        borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
-        overflow: 'hidden',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 30,
+        padding: 26,
+        width: '100%',
+        maxWidth: 400,
+        alignItems: 'center',
     },
-    banner: { position: 'absolute', top: 0, left: 0, right: 0, height: 100 },
     warningIcon: {
-        width: 80, height: 80, borderRadius: 40,
-        backgroundColor: 'rgba(231,76,60,0.1)',
-        borderWidth: 1, borderColor: 'rgba(231,76,60,0.3)',
-        justifyContent: 'center', alignItems: 'center', marginBottom: 16,
+        width: 68,
+        height: 68,
+        borderRadius: 34,
+        backgroundColor: '#F7E6E6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
     },
-    title: { color: "#2D3043", fontSize: 24, fontWeight: '900', marginBottom: 12 },
-    body: { color: "#636477", fontSize: 15, textAlign: 'center', lineHeight: 24, marginBottom: 28 },
-    actions: { flexDirection: 'row', gap: 12, width: '100%' },
+    title: {
+        color: '#1B1E23',
+        fontSize: 21,
+        fontWeight: '800',
+        marginBottom: 6,
+        textAlign: 'center',
+    },
+    body: {
+        color: '#6E7785',
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: 22,
+    },
+    actions: {
+        flexDirection: 'row',
+        gap: 10,
+        width: '100%',
+    },
     cancelBtn: {
-        flex: 1, paddingVertical: 16, borderRadius: 14,
-        backgroundColor: "rgba(255,255,255,0.48)",
-        alignItems: 'center', borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
+        flex: 1,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#F3F7F6',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    cancelText: { color: "#636477", fontWeight: '700', fontSize: 14 },
+    cancelText: {
+        color: '#1E3A5F',
+        fontWeight: '700',
+        fontSize: 14,
+    },
     confirmBtn: {
-        flex: 1, paddingVertical: 16, borderRadius: 14,
-        backgroundColor: '#e74c3c', alignItems: 'center',
-        flexDirection: 'row', justifyContent: 'center',
+        flex: 1,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#C96A6A',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    confirmText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14, letterSpacing: 0.5 },
+    confirmText: {
+        color: '#FFFFFF',
+        fontWeight: '800',
+        fontSize: 14,
+    },
 });
 
-// ─── Main Screen ──────────────────────────────────────────
 export const ImpostorResultsScreen = ({ navigation, route }: any) => {
+    const insets = useSafeAreaInsets();
     const {
-        impostorList, secretWord, secretCategory, players, playerDetails,
+        impostorList,
+        secretWord,
+        secretCategory,
+        players,
+        playerDetails,
         sessionId: incomingSessionId,
         canEarnTrophies = true,
     } = route.params;
 
-    // Clave de idempotencia para esta sesión de juego
     const sessionId = incomingSessionId || `IMPOSTOR_${secretWord}_${Date.now()}`;
-    // Previene doble submit aunque el usuario pulse el botón varias veces
     const hasRewarded = React.useRef(false);
 
     const [revealed, setRevealed] = useState(false);
     const [xpRewarded, setXPRewarded] = useState(false);
     const [citizensWon, setCitizensWon] = useState(false);
-    const [rewardSummary, setRewardSummary] = useState<{ name: string; xp: number; trophies: number; won: boolean }[]>([]);
+    const [rewardSummary, setRewardSummary] = useState<
+        { name: string; xp: number; trophies: number; won: boolean }[]
+    >([]);
     const [showConfetti, setShowConfetti] = useState(false);
 
     const { playSound, playHaptic } = useSound();
@@ -200,16 +304,24 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
 
     const [accuseModalVisible, setAccuseModalVisible] = useState(false);
     const [selectedPlayer, setSelectedPlayer] = useState({ index: -1, name: '' });
-    const [caughtImpostors, setCaughtImpostors] = useState<number[]>(route.params.initialCaughtImpostors || []);
-    const [eliminatedInnocents, setEliminatedInnocents] = useState<number[]>(route.params.initialEliminatedInnocents || []);
+    const [caughtImpostors, setCaughtImpostors] = useState<number[]>(
+        route.params.initialCaughtImpostors || []
+    );
+    const [eliminatedInnocents, setEliminatedInnocents] = useState<number[]>(
+        route.params.initialEliminatedInnocents || []
+    );
 
-    // Premium feedback modal state
     const [feedback, setFeedback] = useState<FeedbackState>({
-        type: null, title: '', subtitle: '', body: '', accentColor: "#2D3043", icon: 'checkmark',
+        type: null,
+        title: '',
+        subtitle: '',
+        body: '',
+        bgColor: '#DCECE8',
+        accentColor: '#1E3A5F',
+        icon: 'checkmark',
     });
     const [feedbackVisible, setFeedbackVisible] = useState(false);
 
-    // Synchronize initial state if params change while mounted
     React.useEffect(() => {
         if (route.params?.initialCaughtImpostors) {
             setCaughtImpostors(route.params.initialCaughtImpostors);
@@ -231,7 +343,12 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
     };
 
     const handlePlayerVote = (playerIndex: number, playerName: string) => {
-        if (caughtImpostors.includes(playerIndex) || eliminatedInnocents.includes(playerIndex)) return;
+        if (
+            caughtImpostors.includes(playerIndex) ||
+            eliminatedInnocents.includes(playerIndex)
+        ) {
+            return;
+        }
         setSelectedPlayer({ index: playerIndex, name: playerName });
         setAccuseModalVisible(true);
     };
@@ -239,14 +356,24 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
     const confirmVote = () => {
         setAccuseModalVisible(false);
         const accusedIndex = selectedPlayer.index;
-        const isImpostor = impostorList.includes(accusedIndex);
+        if (
+            revealed ||
+            accusedIndex < 0 ||
+            caughtImpostors.includes(accusedIndex) ||
+            eliminatedInnocents.includes(accusedIndex)
+        ) {
+            return;
+        }
+
+        const safeImpostorList: number[] = Array.isArray(impostorList) ? impostorList : [];
+        const isImpostor = safeImpostorList.includes(accusedIndex);
 
         if (isImpostor) {
             const newCaught = [...caughtImpostors, accusedIndex];
             setCaughtImpostors(newCaught);
-            const remaining = impostorList.length - newCaught.length;
+            const remainingImpostors = Math.max(0, safeImpostorList.length - newCaught.length);
 
-            if (remaining === 0) {
+            if (remainingImpostors === 0) {
                 setCitizensWon(true);
                 setRevealed(true);
                 setTimeout(() => {
@@ -259,10 +386,15 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
                 playHaptic('victory');
                 showFeedback({
                     type: 'hit',
-                    title: '¡IMPOSTOR ATRAPADO!',
-                    subtitle: `${selectedPlayer.name} era un espía`,
-                    body: `¡Bien jugado! Pero cuidado, aún ${remaining === 1 ? 'queda 1 impostor' : `quedan ${remaining} impostores`} oculto${remaining !== 1 ? 's' : ''} entre el grupo. ¡Sigan votando!`,
-                    accentColor: '#68A877',
+                    title: '¡Impostor atrapado!',
+                    subtitle: `${selectedPlayer.name} era impostor`,
+                    body: `Aún ${
+                        remainingImpostors === 1
+                            ? 'queda 1 impostor oculto'
+                            : `quedan ${remainingImpostors} impostores ocultos`
+                    }. Sigan votando.`,
+                    bgColor: '#DCECE8',
+                    accentColor: '#3D8A7B',
                     icon: 'checkmark-circle',
                 });
             }
@@ -270,9 +402,9 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
             const newEliminated = [...eliminatedInnocents, accusedIndex];
             setEliminatedInnocents(newEliminated);
 
-            const totalInnocents = players - impostorList.length;
-            const remainingInnocents = totalInnocents - newEliminated.length;
-            const remainingImpostors = impostorList.length - caughtImpostors.length;
+            const totalInnocents = Math.max(0, players - safeImpostorList.length);
+            const remainingInnocents = Math.max(0, totalInnocents - newEliminated.length);
+            const remainingImpostors = Math.max(0, safeImpostorList.length - caughtImpostors.length);
 
             if (remainingInnocents <= remainingImpostors) {
                 setCitizensWon(false);
@@ -282,10 +414,13 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
                 playHaptic('impact');
                 showFeedback({
                     type: 'miss',
-                    title: '¡ERROR FATAL!',
-                    subtitle: `${selectedPlayer.name} era inocente`,
-                    body: `Acaban de eliminar a un ciudadano. Quedan ${remainingInnocents - 1} inocentes vivos. ¡Piensen bien el siguiente voto antes de hablar!`,
-                    accentColor: '#e74c3c',
+                    title: 'Era inocente',
+                    subtitle: `${selectedPlayer.name} no era el impostor`,
+                    body: `Quedan ${remainingInnocents} inocentes y ${remainingImpostors} ${
+                        remainingImpostors === 1 ? 'impostor' : 'impostores'
+                    } en juego.`,
+                    bgColor: '#F7E6E6',
+                    accentColor: '#9E3A3A',
                     icon: 'close-circle',
                 });
             }
@@ -294,12 +429,10 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
 
     const handleGiveRewards = async () => {
         if (!playerDetails) return;
-        // ── Anti-farming: bloquea doble submit ──────────────────────
         if (hasRewarded.current) return;
         hasRewarded.current = true;
         setXPRewarded(true);
 
-        // ── Anti-farming: verificar idempotencia en DB ───────────────
         const { data: existing } = await supabase
             .from('events')
             .select('id')
@@ -307,31 +440,54 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
             .limit(1);
 
         if (existing && existing.length > 0) {
-            console.warn('[Impostor] Sesión ya recompensada:', sessionId);
-            // Aún construir el summary visual sin re-insertar
-            const rewards = calculateImpostorRewards(playerDetails, impostorList, citizensWon, canEarnTrophies);
+            const rewards = calculateImpostorRewards(
+                playerDetails,
+                impostorList,
+                citizensWon,
+                canEarnTrophies
+            );
             const summary = rewards
                 .map(r => {
                     const player = playerDetails.find((p: any) => p.id === r.userId);
-                    return player ? { name: player.username, xp: r.xp, trophies: r.trophies, won: r.won } : null;
+                    return player
+                        ? { name: player.username, xp: r.xp, trophies: r.trophies, won: r.won }
+                        : null;
                 })
-                .filter(Boolean) as { name: string; xp: number; trophies: number; won: boolean }[];
+                .filter(Boolean) as {
+                name: string;
+                xp: number;
+                trophies: number;
+                won: boolean;
+            }[];
             setRewardSummary(summary);
-            Animated.spring(rewardBadgeScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
+            Animated.spring(rewardBadgeScale, {
+                toValue: 1,
+                friction: 5,
+                tension: 80,
+                useNativeDriver: true,
+            }).start();
             return;
         }
 
-        // ── Calcular recompensas ─────────────────────────────────────
-        const rewards = calculateImpostorRewards(playerDetails, impostorList, citizensWon, canEarnTrophies);
+        const rewards = calculateImpostorRewards(
+            playerDetails,
+            impostorList,
+            citizensWon,
+            canEarnTrophies
+        );
         const summary: { name: string; xp: number; trophies: number; won: boolean }[] = [];
 
         for (const reward of rewards) {
             const player = playerDetails.find((p: any) => p.id === reward.userId);
             if (!player) continue;
-            summary.push({ name: player.username, xp: reward.xp, trophies: reward.trophies, won: reward.won });
+            summary.push({
+                name: player.username,
+                xp: reward.xp,
+                trophies: reward.trophies,
+                won: reward.won,
+            });
 
             try {
-                // Audit log con session_id para idempotencia futura
                 await supabase.from('events').insert({
                     user_id: reward.userId,
                     session_id: sessionId,
@@ -341,22 +497,26 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
                     trophies_awarded: reward.trophies,
                 });
 
-                // Actualización atómica via RPC
                 const { error: rpcErr } = await supabase.rpc('increment_user_rewards', {
                     p_user_id: reward.userId,
                     p_xp: reward.xp,
                     p_trophies: reward.trophies,
                 });
 
-                // Fallback manual si la RPC no existe
                 if (rpcErr) {
                     const { data: userData } = await supabase
-                        .from('users').select('total_xp, total_trophies').eq('id', reward.userId).single();
+                        .from('users')
+                        .select('total_xp, total_trophies')
+                        .eq('id', reward.userId)
+                        .single();
                     if (userData) {
-                        await supabase.from('users').update({
-                            total_xp: (userData.total_xp || 0) + reward.xp,
-                            total_trophies: (userData.total_trophies || 0) + reward.trophies,
-                        }).eq('id', reward.userId);
+                        await supabase
+                            .from('users')
+                            .update({
+                                total_xp: (userData.total_xp || 0) + reward.xp,
+                                total_trophies: (userData.total_trophies || 0) + reward.trophies,
+                            })
+                            .eq('id', reward.userId);
                     }
                 }
             } catch (err) {
@@ -365,22 +525,24 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
         }
 
         setRewardSummary(summary);
-        Animated.spring(rewardBadgeScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
+        Animated.spring(rewardBadgeScale, {
+            toValue: 1,
+            friction: 5,
+            tension: 80,
+            useNativeDriver: true,
+        }).start();
     };
 
     return (
-        <View style={styles.container}>
-            <GlassBackground />
+        <View style={[s.container, { paddingTop: insets.top }]}>
             <Confetti visible={showConfetti} duration={3500} />
 
-            {/* Premium Feedback Overlay */}
             <FeedbackModal
                 visible={feedbackVisible}
                 feedback={feedback}
                 onClose={() => setFeedbackVisible(false)}
             />
 
-            {/* Accusation Confirm Modal */}
             <AccuseModal
                 visible={accuseModalVisible}
                 playerName={selectedPlayer.name}
@@ -388,314 +550,502 @@ export const ImpostorResultsScreen = ({ navigation, route }: any) => {
                 onCancel={() => setAccuseModalVisible(false)}
             />
 
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.iconBtn}>
-                    <Ionicons name="close" size={26} color="#2D3043" />
+            <View style={s.header}>
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    onPress={() => navigation.navigate('Home')}
+                    style={s.iconBtn}
+                >
+                    <Ionicons name="close" size={20} color="#1B1E23" />
                 </TouchableOpacity>
-                <AppText style={styles.headerTitle}>VOTACIÓN</AppText>
-                <TouchableOpacity style={styles.iconBtn}>
-                    <Ionicons name="help-circle-outline" size={26} color="#636477" />
-                </TouchableOpacity>
+                <AppText style={s.headerTitle}>
+                    {revealed ? 'RESULTADO' : 'VOTACIÓN'}
+                </AppText>
+                <View style={{ width: 38 }} />
             </View>
 
-            <View style={styles.content}>
-                {!revealed ? (
-                    /* ─── Voting Phase ─── */
-                    <View style={styles.votingContainer}>
-                        <LinearGradient colors={['rgba(69,131,77,0.2)', 'transparent']} style={styles.votingBanner}>
-                            <View style={styles.ballotIconWrapper}>
-                                <Ionicons name="finger-print" size={40} color="#45834D" />
-                            </View>
-                        </LinearGradient>
-
-                        <AppText style={styles.title}>¿Quién es el Impostor?</AppText>
-                        <AppText style={styles.subtitle}>
-                            Discutan y toca el jugador que deseen acusar.
-                        </AppText>
-
-                        {/* Player grid */}
-                        <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
-                            {Array.from({ length: players }).map((_, index) => {
-                                const player = playerDetails ? playerDetails[index] : { username: `Jugador ${index + 1}` };
-                                const isCaught = caughtImpostors.includes(index);
-                                const isEliminated = eliminatedInnocents.includes(index);
-                                const isDisabled = isCaught || isEliminated;
-
-                                const avatarUri = `https://api.dicebear.com/7.x/bottts/png?seed=${player.username || index}`;
-
-                                return (
-                                    <TouchableOpacity
-                                        key={index}
-                                        style={[
-                                            styles.playerCard,
-                                            isCaught && styles.playerCardSuccess,
-                                            isEliminated && styles.playerCardDanger,
-                                            isDisabled && { opacity: 0.5 },
-                                        ]}
-                                        onPress={() => !isDisabled && handlePlayerVote(index, player.username)}
-                                        activeOpacity={isDisabled ? 1 : 0.8}
-                                    >
-                                        {isCaught && (
-                                            <View style={styles.playerBadge}>
-                                                <Ionicons name="checkmark" size={12} color="#2D3043" />
-                                            </View>
-                                        )}
-                                        {isEliminated && (
-                                            <View style={[styles.playerBadge, { backgroundColor: '#e74c3c' }]}>
-                                                <Ionicons name="close" size={12} color="#2D3043" />
-                                            </View>
-                                        )}
-                                        <Image source={{ uri: avatarUri }} style={styles.playerAvatar} />
-                                        <AppText style={styles.playerName} numberOfLines={1}>{player.username}</AppText>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-
-                        <View style={styles.footerArea}>
-                            <TouchableOpacity
-                                style={styles.backDiscussBtn}
-                                onPress={() => navigation.navigate('ImpostorGame', {
-                                    ...route.params, // Mantener duración, palabra secreta, etc.
-                                    caughtImpostors,
-                                    eliminatedInnocents
-                                })}
-                                activeOpacity={0.85}
-                            >
-                                <Ionicons name="arrow-back" size={18} color="#2D3043" style={{ marginRight: 8 }} />
-                                <AppText style={styles.backDiscussText}>Volver a Debate</AppText>
-                            </TouchableOpacity>
+            {!revealed ? (
+                <View style={s.votingContainer}>
+                    <View style={s.votingTop}>
+                        <EditorialDoodle kind="impostor" tint="#D6E8F8" size={60} />
+                        <AppText style={s.title}>¿Quién es el impostor?</AppText>
+                        <View style={s.statusPill}>
+                            <AppText style={s.statusPillText}>
+                                {Math.max(0, (Array.isArray(impostorList) ? impostorList.length : 0) - caughtImpostors.length)}{' '}
+                                {Math.max(0, (Array.isArray(impostorList) ? impostorList.length : 0) - caughtImpostors.length) === 1
+                                    ? 'impostor oculto'
+                                    : 'impostores ocultos'}
+                            </AppText>
                         </View>
                     </View>
-                ) : (
-                    /* ─── Results Phase ─── */
-                    <ScrollView contentContainerStyle={styles.resultsScroll} showsVerticalScrollIndicator={false}>
-                        {/* Win banner */}
-                        <LinearGradient
-                            colors={citizensWon
-                                ? ['rgba(46,204,113,0.15)', 'transparent']
-                                : ['rgba(231,76,60,0.15)', 'transparent']}
-                            style={styles.winBanner}
-                        >
-                            <Ionicons
-                                name={citizensWon ? 'shield-checkmark' : 'glasses'}
-                                size={72}
-                                color={citizensWon ? '#68A877' : '#e74c3c'}
-                                style={{ marginBottom: 10 }}
-                            />
-                            <AppText style={citizensWon ? styles.winTitleCit : styles.winTitleImp}>
-                                {citizensWon ? '¡VICTORIA CIUDADANA!' : '¡VICTORIA DEL IMPOSTOR!'}
-                            </AppText>
-                            <AppText style={styles.winSub}>
-                                {citizensWon ? 'Atraparon al espía' : 'Logró engañar a todos'}
-                            </AppText>
-                        </LinearGradient>
 
-                        {/* Secret word */}
-                        <View style={styles.wordBox}>
-                            <AppText style={styles.resultBadge}>PALABRA SECRETA</AppText>
-                            <AppText style={styles.wordValue} numberOfLines={3}>{secretWord}</AppText>
-                            <AppText style={styles.catValue}>{secretCategory}</AppText>
-                        </View>
+                    <ScrollView
+                        contentContainerStyle={s.grid}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {Array.from({ length: players }).map((_, index) => {
+                            const player = playerDetails
+                                ? playerDetails[index]
+                                : { username: `Jugador ${index + 1}` };
+                            const isCaught = caughtImpostors.includes(index);
+                            const isEliminated = eliminatedInnocents.includes(index);
+                            const isDisabled = isCaught || isEliminated;
+                            const initial = (player.username || 'J').trim().slice(0, 1).toUpperCase();
 
-                        {/* Impostors revealed */}
-                        <View style={styles.impostorsBox}>
-                            <AppText style={[styles.resultBadge, { color: '#e74c3c' }]}>
-                                {impostorList.length > 1 ? 'IMPOSTORES' : 'IMPOSTOR'}
-                            </AppText>
-                            {impostorList.map((imp: number, index: number) => {
-                                const impName = playerDetails ? playerDetails[imp].username : `Jugador ${imp + 1}`;
-                                const impAvatar = `https://api.dicebear.com/7.x/bottts/png?seed=${impName}`;
-                                return (
-                                    <View key={index} style={styles.impItem}>
-                                        <Image source={{ uri: impAvatar }} style={styles.resultAvatar} />
-                                        <AppText style={styles.impName}>{impName}</AppText>
+                            return (
+                                <Pressable
+                                    key={index}
+                                    style={({ pressed }) => [
+                                        s.playerCard,
+                                        isCaught && s.playerCardSuccess,
+                                        isEliminated && s.playerCardDanger,
+                                        isDisabled && { opacity: 0.55 },
+                                        pressed && !isDisabled && s.pressed,
+                                    ]}
+                                    onPress={() =>
+                                        !isDisabled && handlePlayerVote(index, player.username)
+                                    }
+                                >
+                                    {isCaught && (
+                                        <View style={[s.playerBadge, { backgroundColor: '#1E3A5F' }]}>
+                                            <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                                        </View>
+                                    )}
+                                    {isEliminated && (
+                                        <View style={[s.playerBadge, { backgroundColor: '#C96A6A' }]}>
+                                            <Ionicons name="close" size={12} color="#FFFFFF" />
+                                        </View>
+                                    )}
+                                    <View style={s.playerAvatar}>
+                                        <AppText style={s.playerAvatarText}>{initial}</AppText>
                                     </View>
-                                );
-                            })}
-                        </View>
-
-                        {/* Rewards section */}
-                        {!xpRewarded ? (
-                            <TouchableOpacity style={styles.rewardBtn} onPress={handleGiveRewards} activeOpacity={0.85}>
-                                <LinearGradient colors={["#68A877", "#68A877"]} style={styles.rewardBtnInner}>
-                                    <Ionicons name="gift" size={22} color="#2D3043" style={{ marginRight: 10 }} />
-                                    <AppText style={styles.rewardBtnText}>DAR RECOMPENSAS</AppText>
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        ) : (
-                            <Animated.View style={[styles.rewardSuccess, { transform: [{ scale: rewardBadgeScale }] }]}>
-                                <Ionicons name="checkmark-circle" size={22} color="#68A877" style={{ marginRight: 8 }} />
-                                <AppText style={styles.rewardSuccessText}>¡Recompensas Entregadas!</AppText>
-                            </Animated.View>
-                        )}
-
-                        {/* Per-player reward summary */}
-                        {xpRewarded && rewardSummary.length > 0 && (
-                            <View style={styles.rewardSummary}>
-                                {rewardSummary.map((r, i) => (
-                                    <View key={i} style={styles.rewardSummaryRow}>
-                                        <Ionicons name={r.won ? 'trophy' : 'person'} size={14}
-                                            color={r.won ? "#68A877" : "#C1D3CB"} style={{ marginRight: 8 }} />
-                                        <AppText style={styles.rewardSummaryName} numberOfLines={1}>{r.name}</AppText>
-                                        <AppText style={[styles.rewardSummaryXP, r.won && { color: "#68A877" }]}>+{r.xp} XP</AppText>
-                                        {r.trophies > 0 && (
-                                            <AppText style={styles.rewardSummaryTrophies}>+{r.trophies} 🏆</AppText>
-                                        )}
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-
-                        <View style={{ height: 24 }} />
-
-                        <TouchableOpacity
-                            style={styles.playAgainBtn}
-                            onPress={() => navigation.reset({ index: 1, routes: [{ name: 'Home' }, { name: 'ImpostorConfig' }] })}
-                            activeOpacity={0.85}
-                        >
-                            <Ionicons name="refresh" size={20} color="#2D3043" style={{ marginRight: 10 }} />
-                            <AppText style={styles.playAgainBtnText}>Jugar de Nuevo</AppText>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.homeBtn} onPress={() => navigation.navigate('Home')} activeOpacity={0.85}>
-                            <AppText style={[styles.playAgainBtnText, { color: "#636477" }]}>← Inicio</AppText>
-                        </TouchableOpacity>
+                                    <AppText style={s.playerName} numberOfLines={1}>
+                                        {player.username}
+                                    </AppText>
+                                </Pressable>
+                            );
+                        })}
                     </ScrollView>
-                )}
-            </View>
+
+                    <View style={[s.footerArea, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+                        <Pressable
+                            style={({ pressed }) => [s.backDiscussBtn, pressed && s.pressed]}
+                            onPress={() =>
+                                navigation.navigate('ImpostorGame', {
+                                    ...route.params,
+                                    caughtImpostors,
+                                    eliminatedInnocents,
+                                })
+                            }
+                        >
+                            <Ionicons name="arrow-back" size={17} color="#1E3A5F" />
+                            <AppText style={s.backDiscussText}>Volver al debate</AppText>
+                        </Pressable>
+                    </View>
+                </View>
+            ) : (
+                <ScrollView
+                    contentContainerStyle={[s.resultsScroll, { paddingBottom: insets.bottom + 36 }]}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <EditorialDoodle
+                        kind={citizensWon ? 'trophy' : 'impostor'}
+                        tint={citizensWon ? '#F5DA7C' : '#F7E6E6'}
+                        size={88}
+                    />
+                    <AppText style={s.winTitle}>
+                        {citizensWon ? '¡Ganaron los ciudadanos!' : '¡Ganó el impostor!'}
+                    </AppText>
+
+                    <View style={s.wordBox}>
+                        <AppText style={s.resultBadge}>PALABRA SECRETA</AppText>
+                        <AppText style={s.wordValue} numberOfLines={3}>
+                            {secretWord}
+                        </AppText>
+                        <AppText style={s.catValue}>{secretCategory}</AppText>
+                    </View>
+
+                    <View style={s.impostorsBox}>
+                        <AppText style={[s.resultBadge, { color: '#9E3A3A' }]}>
+                            {impostorList.length > 1 ? 'IMPOSTORES' : 'IMPOSTOR'}
+                        </AppText>
+                        {impostorList.map((imp: number, index: number) => {
+                            const impName = playerDetails
+                                ? playerDetails[imp].username
+                                : `Jugador ${imp + 1}`;
+                            const impInitial = impName.trim().slice(0, 1).toUpperCase();
+                            return (
+                                <View key={index} style={s.impItem}>
+                                    <View style={s.resultAvatar}>
+                                        <AppText style={s.resultAvatarText}>{impInitial}</AppText>
+                                    </View>
+                                    <AppText style={s.impName}>{impName}</AppText>
+                                </View>
+                            );
+                        })}
+                    </View>
+
+                    {!xpRewarded ? (
+                        <Pressable
+                            style={({ pressed }) => [s.rewardBtn, pressed && s.pressed]}
+                            onPress={handleGiveRewards}
+                        >
+                            <Ionicons name="sparkles-outline" size={18} color="#1B1E23" />
+                            <AppText style={s.rewardBtnText}>Entregar recompensas</AppText>
+                        </Pressable>
+                    ) : (
+                        <Animated.View
+                            style={[s.rewardSuccess, { transform: [{ scale: rewardBadgeScale }] }]}
+                        >
+                            <Ionicons name="checkmark-circle" size={18} color="#3D8A7B" />
+                            <AppText style={s.rewardSuccessText}>Recompensas entregadas</AppText>
+                        </Animated.View>
+                    )}
+
+                    {xpRewarded && rewardSummary.length > 0 && (
+                        <View style={s.rewardSummary}>
+                            {rewardSummary.map((r, i) => (
+                                <View key={i} style={s.rewardSummaryRow}>
+                                    <AppText style={s.rewardSummaryName} numberOfLines={1}>
+                                        {r.name}
+                                    </AppText>
+                                    <AppText style={s.rewardSummaryXP}>+{r.xp} XP</AppText>
+                                    {r.trophies > 0 && (
+                                        <View style={s.trophyChip}>
+                                            <Ionicons name="trophy" size={12} color="#6F5207" />
+                                            <AppText style={s.trophyChipText}>+{r.trophies}</AppText>
+                                        </View>
+                                    )}
+                                </View>
+                            ))}
+                        </View>
+                    )}
+
+                    <View style={s.actions}>
+                        <Pressable
+                            style={({ pressed }) => [s.playAgainBtn, pressed && s.pressed]}
+                            onPress={() =>
+                                navigation.reset({
+                                    index: 1,
+                                    routes: [{ name: 'Home' }, { name: 'ImpostorConfig' }],
+                                })
+                            }
+                        >
+                            <AppText style={s.playAgainBtnText}>Jugar otra vez</AppText>
+                            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                        </Pressable>
+                        <Pressable
+                            style={({ pressed }) => [s.homeBtn, pressed && s.pressed]}
+                            onPress={() => navigation.navigate('Home')}
+                        >
+                            <AppText style={s.homeBtnText}>Volver al inicio</AppText>
+                        </Pressable>
+                    </View>
+                </ScrollView>
+            )}
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#EAE5E0", paddingTop: 50 },
+const s = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, marginBottom: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
     },
-    headerTitle: { color: "#2D3043", fontSize: 16, fontWeight: '900', letterSpacing: 2 },
     iconBtn: {
-        padding: 8, backgroundColor: "rgba(255,255,255,0.48)",
-        borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#F3F7F6',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    content: { flex: 1 },
-
-    // Voting Phase
-    votingContainer: { flex: 1, alignItems: 'center' },
-    votingBanner: { width: '100%', alignItems: 'center', paddingVertical: 20, marginBottom: 10 },
-    ballotIconWrapper: {
-        width: 80, height: 80, backgroundColor: 'rgba(69,131,77,0.15)',
-        borderRadius: 24, justifyContent: 'center', alignItems: 'center',
-        borderWidth: 1, borderColor: 'rgba(69,131,77,0.3)',
+    headerTitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 1.5,
+        color: '#2B6CB0',
+    },
+    votingContainer: {
+        flex: 1,
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+    },
+    votingTop: {
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 6,
+        marginBottom: 16,
+        gap: 8,
     },
     title: {
-        fontSize: 28,
-        color: "#2D3043",
-        fontWeight: '900',
-        marginBottom: 8,
+        fontSize: 25,
+        fontWeight: '800',
+        color: '#1B1E23',
         textAlign: 'center',
-        lineHeight: 38,
-        includeFontPadding: false,
-        paddingTop: 4,
+        letterSpacing: -0.5,
     },
-    subtitle: { fontSize: 15, color: "#636477", textAlign: 'center', paddingHorizontal: 30, marginBottom: 20, lineHeight: 22 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 14, paddingHorizontal: 16, paddingBottom: 20 },
+    statusPill: {
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 12,
+        backgroundColor: '#D6E8F8',
+    },
+    statusPillText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#1E3A5F',
+    },
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 12,
+        paddingHorizontal: 20,
+        paddingBottom: 24,
+    },
     playerCard: {
-        width: '44%', aspectRatio: 1, backgroundColor: "rgba(255,255,255,0.52)",
-        borderRadius: 20, justifyContent: 'center', alignItems: 'center',
-        padding: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.82)", position: 'relative',
+        width: '45%',
+        maxWidth: 180,
+        borderRadius: 24,
+        padding: 16,
+        backgroundColor: '#F6F8FA',
+        alignItems: 'center',
+        position: 'relative',
     },
-    playerCardSuccess: { borderColor: '#68A877', backgroundColor: 'rgba(46,204,113,0.08)' },
-    playerCardDanger: { borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.06)' },
+    playerCardSuccess: {
+        backgroundColor: '#DCECE8',
+    },
+    playerCardDanger: {
+        backgroundColor: '#F7E6E6',
+    },
     playerBadge: {
-        position: 'absolute', top: 8, right: 8,
-        width: 20, height: 20, borderRadius: 10,
-        backgroundColor: '#68A877', alignItems: 'center', justifyContent: 'center',
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    playerAvatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(255,255,255,0.52)", marginBottom: 10 },
-    playerName: { color: "#2D3043", fontSize: 14, fontWeight: '800', textAlign: 'center' },
-    footerArea: { paddingHorizontal: 20, paddingVertical: 16, width: '100%' },
+    playerAvatar: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#D6E8F8',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 10,
+    },
+    playerAvatarText: {
+        fontSize: 19,
+        fontWeight: '800',
+        color: '#1E3A5F',
+    },
+    playerName: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1B1E23',
+    },
+    footerArea: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+    },
     backDiscussBtn: {
-        flexDirection: 'row', backgroundColor: "rgba(255,255,255,0.48)",
-        paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
-        width: '100%', borderWidth: 1, borderColor: "rgba(255,255,255,0.82)",
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: '#F3F7F6',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
     },
-    backDiscussText: { color: "#2D3043", fontSize: 16, fontWeight: '700' },
-
-    // Results Phase
-    resultsScroll: { width: '100%', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 40 },
-    winBanner: { width: '100%', marginBottom: 24, alignItems: 'center', paddingVertical: 24, borderRadius: 24 },
-    winTitleCit: {
-        fontSize: 24, fontWeight: '900', color: '#68A877', textAlign: 'center',
-        marginBottom: 4, lineHeight: 34, includeFontPadding: false,
+    backDiscussText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1E3A5F',
     },
-    winTitleImp: {
-        fontSize: 24, fontWeight: '900', color: '#e74c3c', textAlign: 'center',
-        marginBottom: 4, lineHeight: 34, includeFontPadding: false,
+    resultsScroll: {
+        width: '100%',
+        maxWidth: 520,
+        alignSelf: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 22,
+        paddingTop: 14,
+        gap: 14,
     },
-    winSub: { color: "#636477", fontSize: 15, textAlign: 'center', lineHeight: 22 },
-    resultBadge: { fontSize: 11, fontWeight: '800', color: '#68A877', letterSpacing: 2, marginBottom: 8, opacity: 0.8 },
+    winTitle: {
+        fontSize: 26,
+        fontWeight: '800',
+        color: '#1B1E23',
+        textAlign: 'center',
+        letterSpacing: -0.5,
+    },
     wordBox: {
-        backgroundColor: 'rgba(46,204,113,0.07)', borderWidth: 1, borderColor: 'rgba(46,204,113,0.25)',
-        borderRadius: 20, paddingTop: 18, paddingBottom: 18, paddingHorizontal: 20,
-        width: '100%', alignItems: 'center', marginBottom: 16,
+        width: '100%',
+        borderRadius: 26,
+        padding: 20,
+        backgroundColor: '#DCECE8',
+        alignItems: 'center',
+    },
+    resultBadge: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1.4,
+        color: '#3D8A7B',
+        marginBottom: 4,
     },
     wordValue: {
-        fontSize: 30,
-        fontWeight: '900',
-        color: '#68A877',
-        textTransform: 'uppercase',
+        fontSize: 26,
+        fontWeight: '800',
+        color: '#1B1E23',
         textAlign: 'center',
-        marginBottom: 4,
-        lineHeight: 42,
-        includeFontPadding: false,
-        paddingTop: 2,
-        flexShrink: 1,
-        width: '100%',
     },
-    catValue: { fontSize: 12, color: "#636477", textTransform: 'uppercase', letterSpacing: 1 },
+    catValue: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#3D8A7B',
+        marginTop: 4,
+    },
     impostorsBox: {
-        backgroundColor: 'rgba(231,76,60,0.07)', borderWidth: 1, borderColor: 'rgba(231,76,60,0.25)',
-        borderRadius: 20, padding: 16, width: '100%', alignItems: 'center', gap: 12, marginBottom: 20,
+        width: '100%',
+        borderRadius: 24,
+        padding: 18,
+        backgroundColor: '#F7E6E6',
+        alignItems: 'center',
+        gap: 10,
     },
-    impItem: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-    resultAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(255,255,255,0.52)", borderWidth: 2, borderColor: "rgba(255,255,255,0.82)" },
+    impItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    resultAvatar: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    resultAvatarText: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#9E3A3A',
+    },
     impName: {
-        fontSize: 24,
-        fontWeight: '900',
-        color: "#2D3043",
-        lineHeight: 34,
-        includeFontPadding: false,
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#1B1E23',
     },
-    rewardBtn: { width: '100%', borderRadius: 18, overflow: 'hidden', marginBottom: 14 },
-    rewardBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18 },
-    rewardBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', letterSpacing: 1 },
+    rewardBtn: {
+        width: '100%',
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: '#F5DA7C',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    rewardBtnText: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: '#1B1E23',
+    },
     rewardSuccess: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        backgroundColor: 'rgba(46,204,113,0.08)', borderColor: 'rgba(46,204,113,0.3)',
-        borderWidth: 1, borderRadius: 16, padding: 18, width: '100%', marginBottom: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 14,
+        backgroundColor: '#DCECE8',
     },
-    rewardSuccessText: { color: '#68A877', fontSize: 15, fontWeight: '800' },
+    rewardSuccessText: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: '#1B1E23',
+    },
     rewardSummary: {
-        width: '100%', marginBottom: 20, backgroundColor: "rgba(255,255,255,0.48)",
-        borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.82)", overflow: 'hidden',
+        width: '100%',
+        borderRadius: 22,
+        padding: 16,
+        backgroundColor: '#F6F8FA',
+        gap: 8,
     },
     rewardSummaryRow: {
-        flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16,
-        borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.82)",
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
-    rewardSummaryName: { flex: 1, color: "#636477", fontSize: 14 },
-    rewardSummaryXP: { color: "#636477", fontSize: 13, fontWeight: '700', marginRight: 8 },
-    rewardSummaryTrophies: { color: "#68A877", fontSize: 13, fontWeight: '700' },
+    rewardSummaryName: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1B1E23',
+    },
+    rewardSummaryXP: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: '#1E3A5F',
+    },
+    trophyChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+        backgroundColor: '#F5DA7C',
+    },
+    trophyChipText: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#6F5207',
+    },
+    actions: {
+        width: '100%',
+        gap: 10,
+        marginTop: 6,
+    },
     playAgainBtn: {
-        flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-        backgroundColor: '#45834D', paddingVertical: 18, borderRadius: 18,
-        width: '100%', marginBottom: 10,
+        height: 54,
+        borderRadius: 27,
+        backgroundColor: '#1E3A5F',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    playAgainBtnText: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#FFFFFF',
     },
     homeBtn: {
-        justifyContent: 'center', alignItems: 'center',
-        backgroundColor: 'transparent', paddingVertical: 16,
-        borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.82)", width: '100%',
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#F3F7F6',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    playAgainBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+    homeBtnText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1E3A5F',
+    },
+    pressed: {
+        opacity: 0.88,
+        transform: [{ scale: 0.985 }],
+    },
 });

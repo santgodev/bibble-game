@@ -1,39 +1,36 @@
-import { GlassBackground } from '../components/Glass';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    View, StyleSheet, ScrollView, TouchableOpacity,
-    Platform, UIManager, Animated, Easing, Dimensions
+    Animated,
+    Easing,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    UIManager,
+    View,
 } from 'react-native';
-import { AppText } from '../components';
-import { useLanguage } from '../context/LanguageContext';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppText } from '../components';
 import { CharadaCard } from '../data/categories';
 import { supabase } from '../lib/supabase';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { theme } from '../theme';
-
-const GOLD = "#68A877";
-const GOLD2 = "#AE91E4";
-const SURFACE = "rgba(255,255,255,0.55)";
-const BORDER = "rgba(255,255,255,0.82)";
-
-const { width: SW } = Dimensions.get('window');
-
-// Chip style constants
-const CHIP_BG = 'rgba(255,255,255,0.05)';
-const CHIP_BORDER = 'rgba(255,255,255,0.12)';
-const CHIP_TEXT = '#FFFFFF';
+import { EditorialDoodle } from '../trivia/components/EditorialDoodle';
 
 export const WordPreviewScreen = ({ navigation, route }: any) => {
-    const { t } = useLanguage();
     const insets = useSafeAreaInsets();
-    const { category, categoryObj, totalPool, difficulty } = route.params || { category: 'Mock', categoryObj: {}, totalPool: [], difficulty: null };
+    const { category, categoryObj, totalPool, difficulty } = route.params || {
+        category: 'Charadas',
+        categoryObj: {},
+        totalPool: [],
+        difficulty: null,
+    };
 
     useFocusEffect(
         React.useCallback(() => {
+            setHasStarted(false);
             ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
         }, [])
     );
@@ -45,18 +42,7 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
     const [showMembers, setShowMembers] = useState(false);
 
-    // Glow pulse animation
-    const glowAnim = useRef(new Animated.Value(0.5)).current;
     const shuffleSpin = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(glowAnim, { toValue: 1, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
-                Animated.timing(glowAnim, { toValue: 0.5, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
-            ])
-        ).start();
-    }, []);
 
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
         UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -65,46 +51,49 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
     useEffect(() => {
         const fetchMembers = async () => {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
+                const {
+                    data: { user },
+                } = await supabase.auth.getUser();
                 if (user) {
-                    const { data: userData } = await supabase.from('users').select('church_id').eq('id', user.id).single();
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('church_id')
+                        .eq('id', user.id)
+                        .single();
                     if (userData?.church_id) {
-                        const { data: churchMembers } = await supabase.from('users')
-                            .select('id, username').eq('church_id', userData.church_id).order('username');
+                        const { data: churchMembers } = await supabase
+                            .from('users')
+                            .select('id, username')
+                            .eq('church_id', userData.church_id)
+                            .order('username');
                         if (churchMembers) setMembers(churchMembers);
                     }
                 }
-            } catch (e) { console.error('Error fetching members', e); }
+            } catch (e) {
+                console.error('Error fetching members', e);
+            }
         };
         fetchMembers();
     }, []);
 
-    useEffect(() => {
-        // Sync the word pool whenever words arrive OR duration changes
-        shuffleAndPick(gameDuration);
-    }, [totalPool, gameDuration]);
-
-    const toggleMember = (id: string) => {
-        setSelectedMembers(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
-    };
-
     const getWordsCount = (dur: number) => {
         if (dur <= 60) return 20;
         if (dur <= 90) return 30;
-        if (dur <= 120) return 45;
-        return 65; // Increased significantly for 3 mins
+        return 45;
     };
 
     const shuffleAndPick = (dur?: number) => {
-        if (!totalPool || totalPool.length === 0) return;
+        const sourcePool =
+            totalPool && totalPool.length > 0
+                ? totalPool
+                : categoryObj?.words || [];
+        if (sourcePool.length === 0) return;
         const activeDuration = dur ?? gameDuration;
 
-        let pool = [...totalPool];
-
-        // Filter by difficulty if provided
+        let pool = [...sourcePool];
         if (difficulty) {
             pool = pool.filter((item: any) => {
-                const itemDiff = typeof item === 'string' ? 1 : (item.difficulty || 1);
+                const itemDiff = typeof item === 'string' ? 1 : item.difficulty || 1;
                 return itemDiff === difficulty;
             });
         }
@@ -114,352 +103,370 @@ export const WordPreviewScreen = ({ navigation, route }: any) => {
             [pool[i], pool[j]] = [pool[j], pool[i]];
         }
 
-        // Respect duration-based count even if difficulty is set, especially for Charadas
         const targetCount = getWordsCount(activeDuration);
         const target = Math.min(targetCount, pool.length);
         setDisplayedWords(pool.slice(0, target));
 
-        // Spin shuffle icon
         shuffleSpin.setValue(0);
         Animated.timing(shuffleSpin, {
-            toValue: 1, duration: 400, useNativeDriver: true, easing: Easing.out(Easing.ease)
+            toValue: 1,
+            duration: 380,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.ease),
         }).start();
+    };
+
+    useEffect(() => {
+        shuffleAndPick(gameDuration);
+    }, [totalPool, gameDuration]);
+
+    const toggleMember = (id: string) => {
+        setSelectedMembers(prev =>
+            prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
+        );
     };
 
     const startGame = () => {
         if (hasStarted) return;
         setHasStarted(true);
         navigation.navigate('Game', {
-            category, categoryObj, words: displayedWords,
-            duration: gameDuration, playingMembers: selectedMembers
+            category,
+            categoryObj,
+            words: displayedWords,
+            duration: gameDuration,
+            playingMembers: selectedMembers,
         });
     };
 
     const durations = [
-        { seconds: 60, label: '1 MIN' },
+        { seconds: 60, label: '1 min' },
         { seconds: 90, label: '1:30' },
-        { seconds: 120, label: '2 MIN' },
-        { seconds: 180, label: '3 MIN' },
+        { seconds: 120, label: '2 min' },
     ];
 
-    const spinDeg = shuffleSpin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-    const glowOpacity = glowAnim.interpolate({ inputRange: [0.5, 1], outputRange: [0.4, 0.9] });
-
-    const formatDuration = (s: number) =>
-        s >= 60 ? `${Math.floor(s / 60)}:${s % 60 === 0 ? '00' : String(s % 60).padStart(2, '0')}` : `${s}s`;
-
-    // Colorimetry
-    const themeGradients = categoryObj?.gradientColors || ["#D1E2DA", "#D1E2DA", "#D1E2DA"];
-    const primaryColor = theme.colors.primary;
+    const spinDeg = shuffleSpin.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
 
     return (
-        <View style={s.root}>
-            <GlassBackground />
-            {/* ── Hero gradient background ── */}
-
-
-
-            {/* Decorative glow orb */}
-            <Animated.View style={[s.glowOrb, { opacity: glowOpacity, backgroundColor: primaryColor }]} />
-
+        <View style={[s.container, { paddingTop: insets.top }]}>
             <ScrollView
-                contentContainerStyle={[s.scroll, { paddingTop: insets.top + 8 }]}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={[s.page, { paddingBottom: insets.bottom + 110 }]}
             >
-                {/* ── Hero Header ── */}
-                <View style={s.heroRow}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} activeOpacity={0.7}>
-                        <Ionicons name="arrow-back" size={20} color="#636477" />
-                    </TouchableOpacity>
-
-                    <View style={s.heroCenter}>
-                        <AppText style={[s.categoryName, { color: primaryColor }]} numberOfLines={1}>{category}</AppText>
-                        <View style={[s.wordCountBadge, { backgroundColor: primaryColor + '20' }]}>
-                            <Ionicons name="layers" size={12} color={primaryColor} />
-                            <AppText style={[s.wordCountText, { color: primaryColor }]}>{displayedWords.length} PALABRAS</AppText>
-                        </View>
-                    </View>
-
+                {/* Header limpio */}
+                <View style={s.topBar}>
                     <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Volver"
+                        onPress={() => navigation.goBack()}
+                        style={s.navBtn}
+                    >
+                        <Ionicons name="chevron-back" size={20} color="#1B1E23" />
+                    </TouchableOpacity>
+                    <AppText style={s.topEyebrow}>CHARADAS</AppText>
+                    <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Mezclar palabras"
                         onPress={() => shuffleAndPick(gameDuration)}
-                        style={[s.shuffleBtn, { backgroundColor: primaryColor + '20' }]}
-                        activeOpacity={0.8}
+                        style={s.shuffleBtn}
                     >
                         <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
-                            <Ionicons name="shuffle" size={20} color={primaryColor} />
+                            <Ionicons name="shuffle" size={18} color="#1E3A5F" />
                         </Animated.View>
                     </TouchableOpacity>
                 </View>
 
-                {/* ── Duration selector ── */}
-                <View style={s.section}>
-                    <View style={s.sectionHead}>
-                        <Ionicons name="timer" size={14} color={primaryColor} />
-                        <AppText style={s.sectionLabel}>DURACIÓN DEL JUEGO</AppText>
+                {/* Tarjeta principal oro champán */}
+                <View style={s.heroCard}>
+                    <View style={s.heroRow}>
+                        <View style={{ flex: 1 }}>
+                            <AppText style={s.heroTitle} numberOfLines={2}>
+                                {category}
+                            </AppText>
+                            <AppText style={s.heroMeta}>
+                                {displayedWords.length} palabras
+                            </AppText>
+                        </View>
+                        <EditorialDoodle kind="charades" tint="#FFFFFF" size={60} />
                     </View>
+                </View>
+
+                {/* Duración (máximo 3 botones) */}
+                <View style={s.section}>
+                    <AppText style={s.sectionLabel}>Duración</AppText>
                     <View style={s.durationRow}>
                         {durations.map(({ seconds, label }) => {
                             const active = gameDuration === seconds;
                             return (
-                                <TouchableOpacity
+                                <Pressable
                                     key={seconds}
-                                    style={[s.durBtn, active && s.durBtnActive]}
+                                    accessibilityRole="button"
                                     onPress={() => {
                                         setGameDuration(seconds);
                                         shuffleAndPick(seconds);
                                     }}
-                                    activeOpacity={0.75}
+                                    style={({ pressed }) => [
+                                        s.durPill,
+                                        active && s.durPillActive,
+                                        pressed && s.pressed,
+                                    ]}
                                 >
-                                    {active ? (
-                                        <LinearGradient colors={[primaryColor, primaryColor]} style={s.durBtnGrad}>
-                                            <AppText style={[s.durTextActive, { color: "#FFFFFF" }]}>{label}</AppText>
-                                        </LinearGradient>
-                                    ) : (
-                                        <AppText style={s.durText}>{label}</AppText>
-                                    )}
-                                </TouchableOpacity>
+                                    <AppText style={[s.durText, active && s.durTextActive]}>
+                                        {label}
+                                    </AppText>
+                                </Pressable>
                             );
                         })}
                     </View>
                 </View>
 
-                {/* ── Words grid ── */}
+                {/* Vista previa compacta de palabras */}
                 <View style={s.section}>
-                    <View style={s.sectionHead}>
-                        <Ionicons name="game-controller" size={14} color={primaryColor} />
-                        <AppText style={s.sectionLabel}>PALABRAS DE ESTA RONDA</AppText>
-                        <View style={s.countBadge}>
-                            <AppText style={s.countBadgeText}>{displayedWords.length}</AppText>
-                        </View>
-                    </View>
-                    {totalPool.length < getWordsCount(gameDuration) && (
-                        <View style={s.limitWarning}>
-                            <Ionicons name="information-circle-outline" size={14} color="#636477" />
-                            <AppText style={s.limitWarningText}>
-                                Esta categoría tiene pocas palabras ({totalPool.length}). Jugando con todas.
-                            </AppText>
-                        </View>
-                    )}
+                    <AppText style={s.sectionLabel}>Palabras</AppText>
                     <View style={s.wordsGrid}>
                         {displayedWords.map((item, index) => {
                             const wordText = typeof item === 'string' ? item : item.word;
                             return (
-                                <View
-                                    key={index}
-                                    style={[s.chip, {
-                                        backgroundColor: "rgba(255,255,255,0.48)",
-                                        borderColor: primaryColor + '40'
-                                    }]}
-                                >
-                                    <AppText style={[s.chipText, { color: "#2D3043" }]} numberOfLines={1} adjustsFontSizeToFit>
+                                <View key={index} style={s.wordChip}>
+                                    <AppText style={s.wordText} numberOfLines={1}>
                                         {wordText}
                                     </AppText>
                                 </View>
                             );
                         })}
                         {displayedWords.length === 0 && (
-                            <View style={s.emptyWords}>
-                                <Ionicons name="alert-circle-outline" size={32} color="#636477" />
-                                <AppText style={s.emptyText}>Sin palabras disponibles</AppText>
-                            </View>
+                            <AppText style={s.emptyText}>Sin palabras disponibles</AppText>
                         )}
                     </View>
                 </View>
 
-                {/* ── Who's playing ── */}
+                {/* Quién juega (solo si hay miembros) */}
                 {members.length > 0 && (
                     <View style={s.section}>
-                        <TouchableOpacity
-                            style={s.membersToggle}
+                        <Pressable
+                            accessibilityRole="button"
                             onPress={() => setShowMembers(!showMembers)}
-                            activeOpacity={0.8}
+                            style={s.membersToggle}
                         >
-                            <Ionicons name="people" size={14} color={primaryColor} />
-                            <AppText style={[s.sectionLabel, { flex: 1 }]}>¿QUIÉN JUEGA?</AppText>
+                            <AppText style={s.sectionLabel}>Jugadores</AppText>
                             <Ionicons
                                 name={showMembers ? 'chevron-up' : 'chevron-down'}
-                                size={16} color="#636477"
+                                size={18}
+                                color="#5B6573"
                             />
-                        </TouchableOpacity>
+                        </Pressable>
 
                         {showMembers && (
-                            <View style={[s.wordsGrid, { marginTop: 12 }]}>
+                            <View style={s.wordsGrid}>
                                 {members.map(member => {
                                     const active = selectedMembers.includes(member.id);
                                     return (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={member.id}
-                                            style={[s.memberChip, active && s.memberChipActive]}
                                             onPress={() => toggleMember(member.id)}
-                                            activeOpacity={0.8}
+                                            style={[s.memberChip, active && s.memberChipActive]}
                                         >
-                                            {active && <Ionicons name="checkmark-circle" size={13} color={GOLD} style={{ marginRight: 4 }} />}
-                                            <AppText style={[s.memberText, active && { color: GOLD }]}>
+                                            <AppText
+                                                style={[
+                                                    s.memberText,
+                                                    active && { color: '#1B1E23', fontWeight: '800' },
+                                                ]}
+                                            >
                                                 {member.username}
                                             </AppText>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     );
                                 })}
                             </View>
                         )}
                     </View>
                 )}
-
-                <View style={{ height: 130 }} />
             </ScrollView>
 
-            {/* ── Fixed CTA ── */}
-            <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
-                <TouchableOpacity
-                    style={[s.startBtn, hasStarted && { opacity: 0.6 }]}
+            {/* CTA fijo abajo */}
+            <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+                <Pressable
+                    accessibilityRole="button"
+                    disabled={hasStarted || displayedWords.length === 0}
                     onPress={startGame}
-                    activeOpacity={0.88}
-                    disabled={hasStarted}
+                    style={({ pressed }) => [
+                        s.startBtn,
+                        (hasStarted || displayedWords.length === 0) && { opacity: 0.5 },
+                        pressed && s.pressed,
+                    ]}
                 >
-                    <LinearGradient
-                        colors={[primaryColor, primaryColor]}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                        style={s.startBtnInner}
-                    >
-                        <Ionicons name="play-circle" size={26} color="#2D3043" />
-                        <View style={{ alignItems: 'center' }}>
-                            <AppText style={[s.startBtnText, { color: "#FFFFFF" }]}>INICIAR JUEGO</AppText>
-                            <AppText style={[s.startBtnSub, { color: "#FFFFFFCC" }]}>{formatDuration(gameDuration)} · {displayedWords.length} palabras</AppText>
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
+                    <AppText style={s.startBtnText}>Empezar</AppText>
+                    <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                </Pressable>
             </View>
         </View>
     );
 };
 
 const s = StyleSheet.create({
-    root: { flex: 1, backgroundColor: "#EAE5E0" },
-    scroll: { paddingHorizontal: 16, paddingBottom: 20 },
-
-    // Glow orb
-    glowOrb: {
-        position: 'absolute', top: -80, left: SW / 2 - 150,
-        width: 300, height: 300, borderRadius: 150,
-        // color is set dynamically in the component
-        opacity: 0.18,
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
     },
-
-    // Hero
-    heroRow: {
-        flexDirection: 'row', alignItems: 'center',
-        marginBottom: 24, paddingTop: 8,
+    page: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        gap: 20,
     },
-    backBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: "rgba(255,255,255,0.48)",
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: BORDER,
+    topBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
-    heroCenter: { flex: 1, alignItems: 'center' },
-    categoryGradientText: {
-        borderRadius: 8, paddingHorizontal: 4,
+    navBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#F3F7F6',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    categoryName: {
-        fontSize: 22, fontWeight: '900', letterSpacing: 0.5,
-        color: "#2D3043", // overridden visually by gradient bg on text
-        includeFontPadding: false,
-        lineHeight: 28,
-        paddingTop: 2,
-    },
-    wordCountBadge: {
-        flexDirection: 'row', alignItems: 'center', gap: 4,
-        marginTop: 4,
-    },
-    wordCountText: {
-        color: GOLD, fontSize: 10, fontWeight: '800', letterSpacing: 1.5,
+    topEyebrow: {
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 1.5,
+        color: '#3D8A7B',
     },
     shuffleBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: "rgba(11,138,94,0.1)",
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1, borderColor: "rgba(11,138,94,0.25)",
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#DCECE8',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-
-    // Sections
+    heroCard: {
+        borderRadius: 28,
+        padding: 22,
+        backgroundColor: '#DCECE8',
+    },
+    heroRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+    },
+    heroTitle: {
+        fontSize: 22,
+        lineHeight: 28,
+        fontWeight: '800',
+        color: '#1B1E23',
+        letterSpacing: -0.5,
+    },
+    heroMeta: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#3D8A7B',
+        marginTop: 4,
+    },
     section: {
-        backgroundColor: "rgba(255,255,255,0.48)",
-        borderRadius: 22, padding: 16,
-        borderWidth: 1, borderColor: BORDER,
-        marginBottom: 14,
-    },
-    sectionHead: {
-        flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14,
+        gap: 10,
     },
     sectionLabel: {
-        color: "#636477", fontSize: 10, fontWeight: '800', letterSpacing: 1.5,
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#1B1E23',
     },
-    countBadge: {
-        marginLeft: 'auto',
-        backgroundColor: "rgba(11,138,94,0.12)",
-        paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10,
-        borderWidth: 1, borderColor: "rgba(11,138,94,0.25)",
+    durationRow: {
+        flexDirection: 'row',
+        gap: 10,
     },
-    countBadgeText: { color: GOLD, fontSize: 12, fontWeight: '900' },
-
-    // Duration
-    durationRow: { flexDirection: 'row', gap: 8 },
-    durBtn: {
-        flex: 1, borderRadius: 14, overflow: 'hidden',
-        borderWidth: 1, borderColor: BORDER,
-        backgroundColor: "rgba(255,255,255,0.48)",
-        minHeight: 46, alignItems: 'center', justifyContent: 'center',
+    durPill: {
+        flex: 1,
+        paddingVertical: 13,
+        borderRadius: 18,
+        backgroundColor: '#F6F8FA',
+        alignItems: 'center',
     },
-    durBtnActive: { borderColor: GOLD },
-    durBtnGrad: { width: '100%', paddingVertical: 13, alignItems: 'center' },
-    durText: { color: "#636477", fontWeight: '800', fontSize: 12 },
-    durTextActive: { color: "#2D3043", fontWeight: '900', fontSize: 12 },
-
-    // Words
-    wordsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-    chip: {
-        paddingVertical: 8, paddingHorizontal: 13, borderRadius: 12,
-        borderWidth: 1,
+    durPillActive: {
+        backgroundColor: '#1E3A5F',
     },
-    chipText: { fontSize: 13, fontWeight: '700' },
-    emptyWords: { alignItems: 'center', width: '100%', paddingVertical: 30, gap: 10 },
-    emptyText: { color: "#636477", fontSize: 14 },
-
-    // Members
-    membersToggle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    durText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#5B6573',
+    },
+    durTextActive: {
+        color: '#FFFFFF',
+        fontWeight: '800',
+    },
+    wordsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    wordChip: {
+        paddingHorizontal: 13,
+        paddingVertical: 8,
+        borderRadius: 14,
+        backgroundColor: '#F6F8FA',
+    },
+    wordText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#1B1E23',
+    },
+    emptyText: {
+        color: '#6E7785',
+        fontSize: 14,
+    },
+    membersToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 4,
+    },
     memberChip: {
-        flexDirection: 'row', alignItems: 'center',
-        paddingVertical: 8, paddingHorizontal: 13, borderRadius: 20,
-        backgroundColor: "rgba(255,255,255,0.48)",
-        borderWidth: 1, borderColor: BORDER,
+        paddingHorizontal: 13,
+        paddingVertical: 8,
+        borderRadius: 14,
+        backgroundColor: '#F6F8FA',
     },
     memberChipActive: {
-        backgroundColor: "rgba(11,138,94,0.08)",
-        borderColor: "rgba(11,138,94,0.35)",
+        backgroundColor: '#DCECE8',
     },
-    memberText: { color: "#636477", fontSize: 13, fontWeight: '700' },
-
-    // Footer CTA
+    memberText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#5B6573',
+    },
     footer: {
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        paddingHorizontal: 16, paddingTop: 12,
-        backgroundColor: "rgba(229,224,233,0.94)",
-        borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.82)",
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        backgroundColor: 'rgba(255,255,255,0.92)',
     },
-    startBtn: { borderRadius: 20, overflow: 'hidden' },
-    startBtnInner: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 18, gap: 14,
+    startBtn: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        height: 54,
+        borderRadius: 27,
+        backgroundColor: '#1E3A5F',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
     },
-    startBtnText: { color: "#2D3043", fontSize: 18, fontWeight: '900', letterSpacing: 1.5, includeFontPadding: false },
-    startBtnSub: { color: "#636477", fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 2 },
-
-    // Warning
-    limitWarning: {
-        flexDirection: 'row', alignItems: 'center', gap: 6,
-        backgroundColor: 'rgba(255,165,0,0.05)',
-        padding: 8, borderRadius: 10, marginBottom: 16,
-        borderWidth: 1, borderColor: 'rgba(255,165,0,0.15)',
+    startBtnText: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#FFFFFF',
     },
-    limitWarningText: { color: "#636477", fontSize: 11, fontWeight: '600' },
+    pressed: {
+        opacity: 0.88,
+        transform: [{ scale: 0.985 }],
+    },
 });

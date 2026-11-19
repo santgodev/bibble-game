@@ -1,24 +1,35 @@
-import { GlassBackground } from '../components/Glass';
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    StatusBar, ActivityIndicator
+    Pressable, ScrollView, StyleSheet, View, StatusBar, ActivityIndicator
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../lib/supabase';
-import { StudyPath, StudyWeek, StudyNode } from '../data/studyPaths';
 import { useIsFocused } from '@react-navigation/native';
+import { AppText } from '../components';
+import { supabase } from '../lib/supabase';
+import { StudyPath, StudyNode } from '../data/studyPaths';
+import { useSound } from '../context/SoundContext';
+
+const BG = '#FFFFFF';
+const SURFACE = '#F6F8FA';
+const INK = '#1B1E23';
+const MUTED = '#5B6573';
+const NAVY = '#1E3A5F';
+const EUCALIPTO = '#2E6F65';
+const EUCALIPTO_SOFT = '#DCECE8';
+const ACUARELA_SOFT = '#D6E8F8';
+const ORO = '#8A6408';
+const ORO_SOFT = '#FBF2D0';
 
 export const StudyMissionsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const isFocused = useIsFocused();
+    const { playSound, playHaptic } = useSound();
     const { path }: { path: StudyPath } = route.params;
 
     const [loading, setLoading] = useState(true);
     const [completedSet, setCompletedSet] = useState<Set<string>>(new Set());
 
-    // Flatten logic to easily know prev/next
     const allNodes: StudyNode[] = path.weeks.flatMap(w => w.nodes);
 
     useEffect(() => {
@@ -52,211 +63,222 @@ export const StudyMissionsScreen = ({ navigation, route }: any) => {
 
     const isNodeUnlocked = (nodeId: string) => {
         const index = allNodes.findIndex(n => n.id === nodeId);
-        if (index === 0) return true; // First node always unlocked
+        if (index === 0) return true;
         const prevNode = allNodes[index - 1];
         return completedSet.has(prevNode.id);
     };
 
     const handlePressNode = (node: StudyNode) => {
         if (!isNodeUnlocked(node.id)) return;
+        playSound('select');
+        playHaptic('selection');
         navigation.navigate('StudyDevotional', { node, path });
     };
 
-    const getNodeColor = (type: string) => {
+    const getNodeStyle = (type: string) => {
         switch (type) {
-            case 'intro': return '#8FCA97';
-            case 'devotional': return '#E67E22';
-            case 'practice': return '#8FCA97';
-            case 'quiz': return '#F1C40F';
-            default: return path.accentColor;
-        }
-    };
-
-    const getNodeIcon = (type: string) => {
-        switch (type) {
-            case 'intro': return 'book';
-            case 'devotional': return 'sunny';
-            case 'practice': return 'color-palette';
-            case 'quiz': return 'trophy';
-            default: return 'ellipse';
+            case 'intro':
+                return { bg: EUCALIPTO_SOFT, fg: EUCALIPTO, icon: 'book-outline' as const };
+            case 'devotional':
+                return { bg: ACUARELA_SOFT, fg: NAVY, icon: 'sunny-outline' as const };
+            case 'practice':
+                return { bg: EUCALIPTO_SOFT, fg: EUCALIPTO, icon: 'compass-outline' as const };
+            case 'quiz':
+                return { bg: ORO_SOFT, fg: ORO, icon: 'trophy-outline' as const };
+            default:
+                return { bg: SURFACE, fg: NAVY, icon: 'ellipse-outline' as const };
         }
     };
 
     if (loading) {
         return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-            <GlassBackground />
-                <ActivityIndicator size="large" color={path.accentColor} />
+            <View style={[s.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <StatusBar barStyle="dark-content" />
+                <ActivityIndicator size="large" color={NAVY} />
             </View>
         );
     }
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <GlassBackground />
-            <StatusBar barStyle="dark-content" backgroundColor="#EAE5E0" />
+        <View style={[s.container, { paddingTop: insets.top }]}>
+            <StatusBar barStyle="dark-content" />
 
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#2D3043" />
-                </TouchableOpacity>
-                <View style={{ flex: 1, paddingHorizontal: 16 }}>
-                    <Text style={[styles.headerSub, { color: path.accentColor }]}>{path.book}</Text>
-                    <Text style={styles.headerTitle} numberOfLines={1}>{path.title}</Text>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[s.page, { paddingBottom: insets.bottom + 36 }]}
+            >
+                <View style={s.header}>
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Volver"
+                        onPress={() => {
+                            playSound('tap');
+                            navigation.goBack();
+                        }}
+                        style={({ pressed }) => [s.backBtn, pressed && s.pressed]}
+                    >
+                        <Ionicons name="arrow-back" size={20} color={INK} />
+                    </Pressable>
+                    <View style={{ flex: 1 }}>
+                        <AppText style={s.eyebrow}>{path.book.toUpperCase()}</AppText>
+                        <AppText style={s.title} numberOfLines={1}>{path.title}</AppText>
+                    </View>
                 </View>
-                <View style={styles.iconBtn}>
-                    <Ionicons name={path.iconName as any} size={20} color={path.accentColor} />
-                </View>
-            </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {path.weeks.map((week, wIndex) => (
-                    <View key={week.id} style={styles.weekContainer}>
-                        {/* Week Header */}
-                        <View style={styles.weekHeader}>
-                            <View style={[styles.weekLabelBox, { backgroundColor: path.accentColor + '20' }]}>
-                                <Text style={[styles.weekLabel, { color: path.accentColor }]}>
-                                    UNIDAD {week.weekNumber}
-                                </Text>
+                {path.weeks.map((week) => (
+                    <View key={week.id} style={s.weekContainer}>
+                        <View style={s.weekHeader}>
+                            <View style={s.weekPill}>
+                                <AppText style={s.weekPillText}>UNIDAD {week.weekNumber}</AppText>
                             </View>
-                            <Text style={styles.weekTitle}>{week.title}</Text>
-                            <Text style={styles.weekTheme}>{week.theme}</Text>
+                            <AppText style={s.weekTitle}>{week.title}</AppText>
                         </View>
 
-                        {/* Nodes Line Map */}
-                        <View style={styles.mapContainer}>
-                            {week.nodes.map((node, i) => {
+                        <View style={{ gap: 12 }}>
+                            {week.nodes.map((node) => {
                                 const isDone = completedSet.has(node.id);
                                 const isUnlocked = isNodeUnlocked(node.id);
-                                const isLastInWeek = i === week.nodes.length - 1;
-                                const isFirstInWeek = i === 0;
-
-                                const nColor = getNodeColor(node.type);
-                                const activeColor = isDone ? nColor : (isUnlocked ? nColor : "#C1D3CB");
-                                const bgOpacity = isUnlocked && !isDone ? '20' : '00';
-                                const ringBorder = isUnlocked && !isDone ? activeColor : 'transparent';
-
-                                // Zig Zag Logic
-                                const isLeftAlign = i % 2 === 0;
+                                const tone = getNodeStyle(node.type);
 
                                 return (
-                                    <View key={node.id} style={styles.nodeWrapper}>
-                                        {/* Connector Line UP */}
-                                        {!(wIndex === 0 && isFirstInWeek) && (
-                                            <View style={[styles.connector, {
-                                                backgroundColor: isUnlocked ? "#C1D3CB" : "#C1D3CB",
-                                                top: -24, left: 35
-                                            }]} />
+                                    <Pressable
+                                        key={node.id}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={node.title}
+                                        onPress={() => handlePressNode(node)}
+                                        style={({ pressed }) => [
+                                            s.nodeCard,
+                                            { backgroundColor: isUnlocked ? tone.bg : SURFACE },
+                                            !isUnlocked && s.lockedCard,
+                                            isUnlocked && pressed && s.pressed,
+                                        ]}
+                                    >
+                                        <View style={s.nodeIconBox}>
+                                            <Ionicons
+                                                name={isDone ? 'checkmark-circle' : (isUnlocked ? tone.icon : 'lock-closed-outline')}
+                                                size={22}
+                                                color={isDone ? EUCALIPTO : (isUnlocked ? tone.fg : MUTED)}
+                                            />
+                                        </View>
+
+                                        <View style={{ flex: 1 }}>
+                                            <AppText style={[s.nodeTitle, !isUnlocked && { color: MUTED }]} numberOfLines={2}>
+                                                {node.title}
+                                            </AppText>
+                                            <AppText style={s.nodeMeta}>
+                                                +{node.xpReward} XP · +{node.trophyReward} T
+                                            </AppText>
+                                        </View>
+
+                                        {isUnlocked && (
+                                            <View style={[s.circleBtn, { backgroundColor: isDone ? '#FFFFFF' : NAVY }]}>
+                                                <Ionicons
+                                                    name={isDone ? 'checkmark' : 'arrow-forward'}
+                                                    size={16}
+                                                    color={isDone ? EUCALIPTO : '#FFFFFF'}
+                                                />
+                                            </View>
                                         )}
-
-                                        <TouchableOpacity
-                                            style={styles.nodeItemContainer}
-                                            activeOpacity={isUnlocked ? 0.7 : 1}
-                                            onPress={() => handlePressNode(node)}
-                                        >
-                                            {/* Node Bubble */}
-                                            <View style={[
-                                                styles.nodeBubbleOut,
-                                                { borderColor: ringBorder, opacity: isUnlocked ? 1 : 0.5 }
-                                            ]}>
-                                                <View style={[styles.nodeBubble, { backgroundColor: activeColor }]}>
-                                                    <Ionicons
-                                                        name={isDone ? 'checkmark' : (isUnlocked ? getNodeIcon(node.type) as any : 'lock-closed')}
-                                                        size={24}
-                                                        color={isDone ? "#C1D3CB" : (isUnlocked ? "#2D3043" : '#666')}
-                                                    />
-                                                </View>
-                                            </View>
-
-                                            {/* Node Info Box */}
-                                            <View style={[
-                                                styles.nodeInfoCard,
-                                                { opacity: isUnlocked ? 1 : 0.4 }
-                                            ]}>
-                                                <Text style={[styles.nodeSubtitle, { color: nColor }]}>{node.subtitle}</Text>
-                                                <Text style={styles.nodeTitle} numberOfLines={2}>{node.title}</Text>
-
-                                                <View style={styles.rewardsRow}>
-                                                    <View style={[styles.miniPill, { backgroundColor: "rgba(255,255,255,0.52)" }]}>
-                                                        <Text style={styles.miniPillText}>+{node.xpReward} XP</Text>
-                                                    </View>
-                                                    <View style={[styles.miniPill, { backgroundColor: "rgba(11,138,94,0.1)" }]}>
-                                                        <Text style={[styles.miniPillText, { color: "#68A877" }]}>+{node.trophyReward} T</Text>
-                                                    </View>
-                                                </View>
-                                            </View>
-                                        </TouchableOpacity>
-                                    </View>
+                                    </Pressable>
                                 );
                             })}
                         </View>
                     </View>
                 ))}
-
-                <View style={{ height: 60 }} />
             </ScrollView>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#EAE5E0" },
+const s = StyleSheet.create({
+    container: { flex: 1, backgroundColor: BG },
+    page: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        padding: 20,
+    },
     header: {
-        flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14,
-        borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.82)",
-    },
-    headerSub: { fontSize: 11, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' },
-    headerTitle: { color: "#2D3043", fontSize: 20, fontWeight: '800' },
-    iconBtn: {
-        width: 44, height: 44, borderRadius: 14,
-        backgroundColor: "rgba(255,255,255,0.52)", alignItems: 'center', justifyContent: 'center',
-    },
-    scrollContent: { paddingHorizontal: 20, paddingTop: 30 },
-
-    weekContainer: { marginBottom: 40 },
-    weekHeader: { marginBottom: 20, alignItems: 'flex-start' },
-    weekLabelBox: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 8 },
-    weekLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
-    weekTitle: { color: "#2D3043", fontSize: 24, fontWeight: '900' },
-    weekTheme: { color: "#636477", fontSize: 14, marginTop: 4, fontWeight: '600' },
-
-    mapContainer: {
-        paddingLeft: 10,
-    },
-    nodeWrapper: {
-        position: 'relative',
-        marginBottom: 30, // Space between nodes vertically
-    },
-    connector: {
-        position: 'absolute',
-        width: 3,
-        height: 60,
-        zIndex: -1,
-    },
-    nodeItemContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        position: 'relative',
+        gap: 14,
+        marginBottom: 24,
     },
-    nodeBubbleOut: {
-        width: 74, height: 74, borderRadius: 37,
-        borderWidth: 3, alignItems: 'center', justifyContent: 'center',
-        marginRight: 16,
-    },
-    nodeBubble: {
-        width: 56, height: 56, borderRadius: 28,
-        alignItems: 'center', justifyContent: 'center',
-    },
-
-    nodeInfoCard: {
-        flex: 1, backgroundColor: "rgba(255,255,255,0.52)",
-        borderRadius: 16, padding: 16,
-        borderWidth: 1, borderColor: '#FFFFFFCC',
+    backBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: SURFACE,
+        alignItems: 'center',
         justifyContent: 'center',
     },
-    nodeSubtitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
-    nodeTitle: { color: "#2D3043", fontSize: 15, fontWeight: '700', lineHeight: 20, marginBottom: 10 },
-    rewardsRow: { flexDirection: 'row', gap: 6 },
-    miniPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    miniPillText: { color: "#636477", fontSize: 10, fontWeight: '800' },
+    eyebrow: {
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 1.4,
+        color: EUCALIPTO,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: INK,
+        marginTop: 2,
+    },
+    weekContainer: { marginBottom: 28 },
+    weekHeader: { marginBottom: 12, gap: 6, alignItems: 'flex-start' },
+    weekPill: {
+        backgroundColor: SURFACE,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12,
+    },
+    weekPillText: {
+        color: NAVY,
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 0.8,
+    },
+    weekTitle: {
+        color: INK,
+        fontSize: 20,
+        fontWeight: '800',
+    },
+    nodeCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 22,
+        padding: 18,
+        gap: 14,
+        shadowColor: NAVY,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.06,
+        shadowRadius: 14,
+        elevation: 2,
+    },
+    lockedCard: {
+        shadowOpacity: 0,
+        elevation: 0,
+        opacity: 0.72,
+    },
+    pressed: {
+        transform: [{ scale: 0.985 }],
+        opacity: 0.94,
+    },
+    nodeIconBox: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    nodeTitle: { color: INK, fontSize: 16, fontWeight: '800', lineHeight: 22 },
+    nodeMeta: { color: MUTED, fontSize: 12, fontWeight: '600', marginTop: 3 },
+    circleBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 });

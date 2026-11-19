@@ -10,6 +10,13 @@
  */
 export const SUPABASE_ENABLED = false;
 
+// ⚠️ PENDIENTE IMPORTANTE: reconectar Supabase. Checklist completo en TODO-SUPABASE.md (raíz del proyecto).
+// Este aviso aparece en la consola de desarrollo mientras SUPABASE_ENABLED sea false.
+declare const __DEV__: boolean;
+if (!SUPABASE_ENABLED && typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.warn('[PENDIENTE IMPORTANTE] Supabase está DESCONECTADO (modo offline). Ver TODO-SUPABASE.md');
+}
+
 const OFFLINE_ERROR = null;
 
 // Query builder encadenable (from().select().eq()...) que al hacer await devuelve vacío.

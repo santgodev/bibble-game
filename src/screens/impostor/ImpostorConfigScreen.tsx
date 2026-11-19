@@ -1,14 +1,20 @@
-import { GlassSheen } from '../../components/Glass';
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Animated, TextInput } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Container, AppText, Button } from '../../components';
+import React, { useEffect, useState } from 'react';
+import {
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../theme';
-import { Category, getCategories } from '../../data/categories';
-import { useFocusEffect } from '@react-navigation/native';
-import { supabase } from '../../lib/supabase';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppText } from '../../components';
+import { Category, getCategories } from '../../data/categories';
+import { supabase } from '../../lib/supabase';
+import { EditorialDoodle } from '../../trivia/components/EditorialDoodle';
 
 const STORAGE_KEY_PLAYERS = '@impostor_players_v1';
 const STORAGE_KEY_ANON = '@impostor_anon_v1';
@@ -19,15 +25,15 @@ const STORAGE_KEY_DIFF = '@impostor_diff_v1';
 const STORAGE_KEY_CATEGORIES = '@impostor_cats_v1';
 
 export const ImpostorConfigScreen = ({ navigation, route }: any) => {
+    const insets = useSafeAreaInsets();
     const [impostors, setImpostors] = useState(1);
     const [hintEnabled, setHintEnabled] = useState(true);
     const [durationMinutes, setDurationMinutes] = useState(5);
-    const [difficulty, setDifficulty] = useState(1); // 1: Semilla, 2: Discípulo, 3: Apóstol
+    const [difficulty, setDifficulty] = useState(1);
 
-    // Church and Anonymous Players
     const [churchMembers, setChurchMembers] = useState<any[]>([]);
     const [selectedMembers, setSelectedMembers] = useState<any[]>([]);
-    const [anonPlayersList, setAnonPlayersList] = useState<{ id: string, name: string }[]>([]);
+    const [anonPlayersList, setAnonPlayersList] = useState<{ id: string; name: string }[]>([]);
 
     const totalPlayers = selectedMembers.length + anonPlayersList.length;
 
@@ -36,13 +42,17 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
 
     const loadConfig = async () => {
         try {
-            // 1. Fetch Church members first
             const { data: { user } } = await supabase.auth.getUser();
             let membersData: any[] = [];
             if (user) {
-                const { data: userData } = await supabase.from('users').select('church_id').eq('id', user.id).single();
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('church_id')
+                    .eq('id', user.id)
+                    .single();
                 if (userData?.church_id) {
-                    const { data: churchMembersRows } = await supabase.from('users')
+                    const { data: churchMembersRows } = await supabase
+                        .from('users')
                         .select('id, username')
                         .eq('church_id', userData.church_id)
                         .order('username');
@@ -53,15 +63,22 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                 }
             }
 
-            // 2. Load stored config
-            const [storedSelected, storedAnon, storedDur, storedImp, storedHints, storedDiff, storedCats] = await Promise.all([
+            const [
+                storedSelected,
+                storedAnon,
+                storedDur,
+                storedImp,
+                storedHints,
+                storedDiff,
+                storedCats,
+            ] = await Promise.all([
                 AsyncStorage.getItem(STORAGE_KEY_PLAYERS),
                 AsyncStorage.getItem(STORAGE_KEY_ANON),
                 AsyncStorage.getItem(STORAGE_KEY_DURATION),
                 AsyncStorage.getItem(STORAGE_KEY_IMPOSTORS),
                 AsyncStorage.getItem(STORAGE_KEY_HINTS),
                 AsyncStorage.getItem(STORAGE_KEY_DIFF),
-                AsyncStorage.getItem(STORAGE_KEY_CATEGORIES)
+                AsyncStorage.getItem(STORAGE_KEY_CATEGORIES),
             ]);
 
             if (storedSelected && membersData.length > 0) {
@@ -70,12 +87,11 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                 setSelectedMembers(valid);
             }
             if (storedAnon) setAnonPlayersList(JSON.parse(storedAnon));
-            if (storedDur) setDurationMinutes(parseInt(storedDur));
-            if (storedImp) setImpostors(parseInt(storedImp));
+            if (storedDur) setDurationMinutes(parseInt(storedDur, 10));
+            if (storedImp) setImpostors(parseInt(storedImp, 10));
             if (storedHints) setHintEnabled(storedHints === 'true');
-            if (storedDiff) setDifficulty(parseInt(storedDiff));
+            if (storedDiff) setDifficulty(parseInt(storedDiff, 10));
             if (storedCats && !route.params?.selectedCategories) {
-                // Solo conservar paquetes que aún existen (evita categorías viejas guardadas)
                 const valid = await getCategories('impostor');
                 const fresh = (JSON.parse(storedCats) as Category[])
                     .map(sc => valid.find(v => v.id === sc.id))
@@ -87,25 +103,24 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
             setIsConfigLoaded(true);
         } catch (error) {
             console.error('Error in loadConfig', error);
-            setIsConfigLoaded(true); // Allow saving even if load fails to avoid blocking the user
+            setIsConfigLoaded(true);
         }
     };
 
-    // Load only once on mount
     useEffect(() => {
         loadConfig();
     }, []);
 
-    // Also handle category updates from navigation
     useEffect(() => {
         if (route.params?.selectedCategories) {
             setSelectedCategories(route.params.selectedCategories);
-            // Immediately save categories when they come back from selection
-            AsyncStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(route.params.selectedCategories));
+            AsyncStorage.setItem(
+                STORAGE_KEY_CATEGORIES,
+                JSON.stringify(route.params.selectedCategories)
+            );
         }
     }, [route.params?.selectedCategories]);
 
-    // Robust saving: Only save if initial load is finished
     useEffect(() => {
         if (!isConfigLoaded) return;
         AsyncStorage.setItem(STORAGE_KEY_PLAYERS, JSON.stringify(selectedMembers));
@@ -146,7 +161,7 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
 
     const addAnonPlayer = () => {
         const newId = `anon_${Date.now()}`;
-        setAnonPlayersList(prev => [...prev, { id: newId, name: `Anónimo ${prev.length + 1}` }]);
+        setAnonPlayersList(prev => [...prev, { id: newId, name: `Jugador ${prev.length + 1}` }]);
     };
 
     const removeAnonPlayer = (id: string) => {
@@ -154,17 +169,17 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
     };
 
     const updateAnonName = (id: string, newName: string) => {
-        setAnonPlayersList(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
+        setAnonPlayersList(prev => prev.map(p => (p.id === id ? { ...p, name: newName } : p)));
     };
 
     const handleStartGame = () => {
         if (selectedCategories.length === 0) {
-            alert("Por favor selecciona al menos un paquete de palabras.");
+            Alert.alert('Falta tema', 'Selecciona al menos un paquete de palabras.');
             return;
         }
 
         if (totalPlayers < 3) {
-            alert("Se necesitan al menos 3 participantes en total.");
+            Alert.alert('Faltan jugadores', 'Se necesitan al menos 3 participantes.');
             return;
         }
 
@@ -175,17 +190,16 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
                 id: m.id,
                 username: m.username,
                 avatar: m.avatar_url || `https://api.dicebear.com/7.x/avataaars/png?seed=${m.username}`,
-                isRegistered: true
+                isRegistered: true,
             })),
             ...anonPlayersList.map(a => ({
                 id: a.id,
                 username: a.name,
                 avatar: `https://api.dicebear.com/7.x/bottts/png?seed=${a.id}`,
-                isRegistered: false
-            }))
+                isRegistered: false,
+            })),
         ];
 
-        // Shuffle player details so roles are completely randomized
         const shuffledPlayers = [...playerDetails].sort(() => Math.random() - 0.5);
 
         navigation.navigate('ImpostorPass', {
@@ -199,434 +213,451 @@ export const ImpostorConfigScreen = ({ navigation, route }: any) => {
         });
     };
 
-    return (
-        <View style={styles.container}>
-            <Container style={{ paddingTop: 14 }} noPadding>
+    const maxImpostors = Math.floor(Math.max(3, totalPlayers) / 2);
 
+    return (
+        <View style={[s.container, { paddingTop: insets.top }]}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[s.page, { paddingBottom: insets.bottom + 110 }]}
+                keyboardShouldPersistTaps="handled"
+            >
                 {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <Ionicons name="arrow-back" size={24} color="#2D3043" />
+                <View style={s.header}>
+                    <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Volver"
+                        onPress={() => navigation.goBack()}
+                        style={s.backBtn}
+                    >
+                        <Ionicons name="chevron-back" size={20} color="#1B1E23" />
                     </TouchableOpacity>
-                    <View style={styles.titleContainer}>
-                        <View style={styles.iconCircle}>
-                            <Ionicons name="glasses" size={32} color="#ff4d4d" />
-                        </View>
-                        <AppText variant="display" style={styles.mainTitle}>Impostor</AppText>
+                    <View style={{ flex: 1 }}>
+                        <AppText style={s.eyebrow}>EL IMPOSTOR</AppText>
+                        <AppText style={s.title}>Configurar sala</AppText>
                     </View>
-                    <View style={{ width: 40 }} />
+                    <EditorialDoodle kind="impostor" tint="#D6E8F8" size={46} />
                 </View>
 
-                <ScrollView contentContainerStyle={styles.scrollContent}>
-
-                    {/* Paquetes Section */}
-                    <TouchableOpacity
-                        style={styles.menuRow}
-                        onPress={() => navigation.navigate('ImpostorCategories', { selectedIds: selectedCategories.map(c => c.id) })}
-                    >
-                        <View style={styles.rowLeft}>
-                            <Ionicons name="albums" size={24} color="#e74c3c" />
-                            <AppText style={styles.rowLabel}>Paquetes</AppText>
+                {/* Paquetes */}
+                <Pressable
+                    accessibilityRole="button"
+                    onPress={() =>
+                        navigation.navigate('ImpostorCategories', {
+                            selectedIds: selectedCategories.map(c => c.id),
+                        })
+                    }
+                    style={({ pressed }) => [s.packagesCard, pressed && s.pressed]}
+                >
+                    <View style={s.rowLeft}>
+                        <View style={s.iconBoxWhite}>
+                            <Ionicons name="albums-outline" size={20} color="#1E3A5F" />
                         </View>
-                        <View style={styles.rowRight}>
-                            <AppText style={styles.rowValue}>
-                                {selectedCategories.length === 0 ? "Ninguno" : `${selectedCategories.length} Paquetes`}
+                        <AppText style={s.packagesTitle}>Paquetes</AppText>
+                    </View>
+                    <View style={s.rowRight}>
+                        <View style={s.countBadge}>
+                            <AppText style={s.countBadgeText}>
+                                {selectedCategories.length === 0 ? 'Elegir' : `${selectedCategories.length}`}
                             </AppText>
-                            <Ionicons name="chevron-forward" size={20} color="#636477" style={{ marginLeft: 10 }} />
                         </View>
-                    </TouchableOpacity>
-
-                    {/* Players config */}
-                    <View style={styles.menuRowCol}>
-                    <GlassSheen />
-                        <View style={styles.rowLeft}>
-                            <Ionicons name="people" size={24} color="#e74c3c" />
-                            <AppText style={styles.rowLabel}>Participantes</AppText>
-                        </View>
-                        <AppText style={styles.helpText}>Agrega a los jugadores que van a participar (mínimo 3):</AppText>
-
-                        {churchMembers.length > 0 ? (
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.membersScroll}>
-                                {churchMembers.map(member => {
-                                    const isSelected = selectedMembers.some(m => m.id === member.id);
-                                    return (
-                                        <TouchableOpacity
-                                            key={member.id}
-                                            style={[styles.memberTag, isSelected && styles.memberTagSelected]}
-                                            onPress={() => toggleMember(member)}
-                                        >
-                                            <AppText style={[styles.memberText, isSelected && styles.memberTextSelected]}>{member.username}</AppText>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </ScrollView>
-                        ) : (
-                            null
-                        )}
-
-                        <View style={styles.anonHeaderRow}>
-                            <AppText style={styles.anonLabel}>Jugadores</AppText>
-                            <TouchableOpacity style={styles.addAnonBtn} onPress={addAnonPlayer}>
-                                <Ionicons name="person-add" size={16} color="#2D3043" />
-                                <AppText style={styles.addAnonText}>Agregar</AppText>
-                            </TouchableOpacity>
-                        </View>
-
-                        {anonPlayersList.map(anon => (
-                            <View key={anon.id} style={styles.anonEditRow}>
-                                <View style={styles.anonAvatarPlaceholder}>
-                                    <Ionicons name="person" size={16} color="#636477" />
-                                </View>
-                                <TextInput
-                                    style={styles.anonInput}
-                                    value={anon.name}
-                                    onChangeText={(val) => updateAnonName(anon.id, val)}
-                                    placeholder="Nombre del jugador"
-                                    placeholderTextColor="#636477"
-                                    selectTextOnFocus
-                                    maxLength={20}
-                                />
-                                <TouchableOpacity onPress={() => removeAnonPlayer(anon.id)} style={styles.removeAnonBtn}>
-                                    <Ionicons name="close-circle" size={24} color="#e74c3c" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-
-                        <AppText style={styles.totalPlayersLabel}>Total de Jugadores: {totalPlayers}</AppText>
+                        <Ionicons name="chevron-forward" size={18} color="#1E3A5F" />
                     </View>
+                </Pressable>
 
-                    {/* Impostors config */}
-                    <View style={styles.menuRow}>
-                        <View style={styles.rowLeft}>
-                            <Ionicons name="person-outline" size={24} color="#e74c3c" />
-                            <AppText style={styles.rowLabel}>Impostores</AppText>
-                        </View>
-                        <View style={styles.stepper}>
-                            <TouchableOpacity onPress={() => setImpostors(Math.max(1, impostors - 1))}>
-                                <Ionicons name="remove-circle" size={30} color={impostors <= 1 ? "#C1D3CB" : '#e74c3c'} />
-                            </TouchableOpacity>
-                            <AppText style={styles.stepperValue}>{impostors}</AppText>
-                            <TouchableOpacity onPress={() => setImpostors(Math.min(Math.floor(Math.max(3, totalPlayers) / 2), impostors + 1))}>
-                                <Ionicons name="add-circle" size={30} color={impostors >= Math.floor(Math.max(3, totalPlayers) / 2) ? "#C1D3CB" : '#e74c3c'} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* Pistas config */}
-                    <View style={styles.menuRow}>
-                        <View style={styles.rowLeft}>
-                            <Ionicons name="search" size={24} color="#f1c40f" />
-                            <AppText style={styles.rowLabel}>Pista Impostores</AppText>
-                        </View>
+                {/* Participantes */}
+                <View style={s.block}>
+                    <View style={s.blockHeader}>
+                        <AppText style={s.blockTitle}>Participantes ({totalPlayers})</AppText>
                         <TouchableOpacity
-                            style={[styles.toggle, hintEnabled ? styles.toggleOn : styles.toggleOff]}
-                            onPress={() => setHintEnabled(!hintEnabled)}
+                            accessibilityRole="button"
+                            onPress={addAnonPlayer}
+                            style={s.addBtn}
                         >
-                            <View style={[styles.toggleThumb, hintEnabled ? styles.thumbOn : styles.thumbOff, { backgroundColor: '#fff' }]} />
+                            <Ionicons name="add" size={16} color="#FFFFFF" />
+                            <AppText style={s.addBtnText}>Añadir</AppText>
                         </TouchableOpacity>
                     </View>
 
-                    {/* Duración */}
-                    <View style={styles.menuRow}>
-                        <View style={styles.rowLeft}>
-                            <Ionicons name="time" size={24} color="#95a5a6" />
-                            <AppText style={styles.rowLabel}>Duración</AppText>
-                        </View>
-                        <View style={styles.stepper}>
-                            <TouchableOpacity onPress={() => setDurationMinutes(Math.max(1, durationMinutes - 1))}>
-                                <Ionicons name="remove-circle" size={30} color={durationMinutes <= 1 ? "#C1D3CB" : '#e74c3c'} />
-                            </TouchableOpacity>
-                            <AppText style={styles.stepperValue}>{durationMinutes} min</AppText>
-                            <TouchableOpacity onPress={() => setDurationMinutes(Math.min(15, durationMinutes + 1))}>
-                                <Ionicons name="add-circle" size={30} color={durationMinutes >= 15 ? "#C1D3CB" : '#e74c3c'} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                </ScrollView>
-
-                {/* Footer Button */}
-                <View style={styles.footer}>
-                    <TouchableOpacity style={styles.startButton} onPress={handleStartGame}>
-                        <LinearGradient
-                            colors={['#C599D7', '#A365B0', '#8453A0']}
-                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                            style={styles.startButtonInner}
+                    {churchMembers.length > 0 && (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={s.membersScroll}
                         >
-                            <Ionicons name="play-circle" size={24} color="#FFFFFF" style={{ marginRight: 10 }} />
-                            <AppText style={styles.startButtonText}>Iniciar Juego</AppText>
-                        </LinearGradient>
+                            {churchMembers.map(member => {
+                                const isSelected = selectedMembers.some(m => m.id === member.id);
+                                return (
+                                    <TouchableOpacity
+                                        key={member.id}
+                                        style={[s.memberTag, isSelected && s.memberTagSelected]}
+                                        onPress={() => toggleMember(member)}
+                                    >
+                                        <AppText
+                                            style={[
+                                                s.memberText,
+                                                isSelected && { color: '#1B1E23', fontWeight: '800' },
+                                            ]}
+                                        >
+                                            {member.username}
+                                        </AppText>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    )}
+
+                    <View style={{ gap: 8 }}>
+                        {anonPlayersList.map(anon => (
+                            <View key={anon.id} style={s.anonRow}>
+                                <TextInput
+                                    style={s.anonInput}
+                                    value={anon.name}
+                                    onChangeText={val => updateAnonName(anon.id, val)}
+                                    placeholder="Nombre"
+                                    placeholderTextColor="#8B94A1"
+                                    selectTextOnFocus
+                                    maxLength={20}
+                                />
+                                <TouchableOpacity
+                                    accessibilityRole="button"
+                                    onPress={() => removeAnonPlayer(anon.id)}
+                                    style={s.removeBtn}
+                                >
+                                    <Ionicons name="close" size={16} color="#9E3A3A" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Impostores */}
+                <View style={s.settingRow}>
+                    <AppText style={s.settingLabel}>Impostores</AppText>
+                    <View style={s.stepper}>
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            onPress={() => setImpostors(Math.max(1, impostors - 1))}
+                            style={s.stepBtn}
+                        >
+                            <Ionicons
+                                name="remove"
+                                size={18}
+                                color={impostors <= 1 ? '#B8C1CC' : '#1E3A5F'}
+                            />
+                        </TouchableOpacity>
+                        <AppText style={s.stepperVal}>{impostors}</AppText>
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            onPress={() => setImpostors(Math.min(maxImpostors, impostors + 1))}
+                            style={s.stepBtn}
+                        >
+                            <Ionicons
+                                name="add"
+                                size={18}
+                                color={impostors >= maxImpostors ? '#B8C1CC' : '#1E3A5F'}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Pista */}
+                <View style={s.settingRow}>
+                    <AppText style={s.settingLabel}>Pista para impostores</AppText>
+                    <TouchableOpacity
+                        accessibilityRole="switch"
+                        accessibilityState={{ checked: hintEnabled }}
+                        style={[s.toggle, hintEnabled ? s.toggleOn : s.toggleOff]}
+                        onPress={() => setHintEnabled(!hintEnabled)}
+                    >
+                        <View
+                            style={[
+                                s.toggleThumb,
+                                { transform: [{ translateX: hintEnabled ? 20 : 0 }] },
+                            ]}
+                        />
                     </TouchableOpacity>
                 </View>
 
-            </Container>
+                {/* Duración */}
+                <View style={s.settingRow}>
+                    <AppText style={s.settingLabel}>Duración</AppText>
+                    <View style={s.stepper}>
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            onPress={() => setDurationMinutes(Math.max(1, durationMinutes - 1))}
+                            style={s.stepBtn}
+                        >
+                            <Ionicons
+                                name="remove"
+                                size={18}
+                                color={durationMinutes <= 1 ? '#B8C1CC' : '#1E3A5F'}
+                            />
+                        </TouchableOpacity>
+                        <AppText style={s.stepperVal}>{durationMinutes} min</AppText>
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            onPress={() => setDurationMinutes(Math.min(15, durationMinutes + 1))}
+                            style={s.stepBtn}
+                        >
+                            <Ionicons
+                                name="add"
+                                size={18}
+                                color={durationMinutes >= 15 ? '#B8C1CC' : '#1E3A5F'}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </ScrollView>
+
+            <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+                <Pressable
+                    accessibilityRole="button"
+                    onPress={handleStartGame}
+                    style={({ pressed }) => [s.startBtn, pressed && s.pressed]}
+                >
+                    <AppText style={s.startBtnText}>Iniciar partida</AppText>
+                    <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                </Pressable>
+            </View>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "rgba(255,255,255,0.52)",
+        backgroundColor: '#FFFFFF',
+    },
+    page: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 14,
+        gap: 12,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 30,
-        marginBottom: 25,
+        gap: 12,
+        marginBottom: 8,
     },
     backBtn: {
-        padding: 5,
-        backgroundColor: "rgba(255,255,255,0.48)",
-        borderRadius: 20
-    },
-    titleContainer: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#F3F7F6',
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    iconCircle: {
-        width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255, 77, 77, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: -5
+    eyebrow: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 1.4,
+        color: '#2B6CB0',
+        marginBottom: 2,
     },
-    mainTitle: {
-        color: '#ff4d4d',
-        fontSize: 36,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 2,
+    title: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#1B1E23',
+        letterSpacing: -0.5,
     },
-    scrollContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 140
-    },
-    menuRow: {
+    packagesCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: "rgba(255,255,255,0.48)",
         padding: 18,
-        borderRadius: 22,
-        marginBottom: 8,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.82)"
-    },
-    menuRowCol: {
-        flexDirection: 'column',
-        alignItems: 'stretch',
-        backgroundColor: "rgba(255,255,255,0.48)",
-        padding: 18,
-        borderRadius: 22,
-        marginBottom: 8,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.82)"
+        borderRadius: 24,
+        backgroundColor: '#D6E8F8',
     },
     rowLeft: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 12,
     },
-    rowLabel: {
-        fontSize: 16,
-        color: "#2D3043",
-        marginLeft: 12,
-        fontWeight: '600'
+    iconBoxWhite: {
+        width: 38,
+        height: 38,
+        borderRadius: 13,
+        backgroundColor: 'rgba(255,255,255,0.75)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    packagesTitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        color: '#1B1E23',
     },
     rowRight: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    rowValue: {
-        fontSize: 14,
-        color: "#636477",
-    },
-    helpText: {
-        color: "#636477",
-        fontSize: 13,
-        marginTop: 10,
-        marginBottom: 10
-    },
-    membersScroll: {
         gap: 8,
-        paddingBottom: 5
     },
-    memberTag: {
-        backgroundColor: "rgba(255,255,255,0.48)",
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.82)",
+    countBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.78)',
     },
-    memberTagSelected: {
-        backgroundColor: 'rgba(231, 76, 60, 0.2)',
-        borderColor: '#e74c3c',
+    countBadgeText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#1E3A5F',
     },
-    memberText: {
-        color: "#636477",
-        fontSize: 14,
-        fontWeight: 'bold',
+    block: {
+        borderRadius: 24,
+        padding: 18,
+        backgroundColor: '#F6F8FA',
+        gap: 12,
     },
-    memberTextSelected: {
-        color: '#ff6b6b',
-    },
-    noMembers: {
-        color: "#636477",
-        fontStyle: 'italic',
-        fontSize: 13
-    },
-    anonHeaderRow: {
+    blockHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: 15,
-        borderTopWidth: 1,
-        borderTopColor: "rgba(255,255,255,0.82)",
-        paddingTop: 15,
-        marginBottom: 10
     },
-    anonLabel: {
-        color: "#636477",
+    blockTitle: {
         fontSize: 15,
-        fontWeight: 'bold'
+        fontWeight: '800',
+        color: '#1B1E23',
     },
-    addAnonBtn: {
+    addBtn: {
         flexDirection: 'row',
-        backgroundColor: "rgba(255,255,255,0.48)",
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        borderRadius: 14,
+        backgroundColor: '#1E3A5F',
+    },
+    addBtnText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#FFFFFF',
+    },
+    membersScroll: {
+        gap: 8,
+    },
+    memberTag: {
+        paddingHorizontal: 13,
         paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 15,
-        alignItems: 'center',
-        gap: 5,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.82)"
+        borderRadius: 14,
+        backgroundColor: '#FFFFFF',
     },
-    addAnonText: {
-        color: '#2D3043',
-        fontWeight: 'bold',
-        fontSize: 12
+    memberTagSelected: {
+        backgroundColor: '#DCECE8',
     },
-    anonEditRow: {
+    memberText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#5B6573',
+    },
+    anonRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: "rgba(255,255,255,0.52)", // Un gris oscuro más elegante
-        borderRadius: 20,
-        marginBottom: 10,
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        shadowColor: "#3E4C45",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-        elevation: 3
-    },
-    anonAvatarPlaceholder: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: "rgba(255,255,255,0.52)",
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 10
+        gap: 10,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        paddingLeft: 14,
+        paddingRight: 8,
+        height: 46,
     },
     anonInput: {
         flex: 1,
-        color: "#2D3043",
-        fontSize: 16,
-        paddingVertical: 10,
-        fontWeight: 'bold',
-        fontFamily: 'Outfit-Regular'
-    },
-    removeAnonBtn: {
-        padding: 5
-    },
-    totalPlayersLabel: {
-        color: '#e74c3c',
         fontSize: 14,
-        fontWeight: 'bold',
-        marginTop: 15,
-        textAlign: 'center'
+        fontWeight: '600',
+        color: '#1B1E23',
+    },
+    removeBtn: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: '#F7E6E6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    settingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 18,
+        paddingVertical: 15,
+        borderRadius: 22,
+        backgroundColor: '#F6F8FA',
+    },
+    settingLabel: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1B1E23',
     },
     stepper: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 12,
     },
-    stepperValue: {
-        fontSize: 18,
-        color: "#2D3043",
-        fontWeight: 'bold',
-        width: 50,
+    stepBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stepperVal: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: '#1B1E23',
+        minWidth: 44,
         textAlign: 'center',
     },
     toggle: {
         width: 48,
-        height: 26,
-        borderRadius: 13,
-        padding: 2,
+        height: 28,
+        borderRadius: 14,
+        padding: 3,
         justifyContent: 'center',
     },
     toggleOn: {
-        backgroundColor: '#e74c3c',
+        backgroundColor: '#1E3A5F',
     },
     toggleOff: {
-        backgroundColor: "rgba(255,255,255,0.52)",
+        backgroundColor: '#D6DDE6',
     },
     toggleThumb: {
         width: 22,
         height: 22,
         borderRadius: 11,
-        backgroundColor: '#fff',
-        position: 'absolute'
-    },
-    thumbOn: {
-        right: 2,
-    },
-    thumbOff: {
-        left: 2,
+        backgroundColor: '#FFFFFF',
     },
     footer: {
         position: 'absolute',
-        bottom: 0, left: 0, right: 0,
-        padding: 20,
-        paddingBottom: 40,
-        backgroundColor: "rgba(229,224,233,0.94)"
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        backgroundColor: 'rgba(255,255,255,0.92)',
     },
-    startButton: {
-        borderRadius: 30,
-        overflow: 'hidden',
-    },
-    startButtonInner: {
+    startBtn: {
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
+        height: 54,
+        borderRadius: 27,
+        backgroundColor: '#1E3A5F',
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 18,
-        alignItems: 'center',
+        gap: 8,
     },
-    startButtonText: {
+    startBtnText: {
+        fontSize: 16,
+        fontWeight: '800',
         color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 2
     },
-    difficultyContainer: {
-        flexDirection: 'row',
-        marginTop: 15,
-        backgroundColor: "rgba(255,255,255,0.52)",
-        borderRadius: 12,
-        padding: 4,
+    pressed: {
+        opacity: 0.88,
+        transform: [{ scale: 0.985 }],
     },
-    diffTab: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: 'center',
-        borderRadius: 10,
-    },
-    diffTabActive: {
-        backgroundColor: '#e74c3c',
-    },
-    diffTabText: {
-        color: "#636477",
-        fontSize: 13,
-        fontWeight: 'bold',
-    },
-    diffTabTextActive: {
-        color: "#2D3043",
-    }
 });

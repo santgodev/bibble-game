@@ -1,3 +1,5 @@
+> **⚠️ PENDIENTE IMPORTANTE:** Supabase está desconectado (la app funciona 100% offline). Checklist para reconectarlo: [TODO-SUPABASE.md](./TODO-SUPABASE.md)
+
 # Berea Games - ADN Impact System 🕊️🔥
 
 Bienvenido al ecosistema de juegos bíblicos **Berea Games**. Este proyecto incluye juegos como **Charadas**, **El Impostor** y **Trivia**, integrados con un sistema de gamificación (rachas, XP, niveles) y soporte para iglesias.
