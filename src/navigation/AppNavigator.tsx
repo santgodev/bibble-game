@@ -15,6 +15,7 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { StudyPathsScreen } from '../screens/StudyPathsScreen';
 import { StudyMissionsScreen } from '../screens/StudyMissionsScreen';
 import { StudyDevotionalScreen } from '../screens/StudyDevotionalScreen';
+import { BibleReaderScreen } from '../screens/BibleReaderScreen';
 import { SystemGuideScreen } from '../screens/SystemGuideScreen';
 import { AuthRequiredScreen } from '../screens/AuthRequiredScreen';
 import { useTheme } from '../context/ThemeContext';
@@ -72,6 +73,7 @@ export const AppNavigator = () => {
                 <Stack.Screen name="StudyPaths" component={StudyPathsScreen} />
                 <Stack.Screen name="StudyMissions" component={StudyMissionsScreen} />
                 <Stack.Screen name="StudyDevotional" component={StudyDevotionalScreen} />
+                <Stack.Screen name="BibleReader" component={BibleReaderScreen} />
                 <Stack.Screen name="SystemGuide" component={SystemGuideScreen} />
 
                 {/* Trivia Flow */}

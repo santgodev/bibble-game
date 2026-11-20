@@ -9,6 +9,9 @@ import { TriviaSoloGameScreen } from '../screens/TriviaSoloGameScreen';
 import { TriviaSoloResultsScreen } from '../screens/TriviaSoloResultsScreen';
 import { TriviaFriendsScreen } from '../screens/TriviaFriendsScreen';
 import { TriviaCreateRoomScreen } from '../screens/TriviaCreateRoomScreen';
+import { TriviaJoinRoomScreen } from '../screens/TriviaJoinRoomScreen';
+import { TriviaOnlineLobbyScreen } from '../screens/TriviaOnlineLobbyScreen';
+import { TriviaOnlineGameScreen } from '../screens/TriviaOnlineGameScreen';
 import { TriviaRoomLobbyScreen } from '../screens/TriviaRoomLobbyScreen';
 import { TriviaTeamGameScreen } from '../screens/TriviaTeamGameScreen';
 
@@ -37,6 +40,9 @@ export const TriviaNavigator = () => {
             <Stack.Screen name="TriviaSoloResults" component={TriviaSoloResultsScreen} />
             <Stack.Screen name="TriviaFriends" component={TriviaFriendsScreen} />
             <Stack.Screen name="TriviaCreateRoom" component={TriviaCreateRoomScreen} />
+            <Stack.Screen name="TriviaJoinRoom" component={TriviaJoinRoomScreen} />
+            <Stack.Screen name="TriviaOnlineLobby" component={TriviaOnlineLobbyScreen} />
+            <Stack.Screen name="TriviaOnlineGame" component={TriviaOnlineGameScreen} />
             <Stack.Screen name="TriviaRoomLobby" component={TriviaRoomLobbyScreen} />
             <Stack.Screen name="TriviaTeamGame" component={TriviaTeamGameScreen} />
         </Stack.Navigator>

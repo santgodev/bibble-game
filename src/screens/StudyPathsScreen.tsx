@@ -1,15 +1,18 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-    Pressable, ScrollView, StyleSheet, View, StatusBar, ActivityIndicator
+    Pressable, ScrollView, StyleSheet, View, StatusBar
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../components';
-import { supabase } from '../lib/supabase';
-import { STUDY_PATHS, StudyPath } from '../data/studyPaths';
-import { EditorialDoodle, DoodleKind } from '../trivia/components/EditorialDoodle';
+import { EditorialDoodle } from '../trivia/components/EditorialDoodle';
+import { GOSPEL_BOOKS, GospelId } from '../data/gospelsNtv';
 import { useSound } from '../context/SoundContext';
+
+const HIGHLIGHTS_KEY = '@berea_bible_highlights_v1';
+const LAST_READ_KEY = '@berea_bible_last_read_v1';
 
 const BG = '#FFFFFF';
 const SURFACE = '#F6F8FA';
@@ -18,65 +21,34 @@ const MUTED = '#5B6573';
 const NAVY = '#1E3A5F';
 const EUCALIPTO = '#2E6F65';
 
-const PATH_STYLES: { bg: string; doodle: DoodleKind; tint: string }[] = [
-    { bg: '#DCECE8', doodle: 'scroll', tint: '#68AEEB' },
-    { bg: '#D6E8F8', doodle: 'dove', tint: '#FFFFFF' },
-    { bg: '#F5DA7C', doodle: 'crown', tint: '#FFFFFF' },
-];
-
 export const StudyPathsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { playSound, playHaptic } = useSound();
-    const [completedMissions, setCompletedMissions] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [lastRead, setLastRead] = useState<Partial<Record<GospelId, number>>>({});
+    const [highlightCount, setHighlightCount] = useState(0);
 
     useFocusEffect(
         useCallback(() => {
-            loadProgress();
+            AsyncStorage.getItem(LAST_READ_KEY).then(raw => {
+                if (raw) {
+                    try {
+                        setLastRead(JSON.parse(raw));
+                    } catch {
+                        // ignore
+                    }
+                }
+            });
+            AsyncStorage.getItem(HIGHLIGHTS_KEY).then(raw => {
+                if (raw) {
+                    try {
+                        setHighlightCount(Object.keys(JSON.parse(raw)).length);
+                    } catch {
+                        // ignore
+                    }
+                }
+            });
         }, [])
     );
-
-    const loadProgress = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data: events } = await supabase
-                .from('events')
-                .select('description')
-                .eq('user_id', user.id)
-                .like('description', 'MISSION:%');
-
-            if (events) {
-                setCompletedMissions(events.map((e: any) => e.description.replace('MISSION:', '')));
-            }
-        } catch (err) {
-            console.error('Error loading progress', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const getPathProgress = (path: StudyPath) => {
-        const allNodes = path.weeks.flatMap(w => w.nodes);
-        const done = allNodes.filter(n => completedMissions.includes(n.id)).length;
-        return { done, total: allNodes.length, pct: done / allNodes.length || 0 };
-    };
-
-    const isPathLocked = (index: number) => {
-        if (index === 0) return false;
-        const prevProgress = getPathProgress(STUDY_PATHS[index - 1]);
-        return prevProgress.pct < 1.0;
-    };
-
-    const totalXP = completedMissions.reduce((acc, id) => {
-        for (const path of STUDY_PATHS) {
-            const allNodes = path.weeks.flatMap(w => w.nodes);
-            const n = allNodes.find(node => node.id === id);
-            if (n) return acc + n.xpReward;
-        }
-        return acc;
-    }, 0);
 
     return (
         <View style={[s.container, { paddingTop: insets.top }]}>
@@ -86,7 +58,6 @@ export const StudyPathsScreen = ({ navigation }: any) => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={[s.page, { paddingBottom: insets.bottom + 36 }]}
             >
-                {/* Header editorial idéntico a TriviaHomeScreen */}
                 <View style={s.header}>
                     <Pressable
                         accessibilityRole="button"
@@ -100,102 +71,69 @@ export const StudyPathsScreen = ({ navigation }: any) => {
                         <Ionicons name="arrow-back" size={20} color={INK} />
                     </Pressable>
                     <View style={{ flex: 1 }}>
-                        <AppText style={s.eyebrow}>ESTUDIO BÍBLICO</AppText>
-                        <AppText style={s.title}>Rutas de estudio</AppText>
+                        <AppText style={s.eyebrow}>BIBLIA NTV</AppText>
+                        <AppText style={s.title}>Los Evangelios</AppText>
                     </View>
                 </View>
 
-                {/* Bloque compacto de avance (estilo progressCard de HomeScreen) */}
                 <View style={s.summaryCard}>
-                    <View style={s.summaryLeft}>
+                    <View style={{ flex: 1 }}>
                         <AppText style={s.summaryTitle}>
-                            {completedMissions.length} misiones · {totalXP} XP
+                            {highlightCount === 1
+                                ? '1 versículo subrayado'
+                                : `${highlightCount} versículos subrayados`}
                         </AppText>
                         <AppText style={s.summarySub}>
-                            Avanza paso a paso en cada libro
+                            Toca cualquier versículo al leer para subrayarlo
                         </AppText>
                     </View>
-                    <EditorialDoodle kind="olive" tint="#DCECE8" size={50} />
+                    <EditorialDoodle kind="olive" tint="#DCECE8" size={48} />
                 </View>
 
-                {loading && (
-                    <ActivityIndicator size="small" color={NAVY} style={{ marginBottom: 16 }} />
-                )}
-
-                {/* Tarjetas hero por ruta (estilo TriviaHomeScreen) */}
                 <View style={s.cardsColumn}>
-                    {STUDY_PATHS.map((path, index) => {
-                        const progress = getPathProgress(path);
-                        const locked = isPathLocked(index);
-                        const completed = progress.pct === 1.0;
-                        const palette = PATH_STYLES[index % PATH_STYLES.length];
-
+                    {GOSPEL_BOOKS.map(book => {
+                        const currentCap = lastRead[book.id] || 1;
                         return (
                             <Pressable
-                                key={path.id}
+                                key={book.id}
                                 accessibilityRole="button"
-                                accessibilityLabel={path.title}
+                                accessibilityLabel={`Leer ${book.title}`}
                                 onPress={() => {
-                                    if (locked) return;
                                     playSound('select');
                                     playHaptic('selection');
-                                    navigation.navigate('StudyMissions', { path });
+                                    navigation.navigate('BibleReader', {
+                                        gospelId: book.id,
+                                        chapter: currentCap,
+                                    });
                                 }}
                                 style={({ pressed }) => [
-                                    s.pathCard,
-                                    { backgroundColor: locked ? SURFACE : palette.bg },
-                                    locked && s.lockedCard,
-                                    !locked && pressed && s.pressed,
+                                    s.gospelCard,
+                                    { backgroundColor: book.accentBg },
+                                    pressed && s.pressed,
                                 ]}
                             >
                                 <View style={s.cardHeaderRow}>
                                     <View style={s.pillWhite}>
                                         <AppText style={s.pillWhiteText}>
-                                            {path.book.toUpperCase()}
+                                            {book.chapters.length} CAPÍTULOS
                                         </AppText>
                                     </View>
                                     <EditorialDoodle
-                                        kind={palette.doodle}
-                                        tint={locked ? '#D5DCE2' : palette.tint}
+                                        kind={book.doodle}
+                                        tint={book.doodleTint}
                                         size={58}
                                     />
                                 </View>
 
-                                <AppText style={[s.cardTitle, locked && { color: MUTED }]}>
-                                    {path.title}
-                                </AppText>
-
-                                <View style={s.progressRow}>
-                                    <View style={s.progressTrack}>
-                                        <View
-                                            style={[
-                                                s.progressFill,
-                                                {
-                                                    width: `${progress.pct * 100}%` as any,
-                                                    backgroundColor: locked ? '#C5CED6' : EUCALIPTO,
-                                                },
-                                            ]}
-                                        />
-                                    </View>
-                                    <AppText style={s.progressText}>
-                                        {progress.done}/{progress.total}
-                                    </AppText>
-                                </View>
+                                <AppText style={s.cardTitle}>{book.title}</AppText>
+                                <AppText style={s.cardSub}>{book.subtitle}</AppText>
 
                                 <View style={s.cardFooter}>
-                                    <AppText style={[s.footerAction, locked && { color: MUTED }]}>
-                                        {locked
-                                            ? `Completa ${STUDY_PATHS[index - 1].title}`
-                                            : completed
-                                                ? 'Ruta completada'
-                                                : 'Continuar ruta'}
+                                    <AppText style={s.footerAction}>
+                                        {lastRead[book.id] ? `Continuar · Cap. ${currentCap}` : 'Comenzar lectura'}
                                     </AppText>
-                                    <View style={[s.navyCircle, locked && { backgroundColor: '#D5DCE2' }]}>
-                                        <Ionicons
-                                            name={locked ? 'lock-closed' : completed ? 'checkmark' : 'arrow-forward'}
-                                            size={16}
-                                            color={locked ? MUTED : '#FFFFFF'}
-                                        />
+                                    <View style={s.navyCircle}>
+                                        <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
                                     </View>
                                 </View>
                             </Pressable>
@@ -219,7 +157,7 @@ const s = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 14,
-        marginBottom: 22,
+        marginBottom: 20,
     },
     backBtn: {
         width: 44,
@@ -251,11 +189,10 @@ const s = StyleSheet.create({
         marginBottom: 20,
         gap: 12,
     },
-    summaryLeft: { flex: 1 },
-    summaryTitle: { fontSize: 16, fontWeight: '800', color: INK },
+    summaryTitle: { fontSize: 15, fontWeight: '800', color: INK },
     summarySub: { fontSize: 13, color: MUTED, marginTop: 2 },
     cardsColumn: { gap: 16 },
-    pathCard: {
+    gospelCard: {
         borderRadius: 28,
         padding: 22,
         shadowColor: NAVY,
@@ -263,10 +200,6 @@ const s = StyleSheet.create({
         shadowOpacity: 0.08,
         shadowRadius: 20,
         elevation: 4,
-    },
-    lockedCard: {
-        shadowOpacity: 0,
-        elevation: 0,
     },
     pressed: {
         transform: [{ scale: 0.985 }],
@@ -285,40 +218,21 @@ const s = StyleSheet.create({
         borderRadius: 16,
     },
     pillWhiteText: {
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: '800',
-        letterSpacing: 0.8,
+        letterSpacing: 0.9,
         color: NAVY,
     },
     cardTitle: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: '800',
         color: INK,
-        marginBottom: 14,
     },
-    progressRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
+    cardSub: {
+        fontSize: 14,
+        color: '#34404A',
+        marginTop: 4,
         marginBottom: 16,
-    },
-    progressTrack: {
-        flex: 1,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: 'rgba(255,255,255,0.8)',
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        borderRadius: 3,
-    },
-    progressText: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: INK,
-        minWidth: 32,
-        textAlign: 'right',
     },
     cardFooter: {
         flexDirection: 'row',

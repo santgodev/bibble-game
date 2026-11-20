@@ -6,6 +6,9 @@ export const SOLO_QUESTIONS_PER_GAME = 15;
 export const SOLO_DURATION_SECONDS = 90;
 export const DEFAULT_QUESTIONS_PER_TEAM = 5;
 export const TEAM_QUESTIONS_OPTIONS = [3, 5, 7] as const;
+export const ONLINE_QUESTION_COUNT_OPTIONS = [5, 10, 15] as const;
+export const DEFAULT_ONLINE_QUESTION_COUNT = 10;
+export const DEFAULT_ONLINE_SECONDS_PER_QUESTION = 20;
 
 export interface DifficultyLevelMeta {
     level: DifficultyLevel;
@@ -134,4 +137,59 @@ export interface TriviaTeamStanding {
     totalTurns: number;
     accuracy: number;
     rank: number;
+}
+
+export type OnlineRoomStatus = 'waiting' | 'in_progress' | 'finished' | 'cancelled';
+
+export interface OnlineRoomSession {
+    roomId: string;
+    roomCode: string;
+    participantId: string;
+    playerToken: string;
+    isHost: boolean;
+    displayName: string;
+}
+
+export interface OnlineRoomRow {
+    id: string;
+    room_code: string;
+    host_user_id: string | null;
+    status: OnlineRoomStatus;
+    match_type: TriviaMatchType;
+    theme_id: string;
+    difficulty: DifficultyLevel;
+    question_count: number;
+    seconds_per_question: number;
+    question_ids: string[];
+    round_number: number;
+    current_question_index: number;
+    question_started_at: string | null;
+    started_at: string | null;
+    finished_at: string | null;
+    expires_at: string;
+}
+
+export interface OnlineParticipantRow {
+    id: string;
+    room_id: string;
+    user_id: string | null;
+    display_name: string;
+    role: 'host' | 'player';
+    status: 'joined' | 'ready' | 'left';
+    score: number;
+    correct_count: number;
+    joined_at: string;
+}
+
+export interface OnlineAnswerRow {
+    id: string;
+    room_id: string;
+    participant_id: string;
+    round_number: number;
+    question_index: number;
+    question_id: string;
+    selected_option: number;
+    is_correct: boolean;
+    points_awarded: number;
+    answered_at: string;
 }

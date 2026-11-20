@@ -19,7 +19,8 @@ export type SoundEffect =
     | 'win'
     | 'unlock'
     | 'tap'
-    | 'select';
+    | 'select'
+    | 'page';
 
 export type HapticEffect = 'success' | 'impact' | 'selection' | 'victory';
 
@@ -36,6 +37,7 @@ const SFX_SOURCES: Record<SoundEffect, any> = {
     wrong: require('../../assets/sounds/sfx_wrong.wav'),
     win: require('../../assets/sounds/sfx_win.wav'),
     unlock: require('../../assets/sounds/sfx_unlock.wav'),
+    page: require('../../assets/sounds/sfx_page.wav'),
 };
 
 const SFX_VOLUME_SCALE: Record<SoundEffect, number> = {
@@ -47,6 +49,7 @@ const SFX_VOLUME_SCALE: Record<SoundEffect, number> = {
     wrong: 0.8,
     win: 1.0,
     unlock: 0.9,
+    page: 0.78,
 };
 
 interface SoundContextType {

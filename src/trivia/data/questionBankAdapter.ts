@@ -406,3 +406,15 @@ export const ADAPTED_BANKS = {
 };
 
 export type AdaptedBankKey = keyof typeof ADAPTED_BANKS;
+
+const QUESTION_BY_ID = new Map<string, TriviaQuestion>();
+for (const bank of Object.values(ADAPTED_BANKS)) {
+    for (const q of bank) {
+        if (q.id && !QUESTION_BY_ID.has(q.id)) {
+            QUESTION_BY_ID.set(q.id, q);
+        }
+    }
+}
+
+export const getQuestionById = (id: string): TriviaQuestion | null =>
+    QUESTION_BY_ID.get(id) ?? null;

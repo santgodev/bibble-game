@@ -7,6 +7,7 @@ import { AppText } from '../../components';
 import { EditorialDoodle } from '../components/EditorialDoodle';
 import { TriviaHeader } from '../components/TriviaHeader';
 import { TriviaStackParamList } from '../navigation/types';
+import { useSound } from '../../context/SoundContext';
 
 type Props = {
     navigation: StackNavigationProp<TriviaStackParamList, 'TriviaFriends'>;
@@ -14,6 +15,7 @@ type Props = {
 
 export const TriviaFriendsScreen = ({ navigation }: Props) => {
     const insets = useSafeAreaInsets();
+    const { playSound } = useSound();
 
     return (
         <View style={[s.container, { paddingTop: insets.top }]}>
@@ -24,29 +26,63 @@ export const TriviaFriendsScreen = ({ navigation }: Props) => {
                 <TriviaHeader
                     eyebrow="TRIVIA BÍBLICA"
                     title="Con amigos"
-                    onBack={() => navigation.goBack()}
+                    onBack={() => {
+                        playSound('tap');
+                        navigation.goBack();
+                    }}
                     backLabel="Volver a Trivia bíblica"
                     variant="clean"
                 />
 
-                <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Crear sala"
-                    onPress={() => navigation.navigate('TriviaCreateRoom')}
-                    style={({ pressed }) => [s.createCard, pressed && s.pressed]}
-                >
-                    <View style={s.topRow}>
-                        <AppText style={s.title}>Crear sala</AppText>
-                        <EditorialDoodle kind="dove" tint="#FFFFFF" size={64} />
-                    </View>
-
-                    <View style={s.footer}>
-                        <AppText style={s.footerText}>Jugar por equipos</AppText>
-                        <View style={s.navyCircle}>
-                            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                <View style={s.cardsColumn}>
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Crear sala"
+                        onPress={() => {
+                            playSound('select');
+                            navigation.navigate('TriviaCreateRoom');
+                        }}
+                        style={({ pressed }) => [s.createCard, pressed && s.pressed]}
+                    >
+                        <View style={s.topRow}>
+                            <View style={s.pill}>
+                                <AppText style={s.pillText}>ANFITRIÓN</AppText>
+                            </View>
+                            <EditorialDoodle kind="crown" tint="#FFFFFF" size={62} />
                         </View>
-                    </View>
-                </Pressable>
+                        <AppText style={s.title}>Crear sala</AppText>
+                        <View style={s.footer}>
+                            <AppText style={s.footerText}>Generar código</AppText>
+                            <View style={s.navyCircle}>
+                                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                            </View>
+                        </View>
+                    </Pressable>
+
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Unirme con código"
+                        onPress={() => {
+                            playSound('select');
+                            navigation.navigate('TriviaJoinRoom');
+                        }}
+                        style={({ pressed }) => [s.joinCard, pressed && s.pressed]}
+                    >
+                        <View style={s.topRow}>
+                            <View style={s.pill}>
+                                <AppText style={s.pillText}>INVITADO</AppText>
+                            </View>
+                            <EditorialDoodle kind="dove" tint="#FFFFFF" size={62} />
+                        </View>
+                        <AppText style={s.title}>Unirme con código</AppText>
+                        <View style={s.footer}>
+                            <AppText style={s.footerText}>Entrar a una partida</AppText>
+                            <View style={s.navyCircle}>
+                                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                            </View>
+                        </View>
+                    </Pressable>
+                </View>
             </ScrollView>
         </View>
     );
@@ -63,15 +99,18 @@ const s = StyleSheet.create({
         alignSelf: 'center',
         padding: 20,
     },
+    cardsColumn: {
+        gap: 16,
+    },
     createCard: {
         borderRadius: 28,
         padding: 22,
         backgroundColor: '#F5DA7C',
-        shadowColor: '#1E3A5F',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.08,
-        shadowRadius: 20,
-        elevation: 4,
+    },
+    joinCard: {
+        borderRadius: 28,
+        padding: 22,
+        backgroundColor: '#D6E8F8',
     },
     pressed: {
         transform: [{ scale: 0.985 }],
@@ -87,7 +126,7 @@ const s = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.72)',
+        backgroundColor: 'rgba(255,255,255,0.78)',
     },
     pillText: {
         fontSize: 10,
@@ -96,19 +135,13 @@ const s = StyleSheet.create({
         color: '#1E3A5F',
     },
     title: {
-        fontSize: 26,
+        fontSize: 25,
         fontWeight: '800',
         color: '#1B1E23',
         letterSpacing: -0.5,
     },
-    description: {
-        fontSize: 15,
-        lineHeight: 22,
-        color: '#34404A',
-        marginTop: 5,
-    },
     footer: {
-        marginTop: 22,
+        marginTop: 20,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -125,29 +158,5 @@ const s = StyleSheet.create({
         backgroundColor: '#1E3A5F',
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    stepsPanel: {
-        marginTop: 18,
-        padding: 20,
-        borderRadius: 24,
-        backgroundColor: '#F6F8FA',
-        gap: 12,
-    },
-    stepsTitle: {
-        fontSize: 15,
-        fontWeight: '800',
-        color: '#1B1E23',
-        marginBottom: 2,
-    },
-    stepRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: 10,
-    },
-    stepText: {
-        flex: 1,
-        fontSize: 13,
-        lineHeight: 19,
-        color: '#4E5B66',
     },
 });

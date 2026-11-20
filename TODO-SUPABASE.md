@@ -7,24 +7,24 @@
 ## Checklist (marca con [x] al terminar)
 
 ### A. Proyecto y credenciales
-- [ ] Crear/confirmar el proyecto en Supabase (o recuperar el anterior).
+- [x] Crear/confirmar el proyecto en Supabase (`kadgcnqvsrqfkojhfltp` · `Bibble-game`).
 - [ ] Rotar las llaves si estuvieron expuestas: el archivo `.env` está versionado en git (`git ls-files` lo lista). Sacarlo del repo (`git rm --cached .env`) y confirmar que `.gitignore` lo cubre.
-- [ ] Completar `.env`: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (la `SERVICE_ROLE_KEY` solo para scripts, **nunca** en la app).
+- [x] Completar `.env`: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (la `SERVICE_ROLE_KEY` solo para scripts, **nunca** en la app).
 
 ### B. Base de datos
-- [ ] Ejecutar `SETUP.sql` (el README lo menciona, pero **ese archivo no está en el repo**: recuperarlo del historial de git o reconstruirlo: tablas `users`, `events`, `churches`, `categories`, `words`, `trivia_questions`, `devotionals`, vista `church_global_ranking`, RPC `increment_user_rewards`).
-- [ ] Aplicar la migración de Trivia: `supabase/migrations/20261118100000_trivia_phase1_schema.sql` (con `supabase db push` o pegándola en el SQL Editor). Instalar el CLI de Supabase si se quiere probar en local (`supabase start`).
-- [ ] Probar RLS: un usuario no debe ver progreso ni salas ajenas.
+- [x] Esquema base (`users`, `events`, `churches`, `categories`, `words`, `trivia_questions`, `devotionals`, vista `church_global_ranking`, RPC `increment_user_rewards`) activo en Supabase.
+- [x] Aplicar la migración de Trivia online: `supabase/migrations/20261120163000_trivia_online_rooms.sql` (con tablas, RLS, token privado de participante, 7 RPCs y Realtime).
+- [ ] Activar RLS y políticas en las 9 tablas legacy (`users`, `churches`, `events`, etc.).
 
 ### C. Reactivar el cliente
-- [ ] Restaurar `createClient` en `src/lib/supabase.ts` (ver historial de git: commit `2ac85c6` y anteriores) y poner `SUPABASE_ENABLED = true`.
+- [x] Restaurar `createClient` en `src/lib/supabase.ts` y poner `SUPABASE_ENABLED = true`.
 - [ ] Verificar login/registro (`AuthScreen`), perfil, iglesias y ranking.
 
 ### D. Trivia bíblica (Fase 2 del módulo)
 - [ ] Sincronizar `trivia_user_progress` con `@trivia_personal_progress_v1` (fusionar: mayor `best_score`, `completed` si alguno lo tiene). Hacer `upsert` en `src/trivia/storage/progressStorage.ts` al terminar partida.
-- [ ] Salas remotas: crear sala (`trivia_rooms` + fila `host`), unirse con la RPC `join_trivia_room_by_code` (nunca leyendo `trivia_rooms` directo). Detalle en `supabase/README.md`.
+- [x] Salas remotas por código + Realtime (`create_trivia_room`, `join_trivia_room_by_code`, `start_trivia_room`, `submit_trivia_answer`, `advance_trivia_room`, `reset_trivia_room_for_rematch`, `leave_trivia_room`).
 - [ ] Emparejamiento público (fase posterior).
-- [ ] Decidir si las preguntas se sirven desde Supabase o siguen locales (hoy son locales en `src/data`).
+- [x] Preguntas locales en `src/data` resueltas por ID (`getQuestionById`) durante salas online.
 
 ### E. Recompensas y ranking
 - [ ] `src/lib/gamification/rewardService.ts` ya existe pero Trivia nueva **no** lo llama todavía: conectar `submitGameResult({ gameType: 'TRIVIA', ... })` al terminar partida individual.

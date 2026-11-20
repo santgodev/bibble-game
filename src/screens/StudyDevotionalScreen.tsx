@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { StudyNode, StudyPath } from '../data/studyPaths';
 import { Confetti } from '../components/Confetti';
+import { InteractiveBibleMap, StorySceneCarousel } from '../components/StudyVisualBlocks';
 import { useSound } from '../context/SoundContext';
 import { submitGameResult } from '../lib/gamification/rewardService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -574,10 +575,16 @@ export const StudyDevotionalScreen = ({ navigation, route }: any) => {
 
                 {/* --- RENDERIZADO POR TIPO --- */}
 
-                {/* 1. INTRO / DEVOTIONAL (Textos) */}
+                {/* 1. INTRO / DEVOTIONAL (Textos + Visuales) */}
                 {(node.type === 'intro' || node.type === 'devotional') && (
                     <>
-                        <View style={[styles.refPill, { borderColor: nodeTheme.c + '55', backgroundColor: nodeTheme.c + '10' }]}>
+                        {node.storyScenes && node.storyScenes.length > 0 && (
+                            <StorySceneCarousel scenes={node.storyScenes} />
+                        )}
+
+                        {node.map && <InteractiveBibleMap map={node.map} />}
+
+                        <View style={[styles.refPill, { backgroundColor: nodeTheme.soft }]}>
                             <Ionicons name="book" size={16} color={nodeTheme.c} />
                             <Text style={[styles.refText, { color: nodeTheme.c }]}>{node.bibleRef}</Text>
                         </View>

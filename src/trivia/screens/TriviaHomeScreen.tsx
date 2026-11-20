@@ -61,28 +61,29 @@ export const TriviaHomeScreen = ({ navigation }: Props) => {
                         </View>
                     </Pressable>
 
-                    <View
-                        accessibilityRole="text"
-                        accessibilityLabel="Con amigos, próximamente"
-                        style={s.lockedCard}
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Con amigos"
+                        onPress={() => navigation.navigate('TriviaFriends')}
+                        style={({ pressed }) => [s.goldCard, pressed && s.cardPressed]}
                     >
                         <View style={s.cardHeaderRow}>
-                            <View style={s.pillMuted}>
-                                <AppText style={s.pillMutedText}>PRÓXIMAMENTE</AppText>
+                            <View style={s.pillGold}>
+                                <AppText style={s.pillGoldText}>SALA CON CÓDIGO</AppText>
                             </View>
-                            <EditorialDoodle kind="dove" tint="#DCE3EA" size={64} />
+                            <EditorialDoodle kind="dove" tint="#FFFFFF" size={64} />
                         </View>
-                        <AppText style={[s.cardTitle, { color: '#5B6573' }]}>Con amigos</AppText>
-                        <AppText style={[s.cardDesc, { color: '#6E7785' }]}>
-                            Modo local por equipos en el mismo teléfono.
+                        <AppText style={s.cardTitle}>Con amigos</AppText>
+                        <AppText style={s.cardDesc}>
+                            Crea o únete con un código desde cada teléfono.
                         </AppText>
                         <View style={s.cardFooter}>
-                            <AppText style={[s.footerAction, { color: '#6E7785' }]}>Disponible pronto</AppText>
-                            <View style={s.lockedCircle}>
-                                <Ionicons name="lock-closed" size={16} color="#5B6573" />
+                            <AppText style={s.footerAction}>Jugar con amigos</AppText>
+                            <View style={s.navyCircle}>
+                                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
                             </View>
                         </View>
-                    </View>
+                    </Pressable>
                 </View>
             </ScrollView>
         </View>

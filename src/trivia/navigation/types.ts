@@ -1,4 +1,4 @@
-import { DifficultyLevel, TriviaRoomConfig } from '../types';
+import { DifficultyLevel, OnlineRoomSession, TriviaRoomConfig } from '../types';
 
 export type TriviaStackParamList = {
     TriviaHome: undefined;
@@ -24,6 +24,13 @@ export type TriviaStackParamList = {
     TriviaCreateRoom: {
         pickedThemeId?: string;
     } | undefined;
+    TriviaJoinRoom: undefined;
+    TriviaOnlineLobby: {
+        session: OnlineRoomSession;
+    };
+    TriviaOnlineGame: {
+        session: OnlineRoomSession;
+    };
     TriviaRoomLobby: {
         roomConfig: TriviaRoomConfig;
     };

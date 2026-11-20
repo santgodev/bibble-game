@@ -18,6 +18,29 @@ export interface CharadaWord {
 
 export type NodeType = 'intro' | 'devotional' | 'practice' | 'quiz';
 
+export interface StoryScene {
+    title: string;
+    bibleRef: string;
+    caption: string;
+    image?: any;
+    accentBg?: string;
+}
+
+export interface StudyMapStop {
+    id: string;
+    name: string;
+    region: string;
+    bibleRef: string;
+    summary: string;
+    xPct: number;
+    yPct: number;
+}
+
+export interface StudyMap {
+    title: string;
+    stops: StudyMapStop[];
+}
+
 export interface StudyNode {
     id: string;
     type: NodeType;
@@ -45,6 +68,8 @@ export interface StudyNode {
     };
 
     charadas?: CharadaWord[];
+    storyScenes?: StoryScene[];
+    map?: StudyMap;
 
     xpReward: number;
     trophyReward: number;
@@ -98,6 +123,70 @@ export const JESUS_REAL_PATH: StudyPath = {
                     bibleRef: 'Juan 1:1–18',
                     passage: '"En el principio era el Verbo, y el Verbo era con Dios, y el Verbo era Dios... Y aquel Verbo fue hecho carne, y habitó entre nosotros (y vimos su gloria, gloria como del unigénito del Padre), lleno de gracia y de verdad."',
                     reflection: 'Juan no empieza con el nacimiento de Jesús en un pesebre. Empieza mucho antes: en la eternidad. El "Verbo" (Logos) era la razón creativa de Dios. Jesús es esa fuerza hecha persona. Dios no nos mandó un mensaje. Vino Él mismo.',
+                    storyScenes: [
+                        {
+                            title: '1. En el principio era el Verbo',
+                            bibleRef: 'Juan 1:1–2',
+                            caption: 'Antes de que existiera el tiempo o la materia, el Verbo ya estaba cara a cara con Dios.',
+                            image: require('../../assets/study/verbo_1_eternidad.jpg'),
+                            accentBg: '#D6E8F8',
+                        },
+                        {
+                            title: '2. Todo fue hecho por Él',
+                            bibleRef: 'Juan 1:3–5',
+                            caption: 'La misma voz que creó la luz, las aguas y la vida es la luz que las tinieblas no pudieron apagar.',
+                            image: require('../../assets/study/verbo_2_creacion.jpg'),
+                            accentBg: '#DCECE8',
+                        },
+                        {
+                            title: '3. Habitó entre nosotros',
+                            bibleRef: 'Juan 1:14',
+                            caption: 'El Verbo se hizo carne y puso su tienda en medio de nuestra historia cotidiana, lleno de gracia y verdad.',
+                            image: require('../../assets/study/verbo_3_encarnacion.jpg'),
+                            accentBg: '#FBF2D0',
+                        },
+                    ],
+                    map: {
+                        title: 'Primeros pasos de Jesús en Juan 1–4',
+                        stops: [
+                            {
+                                id: 'cana',
+                                name: 'Caná',
+                                region: 'Galilea',
+                                bibleRef: 'Juan 2:1–11',
+                                summary: 'Primera señal en unas bodas: transforma el agua en el mejor vino.',
+                                xPct: 48,
+                                yPct: 18,
+                            },
+                            {
+                                id: 'sicar',
+                                name: 'Sicar',
+                                region: 'Samaria',
+                                bibleRef: 'Juan 4:5–14',
+                                summary: 'Junto al pozo de Jacob ofrece agua viva a una mujer samaritana.',
+                                xPct: 50,
+                                yPct: 46,
+                            },
+                            {
+                                id: 'jerusalen',
+                                name: 'Jerusalén',
+                                region: 'Judea',
+                                bibleRef: 'Juan 2:13–22',
+                                summary: 'Purifica el templo y enseña a Nicodemo sobre nacer de nuevo.',
+                                xPct: 54,
+                                yPct: 72,
+                            },
+                            {
+                                id: 'betania_jordan',
+                                name: 'Betania',
+                                region: 'Al otro lado del Jordán',
+                                bibleRef: 'Juan 1:28–29',
+                                summary: 'Donde Juan el Bautista lo señala: "He aquí el Cordero de Dios".',
+                                xPct: 78,
+                                yPct: 62,
+                            },
+                        ],
+                    },
                     xpReward: 10,
                     trophyReward: 2,
                 },

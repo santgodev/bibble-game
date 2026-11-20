@@ -11,6 +11,7 @@
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",
     "@expo/vector-icons": "^15.0.3",
+    "@supabase/supabase-js": "^2.99.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/slider": "5.2.1",
     "@react-navigation/native": "^7.5.2",
@@ -42,7 +43,6 @@
     "react-native-web": "^0.21.4"
   },
   "devDependencies": {
-    "@supabase/supabase-js": "^2.99.1",
     "@types/react": "~19.3.0",
     "dotenv": "^17.3.1",
     "expo-mcp": "~0.2.1",
