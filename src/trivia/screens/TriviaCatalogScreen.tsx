@@ -76,7 +76,7 @@ export const TriviaCatalogScreen = ({ navigation, route }: Props) => {
         if (!node.isPlayable) return;
 
         if (mode === 'picker') {
-            navigation.navigate('TriviaCreateRoom', { pickedThemeId: node.id });
+            navigation.popTo('TriviaCreateRoom', { pickedThemeId: node.id });
             return;
         }
         setSelectedTheme(node);

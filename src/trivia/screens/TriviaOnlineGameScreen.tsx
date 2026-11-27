@@ -276,7 +276,7 @@ export const TriviaOnlineGameScreen = ({ navigation, route }: Props) => {
                 style: 'destructive',
                 onPress: async () => {
                     await leaveTriviaRoom(session);
-                    navigation.navigate('TriviaFriends');
+                    navigation.popTo('TriviaFriends');
                 },
             },
         ]);
@@ -375,7 +375,7 @@ export const TriviaOnlineGameScreen = ({ navigation, route }: Props) => {
                             accessibilityRole="button"
                             onPress={() => {
                                 leaveTriviaRoom(session);
-                                navigation.navigate('TriviaHome');
+                                navigation.popTo('TriviaHome');
                             }}
                             style={({ pressed }) => [s.secondaryBtn, pressed && s.pressed]}
                         >

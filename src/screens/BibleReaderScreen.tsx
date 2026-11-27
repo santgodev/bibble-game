@@ -1,22 +1,32 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
     Animated,
+    FlatList,
     Image,
     Modal,
     NativeScrollEvent,
     NativeSyntheticEvent,
+    Platform,
     Pressable,
     ScrollView,
     Share,
     StatusBar,
     StyleSheet,
     View,
+    useWindowDimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../components';
-import { getChapterSceneVisuals, getGospelById, GospelId } from '../data/gospelsNtv';
+import {
+    BibleChapter,
+    getChapterSceneVisuals,
+    getGospelById,
+    GospelBookMeta,
+    GospelId,
+} from '../data/gospelsNtv';
 import { useSound } from '../context/SoundContext';
 
 const HIGHLIGHTS_KEY = '@berea_bible_highlights_v1';
@@ -37,73 +47,67 @@ const MUTED = '#5B6573';
 const NAVY = '#1E3A5F';
 const EUCALIPTO = '#2E6F65';
 
-export const BibleReaderScreen = ({ navigation, route }: any) => {
-    const insets = useSafeAreaInsets();
-    const { playSound, playHaptic } = useSound();
+interface BibleChapterPageProps {
+    book: GospelBookMeta;
+    chapter: BibleChapter;
+    pageWidth: number;
+    fontSize: number;
+    imageCollapsed: boolean;
+    onToggleCollapse: (collapsed: boolean) => void;
+    highlights: Record<string, HighlightColorId>;
+    selectedVerse: number | null;
+    onSelectVerse: (verse: number) => void;
+    bottomInset: number;
+    onGoToChapter: (nextNum: number, animated?: boolean) => void;
+}
 
-    const gospelId: GospelId = route?.params?.gospelId || 'marcos';
-    const initialChapter: number = route?.params?.chapter || 1;
-    const book = getGospelById(gospelId);
-
-    const [chapterNum, setChapterNum] = useState(initialChapter);
-    const [fontSize, setFontSize] = useState(17);
-    const [imageCollapsed, setImageCollapsed] = useState(false);
-    const [chapterPickerOpen, setChapterPickerOpen] = useState(false);
-
-    const [highlights, setHighlights] = useState<Record<string, HighlightColorId>>({});
-    const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
+const BibleChapterPage = React.memo(({
+    book,
+    chapter,
+    pageWidth,
+    fontSize,
+    imageCollapsed,
+    onToggleCollapse,
+    highlights,
+    selectedVerse,
+    onSelectVerse,
+    bottomInset,
+    onGoToChapter,
+}: BibleChapterPageProps) => {
     const [activeSceneIndex, setActiveSceneIndex] = useState(0);
+    const [loadedScenes, setLoadedScenes] = useState<Record<number, boolean>>({});
 
     const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
     const sceneOffsetsRef = useRef<Record<number, number>>({});
     const targetSceneRef = useRef(0);
-    const imageFade = useRef(new Animated.Value(1)).current;
-
-    useEffect(() => {
-        AsyncStorage.getItem(HIGHLIGHTS_KEY).then(raw => {
-            if (raw) {
-                try {
-                    setHighlights(JSON.parse(raw));
-                } catch {
-                    // ignore malformed cache
-                }
-            }
-        });
-    }, []);
-
-    useEffect(() => {
-        AsyncStorage.getItem(LAST_READ_KEY).then(raw => {
-            const parsed = raw ? JSON.parse(raw) : {};
-            parsed[gospelId] = chapterNum;
-            AsyncStorage.setItem(LAST_READ_KEY, JSON.stringify(parsed));
-        }).catch(() => {});
-        setSelectedVerse(null);
-        setActiveSceneIndex(0);
-        targetSceneRef.current = 0;
-        sceneOffsetsRef.current = {};
-        scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, [gospelId, chapterNum]);
-
-    const chapter =
-        book.chapters.find(c => c.number === chapterNum) || book.chapters[0];
 
     const sceneVisuals = useMemo(
-        () => getChapterSceneVisuals(gospelId, chapter.number),
-        [gospelId, chapter.number]
+        () => getChapterSceneVisuals(book.id, chapter.number),
+        [book.id, chapter.number]
+    );
+    const sceneOpacities = useMemo(
+        () => sceneVisuals.map((_, i) => new Animated.Value(i === 0 ? 1 : 0)),
+        [sceneVisuals]
     );
     const currentScene = sceneVisuals[activeSceneIndex] || sceneVisuals[0];
+
+    const markSceneLoaded = useCallback((startVerse: number) => {
+        setLoadedScenes(prev => (prev[startVerse] ? prev : { ...prev, [startVerse]: true }));
+    }, []);
 
     const switchSceneWithFade = (nextIdx: number) => {
         if (nextIdx === targetSceneRef.current) return;
         targetSceneRef.current = nextIdx;
         setActiveSceneIndex(nextIdx);
-        imageFade.stopAnimation();
-        imageFade.setValue(0.55);
-        Animated.timing(imageFade, {
-            toValue: 1,
-            duration: 220,
-            useNativeDriver: true,
-        }).start();
+        Animated.parallel(
+            sceneOpacities.map((anim, i) =>
+                Animated.timing(anim, {
+                    toValue: i === nextIdx ? 1 : 0,
+                    duration: 180,
+                    useNativeDriver: true,
+                })
+            )
+        ).start();
     };
 
     const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -128,7 +132,226 @@ export const BibleReaderScreen = ({ navigation, route }: any) => {
         switchSceneWithFade(nextIdx);
     };
 
+    return (
+        <View style={{ width: pageWidth, flex: 1 }}>
+            {/* MITAD SUPERIOR: Ilustración dinámica por sección */}
+            {!imageCollapsed ? (
+                <View style={[s.topVisualPane, { backgroundColor: book.accentBg }]}>
+                    <View style={s.imageSurface}>
+                        {!loadedScenes[currentScene.startVerse] && (
+                            <ActivityIndicator size="small" color={NAVY} style={s.imageLoader} />
+                        )}
+                        {sceneVisuals.map((scene, idx) => (
+                            <Animated.View
+                                key={`${book.id}-${chapter.number}-${scene.startVerse}`}
+                                pointerEvents="none"
+                                style={[
+                                    StyleSheet.absoluteFill,
+                                    s.sceneLayer,
+                                    { opacity: sceneOpacities[idx] ?? (idx === activeSceneIndex ? 1 : 0) },
+                                ]}
+                            >
+                                <Image
+                                    source={scene.image}
+                                    fadeDuration={0}
+                                    onLoadEnd={() => markSceneLoaded(scene.startVerse)}
+                                    style={[
+                                        s.illustration,
+                                        scene.scale && scene.scale !== 1
+                                            ? { transform: [{ scale: scene.scale }] }
+                                            : null,
+                                    ]}
+                                    resizeMode="contain"
+                                />
+                            </Animated.View>
+                        ))}
+                    </View>
+                    <View style={s.visualFooterRow}>
+                        <View style={s.sceneTagPill}>
+                            <AppText style={s.sceneTagText} numberOfLines={1}>
+                                {currentScene.ref
+                                    ? `${currentScene.label} · ${currentScene.ref}`
+                                    : currentScene.label}
+                            </AppText>
+                        </View>
+                        <Pressable
+                            onPress={() => onToggleCollapse(true)}
+                            style={s.collapsePill}
+                        >
+                            <Ionicons name="chevron-up" size={14} color={NAVY} />
+                        </Pressable>
+                    </View>
+                </View>
+            ) : (
+                <Pressable
+                    onPress={() => onToggleCollapse(false)}
+                    style={[s.collapsedBar, { backgroundColor: book.accentBg }]}
+                >
+                    <Ionicons name="image-outline" size={15} color={NAVY} />
+                    <AppText style={s.collapsedText}>{currentScene.label}</AppText>
+                    <Ionicons name="chevron-down" size={14} color={NAVY} />
+                </Pressable>
+            )}
+
+            {/* MITAD INFERIOR: Biblia NTV linda y subrayable */}
+            <View style={s.readerPane}>
+                <ScrollView
+                    ref={scrollRef}
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator={false}
+                    onScroll={handleScroll}
+                    scrollEventThrottle={32}
+                    contentContainerStyle={[
+                        s.readerContent,
+                        { paddingBottom: bottomInset + (selectedVerse !== null ? 104 : 44) },
+                    ]}
+                >
+                    <View style={s.chapterHeader}>
+                        <AppText style={s.translationTag}>NUEVA TRADUCCIÓN VIVIENTE</AppText>
+                        <AppText style={s.chapterHeading}>
+                            {book.title} {chapter.number}
+                        </AppText>
+                    </View>
+
+                    {chapter.verses.map(v => {
+                        const hlId = highlights[`${book.id}:${chapter.number}:${v.verse}`];
+                        const hl = HIGHLIGHT_COLORS.find(c => c.id === hlId);
+                        const isSelected = selectedVerse === v.verse;
+                        const isSceneStart = sceneVisuals.some(sc => sc.startVerse === v.verse);
+
+                        return (
+                            <View
+                                key={v.verse}
+                                onLayout={
+                                    isSceneStart
+                                        ? e => {
+                                            sceneOffsetsRef.current[v.verse] = e.nativeEvent.layout.y;
+                                        }
+                                        : undefined
+                                }
+                            >
+                                {v.heading ? (
+                                    <AppText style={s.sectionHeading}>{v.heading}</AppText>
+                                ) : null}
+
+                                <Pressable
+                                    onPress={() => onSelectVerse(v.verse)}
+                                    style={[
+                                        s.verseBlock,
+                                        hl && { backgroundColor: hl.bg },
+                                        isSelected && s.verseSelected,
+                                    ]}
+                                >
+                                    <AppText
+                                        style={[
+                                            s.verseText,
+                                            { fontSize, lineHeight: Math.round(fontSize * 1.62) },
+                                        ]}
+                                    >
+                                        <AppText style={s.verseNum}>{v.verse}  </AppText>
+                                        {v.text}
+                                    </AppText>
+                                </Pressable>
+                            </View>
+                        );
+                    })}
+
+                    <View style={s.bottomChapterNav}>
+                        {chapter.number > 1 && (
+                            <Pressable
+                                onPress={() => onGoToChapter(chapter.number - 1, true)}
+                                style={s.chapterFooterBtn}
+                            >
+                                <Ionicons name="arrow-back" size={16} color={NAVY} />
+                                <AppText style={s.chapterFooterText}>Cap. {chapter.number - 1}</AppText>
+                            </Pressable>
+                        )}
+                        {chapter.number < book.chapters.length && (
+                            <Pressable
+                                onPress={() => onGoToChapter(chapter.number + 1, true)}
+                                style={[s.chapterFooterBtn, s.chapterFooterPrimary]}
+                            >
+                                <AppText style={[s.chapterFooterText, { color: '#FFFFFF' }]}>
+                                    Siguiente: Cap. {chapter.number + 1}
+                                </AppText>
+                                <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                            </Pressable>
+                        )}
+                    </View>
+                </ScrollView>
+            </View>
+        </View>
+    );
+});
+
+export const BibleReaderScreen = ({ navigation, route }: any) => {
+    const insets = useSafeAreaInsets();
+    const { width: windowWidth } = useWindowDimensions();
+    const { playHaptic } = useSound();
+
+    const gospelId: GospelId = route?.params?.gospelId || 'marcos';
+    const book = getGospelById(gospelId);
+    const rawInitial: number = route?.params?.chapter || 1;
+    const initialChapter = Math.min(book.chapters.length, Math.max(1, rawInitial));
+
+    const [chapterNum, setChapterNum] = useState(initialChapter);
+    const [pageWidth, setPageWidth] = useState(() => Math.min(windowWidth, 1040));
+    const [fontSize, setFontSize] = useState(17);
+    const [imageCollapsed, setImageCollapsed] = useState(false);
+    const [chapterPickerOpen, setChapterPickerOpen] = useState(false);
+
+    const [highlights, setHighlights] = useState<Record<string, HighlightColorId>>({});
+    const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
+
+    const pagerRef = useRef<FlatList<BibleChapter>>(null);
+
+    useEffect(() => {
+        AsyncStorage.getItem(HIGHLIGHTS_KEY).then(raw => {
+            if (raw) {
+                try {
+                    setHighlights(JSON.parse(raw));
+                } catch {
+                    // ignore malformed cache
+                }
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        AsyncStorage.getItem(LAST_READ_KEY).then(raw => {
+            const parsed = raw ? JSON.parse(raw) : {};
+            parsed[gospelId] = chapterNum;
+            AsyncStorage.setItem(LAST_READ_KEY, JSON.stringify(parsed));
+        }).catch(() => {});
+    }, [gospelId, chapterNum]);
+
+    const chapter =
+        book.chapters.find(c => c.number === chapterNum) || book.chapters[0];
+
+    useEffect(() => {
+        const adjacent = [
+            chapter.number + 1 <= book.chapters.length
+                ? getChapterSceneVisuals(gospelId, chapter.number + 1)
+                : [],
+            chapter.number - 1 >= 1
+                ? getChapterSceneVisuals(gospelId, chapter.number - 1)
+                : [],
+        ].flat();
+        adjacent.forEach(sc => {
+            if (typeof Image.resolveAssetSource === 'function' && typeof Image.prefetch === 'function') {
+                const uri = Image.resolveAssetSource(sc.image)?.uri;
+                if (uri) {
+                    Image.prefetch(uri).catch(() => {});
+                }
+            }
+        });
+    }, [gospelId, chapter.number, book.chapters.length]);
+
     const verseKey = (v: number) => `${gospelId}:${chapter.number}:${v}`;
+
+    const handleSelectVerse = useCallback((verse: number) => {
+        setSelectedVerse(prev => (prev === verse ? null : verse));
+    }, []);
 
     const applyHighlight = async (colorId: HighlightColorId | null) => {
         if (selectedVerse === null) return;
@@ -158,12 +381,27 @@ export const BibleReaderScreen = ({ navigation, route }: any) => {
         }
     };
 
-    const goToChapter = (nextNum: number) => {
-        if (nextNum < 1 || nextNum > book.chapters.length) return;
-        playSound('page');
+    const goToChapter = useCallback((nextNum: number, animated = true) => {
+        if (nextNum < 1 || nextNum > book.chapters.length || nextNum === chapterNum) return;
         playHaptic('selection');
+        setSelectedVerse(null);
         setChapterNum(nextNum);
-    };
+        pagerRef.current?.scrollToOffset({
+            offset: (nextNum - 1) * pageWidth,
+            animated,
+        });
+    }, [book.chapters.length, chapterNum, pageWidth, playHaptic]);
+
+    const handlePagerSettled = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        if (pageWidth <= 0) return;
+        const idx = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
+        const nextChapter = Math.min(book.chapters.length, Math.max(1, idx + 1));
+        if (nextChapter !== chapterNum) {
+            playHaptic('selection');
+            setSelectedVerse(null);
+            setChapterNum(nextChapter);
+        }
+    }, [book.chapters.length, chapterNum, pageWidth, playHaptic]);
 
     const selectedHighlight =
         selectedVerse !== null ? highlights[verseKey(selectedVerse)] : undefined;
@@ -185,7 +423,7 @@ export const BibleReaderScreen = ({ navigation, route }: any) => {
 
                 <View style={s.chapterNav}>
                     <Pressable
-                        onPress={() => goToChapter(chapter.number - 1)}
+                        onPress={() => goToChapter(chapter.number - 1, true)}
                         disabled={chapter.number <= 1}
                         style={[s.miniNavBtn, chapter.number <= 1 && { opacity: 0.35 }]}
                     >
@@ -203,7 +441,7 @@ export const BibleReaderScreen = ({ navigation, route }: any) => {
                     </Pressable>
 
                     <Pressable
-                        onPress={() => goToChapter(chapter.number + 1)}
+                        onPress={() => goToChapter(chapter.number + 1, true)}
                         disabled={chapter.number >= book.chapters.length}
                         style={[s.miniNavBtn, chapter.number >= book.chapters.length && { opacity: 0.35 }]}
                     >
@@ -221,134 +459,58 @@ export const BibleReaderScreen = ({ navigation, route }: any) => {
                 </Pressable>
             </View>
 
-            {/* MITAD SUPERIOR: Ilustración dinámica por sección */}
-            {!imageCollapsed ? (
-                <View style={[s.topVisualPane, { backgroundColor: book.accentBg }]}>
-                    <Animated.View style={[s.imageSurface, { opacity: imageFade }]}>
-                        <Image
-                            key={`${gospelId}-${chapter.number}-${currentScene.startVerse}`}
-                            source={currentScene.image}
-                            style={[
-                                s.illustration,
-                                { transform: [{ scale: currentScene.scale ?? 1.28 }] },
-                            ]}
-                            resizeMode="contain"
-                        />
-                    </Animated.View>
-                    <View style={s.visualFooterRow}>
-                        <View style={s.sceneTagPill}>
-                            <AppText style={s.sceneTagText} numberOfLines={1}>
-                                {currentScene.ref
-                                    ? `${currentScene.label} · ${currentScene.ref}`
-                                    : currentScene.label}
-                            </AppText>
-                        </View>
-                        <Pressable
-                            onPress={() => setImageCollapsed(true)}
-                            style={s.collapsePill}
-                        >
-                            <Ionicons name="chevron-up" size={14} color={NAVY} />
-                        </Pressable>
-                    </View>
-                </View>
-            ) : (
-                <Pressable
-                    onPress={() => setImageCollapsed(false)}
-                    style={[s.collapsedBar, { backgroundColor: book.accentBg }]}
-                >
-                    <Ionicons name="image-outline" size={15} color={NAVY} />
-                    <AppText style={s.collapsedText}>{currentScene.label}</AppText>
-                    <Ionicons name="chevron-down" size={14} color={NAVY} />
-                </Pressable>
-            )}
-
-            {/* MITAD INFERIOR: Biblia NTV linda y subrayable */}
-            <View style={s.readerPane}>
-                <ScrollView
-                    ref={scrollRef}
-                    showsVerticalScrollIndicator={false}
-                    onScroll={handleScroll}
-                    scrollEventThrottle={32}
-                    contentContainerStyle={[
-                        s.readerContent,
-                        { paddingBottom: insets.bottom + (selectedVerse !== null ? 104 : 44) },
-                    ]}
-                >
-                    <View style={s.chapterHeader}>
-                        <AppText style={s.translationTag}>NUEVA TRADUCCIÓN VIVIENTE</AppText>
-                        <AppText style={s.chapterHeading}>
-                            {book.title} {chapter.number}
-                        </AppText>
-                    </View>
-
-                    {chapter.verses.map(v => {
-                        const hlId = highlights[verseKey(v.verse)];
-                        const hl = HIGHLIGHT_COLORS.find(c => c.id === hlId);
-                        const isSelected = selectedVerse === v.verse;
-                        const isSceneStart = sceneVisuals.some(sc => sc.startVerse === v.verse);
-
-                        return (
-                            <View
-                                key={v.verse}
-                                onLayout={
-                                    isSceneStart
-                                        ? e => {
-                                            sceneOffsetsRef.current[v.verse] = e.nativeEvent.layout.y;
-                                        }
-                                        : undefined
-                                }
-                            >
-                                {v.heading ? (
-                                    <AppText style={s.sectionHeading}>{v.heading}</AppText>
-                                ) : null}
-
-                                <Pressable
-                                    onPress={() =>
-                                        setSelectedVerse(prev => (prev === v.verse ? null : v.verse))
-                                    }
-                                    style={[
-                                        s.verseBlock,
-                                        hl && { backgroundColor: hl.bg },
-                                        isSelected && s.verseSelected,
-                                    ]}
-                                >
-                                    <AppText
-                                        style={[
-                                            s.verseText,
-                                            { fontSize, lineHeight: Math.round(fontSize * 1.62) },
-                                        ]}
-                                    >
-                                        <AppText style={s.verseNum}>{v.verse}  </AppText>
-                                        {v.text}
-                                    </AppText>
-                                </Pressable>
-                            </View>
-                        );
+            {/* Paginador horizontal nativo 1:1 por capítulo */}
+            <View
+                style={s.pagerContainer}
+                onLayout={e => {
+                    const w = Math.round(e.nativeEvent.layout.width);
+                    if (w > 0 && Math.abs(w - pageWidth) > 1) {
+                        setPageWidth(w);
+                        pagerRef.current?.scrollToOffset({
+                            offset: (chapterNum - 1) * w,
+                            animated: false,
+                        });
+                    }
+                }}
+            >
+                <FlatList
+                    ref={pagerRef}
+                    data={book.chapters}
+                    keyExtractor={item => String(item.number)}
+                    horizontal
+                    pagingEnabled
+                    directionalLockEnabled
+                    bounces
+                    decelerationRate="fast"
+                    showsHorizontalScrollIndicator={false}
+                    initialScrollIndex={Math.max(0, initialChapter - 1)}
+                    getItemLayout={(_data, index) => ({
+                        length: pageWidth,
+                        offset: pageWidth * index,
+                        index,
                     })}
-
-                    <View style={s.bottomChapterNav}>
-                        {chapter.number > 1 && (
-                            <Pressable
-                                onPress={() => goToChapter(chapter.number - 1)}
-                                style={s.chapterFooterBtn}
-                            >
-                                <Ionicons name="arrow-back" size={16} color={NAVY} />
-                                <AppText style={s.chapterFooterText}>Cap. {chapter.number - 1}</AppText>
-                            </Pressable>
-                        )}
-                        {chapter.number < book.chapters.length && (
-                            <Pressable
-                                onPress={() => goToChapter(chapter.number + 1)}
-                                style={[s.chapterFooterBtn, s.chapterFooterPrimary]}
-                            >
-                                <AppText style={[s.chapterFooterText, { color: '#FFFFFF' }]}>
-                                    Siguiente: Cap. {chapter.number + 1}
-                                </AppText>
-                                <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                            </Pressable>
-                        )}
-                    </View>
-                </ScrollView>
+                    windowSize={3}
+                    initialNumToRender={1}
+                    maxToRenderPerBatch={2}
+                    removeClippedSubviews={Platform.OS === 'android'}
+                    onMomentumScrollEnd={handlePagerSettled}
+                    onScrollEndDrag={Platform.OS === 'web' ? handlePagerSettled : undefined}
+                    renderItem={({ item }) => (
+                        <BibleChapterPage
+                            book={book}
+                            chapter={item}
+                            pageWidth={pageWidth}
+                            fontSize={fontSize}
+                            imageCollapsed={imageCollapsed}
+                            onToggleCollapse={setImageCollapsed}
+                            highlights={highlights}
+                            selectedVerse={item.number === chapterNum ? selectedVerse : null}
+                            onSelectVerse={handleSelectVerse}
+                            bottomInset={insets.bottom}
+                            onGoToChapter={goToChapter}
+                        />
+                    )}
+                />
 
                 {/* Barra flotante de subrayado */}
                 {selectedVerse !== null && (
@@ -424,7 +586,7 @@ export const BibleReaderScreen = ({ navigation, route }: any) => {
                                         key={c.number}
                                         onPress={() => {
                                             setChapterPickerOpen(false);
-                                            goToChapter(c.number);
+                                            goToChapter(c.number, Math.abs(c.number - chapterNum) <= 1);
                                         }}
                                         style={[s.chapterCell, active && s.chapterCellActive]}
                                     >
@@ -444,6 +606,7 @@ export const BibleReaderScreen = ({ navigation, route }: any) => {
 
 const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: BG },
+    pagerContainer: { flex: 1, position: 'relative' },
     topBar: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -494,20 +657,27 @@ const s = StyleSheet.create({
 
     // Top Visual Pane
     topVisualPane: {
-        marginHorizontal: 16,
+        marginHorizontal: 14,
         borderRadius: 24,
-        padding: 8,
+        padding: 6,
         alignItems: 'center',
         marginBottom: 8,
     },
     imageSurface: {
         width: '100%',
-        height: 220,
+        height: 236,
         backgroundColor: '#FFFFFF',
         borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
+    },
+    sceneLayer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    imageLoader: {
+        position: 'absolute',
     },
     illustration: {
         width: '100%',

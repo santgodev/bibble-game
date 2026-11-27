@@ -50,6 +50,11 @@ export const StudyPathsScreen = ({ navigation }: any) => {
         }, [])
     );
 
+    const orderedBooks = [
+        ...GOSPEL_BOOKS.filter(b => b.available),
+        ...GOSPEL_BOOKS.filter(b => !b.available),
+    ];
+
     return (
         <View style={[s.container, { paddingTop: insets.top }]}>
             <StatusBar barStyle="dark-content" />
@@ -91,15 +96,51 @@ export const StudyPathsScreen = ({ navigation }: any) => {
                 </View>
 
                 <View style={s.cardsColumn}>
-                    {GOSPEL_BOOKS.map(book => {
+                    {orderedBooks.map(book => {
                         const currentCap = lastRead[book.id] || 1;
+                        if (!book.available) {
+                            return (
+                                <View
+                                    key={book.id}
+                                    accessibilityLabel={`${book.title}, próximamente`}
+                                    accessibilityState={{ disabled: true }}
+                                    style={s.disabledCard}
+                                >
+                                    <View style={s.cardHeaderRow}>
+                                        <View style={s.pillMuted}>
+                                            <AppText style={s.pillMutedText}>PRÓXIMAMENTE</AppText>
+                                        </View>
+                                        <EditorialDoodle
+                                            kind={book.doodle}
+                                            tint="#DCE3EA"
+                                            size={58}
+                                        />
+                                    </View>
+
+                                    <AppText style={[s.cardTitle, { color: '#5B6573' }]}>
+                                        {book.title}
+                                    </AppText>
+                                    <AppText style={[s.cardSub, { color: '#6E7785' }]}>
+                                        {book.subtitle}
+                                    </AppText>
+
+                                    <View style={s.cardFooter}>
+                                        <AppText style={[s.footerAction, { color: '#6E7785' }]}>
+                                            Próximamente
+                                        </AppText>
+                                        <View style={s.disabledCircle}>
+                                            <Ionicons name="time-outline" size={16} color="#5B6573" />
+                                        </View>
+                                    </View>
+                                </View>
+                            );
+                        }
                         return (
                             <Pressable
                                 key={book.id}
                                 accessibilityRole="button"
                                 accessibilityLabel={`Leer ${book.title}`}
                                 onPress={() => {
-                                    playSound('select');
                                     playHaptic('selection');
                                     navigation.navigate('BibleReader', {
                                         gospelId: book.id,
@@ -201,6 +242,12 @@ const s = StyleSheet.create({
         shadowRadius: 20,
         elevation: 4,
     },
+    disabledCard: {
+        borderRadius: 28,
+        padding: 22,
+        backgroundColor: SURFACE,
+        opacity: 0.86,
+    },
     pressed: {
         transform: [{ scale: 0.985 }],
         opacity: 0.94,
@@ -222,6 +269,18 @@ const s = StyleSheet.create({
         fontWeight: '800',
         letterSpacing: 0.9,
         color: NAVY,
+    },
+    pillMuted: {
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    pillMutedText: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 0.9,
+        color: MUTED,
     },
     cardTitle: {
         fontSize: 24,
@@ -249,6 +308,14 @@ const s = StyleSheet.create({
         height: 36,
         borderRadius: 18,
         backgroundColor: NAVY,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    disabledCircle: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#E8EDF2',
         alignItems: 'center',
         justifyContent: 'center',
     },

@@ -145,7 +145,7 @@ export const TriviaTeamGameScreen = ({ navigation, route }: Props) => {
                 {
                     text: 'Salir',
                     style: 'destructive',
-                    onPress: () => navigation.navigate('TriviaHome'),
+                    onPress: () => navigation.popTo('TriviaHome'),
                 },
             ]
         );
@@ -242,7 +242,7 @@ export const TriviaTeamGameScreen = ({ navigation, route }: Props) => {
                         </Pressable>
                         <Pressable
                             accessibilityRole="button"
-                            onPress={() => navigation.navigate('TriviaHome')}
+                            onPress={() => navigation.popTo('TriviaHome')}
                             style={({ pressed }) => [s.secondaryBtn, pressed && s.pressed]}
                         >
                             <AppText style={s.secondaryBtnText}>Volver al menú</AppText>

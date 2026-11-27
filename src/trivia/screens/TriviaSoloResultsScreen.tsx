@@ -151,7 +151,7 @@ export const TriviaSoloResultsScreen = ({ navigation, route }: Props) => {
 
                     <Pressable
                         accessibilityRole="button"
-                        onPress={() => navigation.navigate('TriviaProgress')}
+                        onPress={() => navigation.popTo('TriviaProgress')}
                         style={({ pressed }) => [s.secondaryBtn, pressed && s.pressed]}
                     >
                         <AppText style={s.secondaryBtnText}>Volver a Mi progreso</AppText>

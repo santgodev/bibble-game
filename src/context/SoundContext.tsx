@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
-import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 
@@ -23,10 +22,6 @@ export type SoundEffect =
     | 'page';
 
 export type HapticEffect = 'success' | 'impact' | 'selection' | 'victory';
-
-const BACKGROUND_TRACKS: Track[] = [
-    { id: 'ancient_arpeggios', name: 'Paz Bíblica (Arpegios)', source: require('../../assets/sounds/main-screan.mp3') },
-];
 
 const SFX_SOURCES: Record<SoundEffect, any> = {
     tap: require('../../assets/sounds/sfx_tap.wav'),
@@ -51,6 +46,8 @@ const SFX_VOLUME_SCALE: Record<SoundEffect, number> = {
     unlock: 0.9,
     page: 0.78,
 };
+
+const noop = () => { };
 
 interface SoundContextType {
     playSound: (type: SoundEffect) => Promise<void>;
@@ -84,32 +81,14 @@ interface SoundContextType {
 const SoundContext = createContext<SoundContextType | undefined>(undefined);
 
 export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
-    const [enableMusic, setEnableMusic] = useState(false);
     const [enableSFX, setEnableSFX] = useState(true);
     const [enableVibration, setEnableVibration] = useState(true);
-    const [enableMusicInVideo, setEnableMusicInVideo] = useState(true);
-
-    const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-    const [localTrack, setLocalTrackState] = useState<Track | null>(null);
-    const [isTemporarilyPaused, setIsTemporarilyPaused] = useState(false);
     const [settingsLoaded, setSettingsLoaded] = useState(false);
-
-    const [musicVolume, setMusicVolume] = useState(0.65);
     const [sfxVolume, setSFXVolume] = useState(0.95);
-    const [volumeModifier, setVolumeModifier] = useState(1.0);
 
-    const musicSound = useRef<AudioPlayer | null>(null);
     const sfxPlayers = useRef<Partial<Record<SoundEffect, AudioPlayer>>>({});
 
-    const enableMusicRef = useRef(enableMusic);
-    const isPausedRef = useRef(isTemporarilyPaused);
-
-    useEffect(() => { enableMusicRef.current = enableMusic; }, [enableMusic]);
-    useEffect(() => { isPausedRef.current = isTemporarilyPaused; }, [isTemporarilyPaused]);
-
     useEffect(() => {
-        setCurrentTrackIndex(Math.floor(Math.random() * BACKGROUND_TRACKS.length));
-
         let settled = false;
         const timeout = setTimeout(() => {
             if (!settled) {
@@ -144,97 +123,31 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const unloadAll = () => {
-        if (musicSound.current) {
-            musicSound.current.remove();
-            musicSound.current = null;
-        }
         for (const key of Object.keys(sfxPlayers.current) as SoundEffect[]) {
             sfxPlayers.current[key]?.remove();
         }
         sfxPlayers.current = {};
     };
 
-    useEffect(() => {
-        if (!settingsLoaded) return;
-        loadBackgroundMusic();
-    }, [currentTrackIndex, localTrack, settingsLoaded]);
-
-    useEffect(() => {
-        if (!musicSound.current) return;
-        if (enableMusic && !isTemporarilyPaused) {
-            musicSound.current.play();
-        } else {
-            musicSound.current.pause();
-        }
-    }, [enableMusic, isTemporarilyPaused]);
-
-    useEffect(() => {
-        if (musicSound.current) {
-            musicSound.current.volume = musicVolume * volumeModifier;
-        }
-    }, [musicVolume, volumeModifier]);
-
-    useEffect(() => {
-        const subscription = AppState.addEventListener('change', nextAppState => {
-            if (nextAppState === 'active' && enableMusic && !isTemporarilyPaused) {
-                musicSound.current?.play();
-            } else if (nextAppState.match(/inactive|background/)) {
-                musicSound.current?.pause();
-            }
-        });
-        return () => subscription.remove();
-    }, [enableMusic, isTemporarilyPaused]);
-
-    useEffect(() => { if (settingsLoaded) AsyncStorage.setItem('setting_music', String(enableMusic)); }, [enableMusic, settingsLoaded]);
     useEffect(() => { if (settingsLoaded) AsyncStorage.setItem('setting_sfx', String(enableSFX)); }, [enableSFX, settingsLoaded]);
     useEffect(() => { if (settingsLoaded) AsyncStorage.setItem('setting_vibration', String(enableVibration)); }, [enableVibration, settingsLoaded]);
-    useEffect(() => { if (settingsLoaded) AsyncStorage.setItem('setting_music_rec', String(enableMusicInVideo)); }, [enableMusicInVideo, settingsLoaded]);
-    useEffect(() => { if (settingsLoaded) AsyncStorage.setItem('setting_music_vol', String(musicVolume)); }, [musicVolume, settingsLoaded]);
     useEffect(() => { if (settingsLoaded) AsyncStorage.setItem('setting_sfx_vol', String(sfxVolume)); }, [sfxVolume, settingsLoaded]);
 
     const loadSettings = async () => {
         try {
-            const [music, sfx, vib, rec, musVol, sfxVol] = await Promise.all([
-                AsyncStorage.getItem('setting_music'),
+            const [sfx, vib, sfxVol] = await Promise.all([
                 AsyncStorage.getItem('setting_sfx'),
                 AsyncStorage.getItem('setting_vibration'),
-                AsyncStorage.getItem('setting_music_rec'),
-                AsyncStorage.getItem('setting_music_vol'),
                 AsyncStorage.getItem('setting_sfx_vol'),
             ]);
 
-            setEnableMusic(music !== null ? music === 'true' : true);
             if (sfx !== null) setEnableSFX(sfx === 'true');
             if (vib !== null) setEnableVibration(vib === 'true');
-            if (rec !== null) setEnableMusicInVideo(rec === 'true');
-            if (musVol !== null && !Number.isNaN(Number(musVol))) setMusicVolume(Number(musVol));
             if (sfxVol !== null && !Number.isNaN(Number(sfxVol))) setSFXVolume(Number(sfxVol));
 
             loadSFX();
         } catch (e) {
             console.error('Error loading settings', e);
-        }
-    };
-
-    const loadBackgroundMusic = async () => {
-        if (musicSound.current) {
-            musicSound.current.remove();
-            musicSound.current = null;
-        }
-
-        const source = localTrack
-            ? { uri: localTrack.source }
-            : BACKGROUND_TRACKS[currentTrackIndex].source;
-
-        try {
-            const shouldPlay = enableMusicRef.current && !isPausedRef.current;
-            const player = createAudioPlayer(source);
-            player.loop = true;
-            player.volume = musicVolume * volumeModifier;
-            if (shouldPlay) player.play();
-            musicSound.current = player;
-        } catch (e) {
-            console.warn('Error loading bg music', e);
         }
     };
 
@@ -285,46 +198,21 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const toggleMusic = () => setEnableMusic(prev => !prev);
-    const pauseMusic = () => setIsTemporarilyPaused(true);
-    const resumeMusic = () => setIsTemporarilyPaused(false);
-
     const toggleSFX = () => setEnableSFX(prev => !prev);
     const toggleVibration = () => setEnableVibration(prev => !prev);
-    const toggleMusicInVideo = () => setEnableMusicInVideo(prev => !prev);
-
-    const shuffleMusic = () => {
-        setLocalTrackState(null);
-        let newIndex = Math.floor(Math.random() * BACKGROUND_TRACKS.length);
-        if (newIndex === currentTrackIndex && BACKGROUND_TRACKS.length > 1) {
-            newIndex = (newIndex + 1) % BACKGROUND_TRACKS.length;
-        }
-        setCurrentTrackIndex(newIndex);
-    };
-
-    const setInternalTrack = (index: number) => {
-        setLocalTrackState(null);
-        setCurrentTrackIndex(index);
-    };
-
-    const setLocalTrack = (uri: string, name: string) => {
-        setLocalTrackState({ id: 'local', name, source: uri, isLocal: true });
-    };
-
-    const currentTrack = localTrack || BACKGROUND_TRACKS[currentTrackIndex];
 
     return (
         <SoundContext.Provider value={{
             playSound, playHaptic,
-            enableMusic, toggleMusic, pauseMusic, resumeMusic,
+            enableMusic: false, toggleMusic: noop, pauseMusic: noop, resumeMusic: noop,
             enableSFX, toggleSFX,
             enableVibration, toggleVibration,
-            currentTrack, availableTracks: BACKGROUND_TRACKS,
-            setInternalTrack, setLocalTrack, shuffleMusic,
-            enableMusicInVideo, toggleMusicInVideo,
-            musicVolume, setMusicVolume,
+            currentTrack: null, availableTracks: [],
+            setInternalTrack: noop, setLocalTrack: noop, shuffleMusic: noop,
+            enableMusicInVideo: false, toggleMusicInVideo: noop,
+            musicVolume: 0, setMusicVolume: noop,
             sfxVolume, setSFXVolume,
-            setVolumeModifier,
+            setVolumeModifier: noop,
         }}>
             {children}
         </SoundContext.Provider>

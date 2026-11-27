@@ -42,16 +42,10 @@ export const SettingsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { language, setLanguage, t } = useLanguage();
     const {
-        enableMusic,
-        toggleMusic,
         enableSFX,
         toggleSFX,
         enableVibration,
         toggleVibration,
-        enableMusicInVideo,
-        toggleMusicInVideo,
-        musicVolume,
-        setMusicVolume,
         sfxVolume,
         setSFXVolume,
     } = useSound();
@@ -100,11 +94,6 @@ export const SettingsScreen = ({ navigation }: any) => {
             >
                 <View style={styles.section}>
                     <AppText style={styles.sectionTitle}>Sonido</AppText>
-                    <ToggleRow icon="musical-notes-outline" label={t('music')} value={enableMusic} onToggle={toggleMusic} />
-                    {enableMusic && volume(t('volume_music'), musicVolume, setMusicVolume)}
-                    <View style={styles.divider} />
-                    <ToggleRow icon="videocam-outline" label={t('music_in_video')} value={enableMusicInVideo} onToggle={toggleMusicInVideo} />
-                    <View style={styles.divider} />
                     <ToggleRow icon="volume-medium-outline" label={t('sound_effects')} value={enableSFX} onToggle={toggleSFX} />
                     {enableSFX && volume(t('volume_sfx'), sfxVolume, setSFXVolume)}
                     <View style={styles.divider} />

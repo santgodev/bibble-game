@@ -15,9 +15,15 @@ Al crear o actualizar ilustraciones para las escenas de la Biblia visual (`src/d
      - Oro champán (`#F5DA7C` / `#FBF2D0`)
    - **Cero texto o letras** dentro de la ilustración.
 
-3. **Proporción estándar y calibración:**
-   - Tomar como estándar de tamaño visual `assets/study/marcos_1_bautista.jpg` (referencia `Marcos 1:1`, `scale: 1.72` en `220px` de alto).
-   - Calibrar siempre el campo `scale` en `ChapterSceneVisual` (`src/data/gospelsNtv.ts`) para que todas las escenas del capítulo mantengan una presencia uniforme sin recortarse ni verse diminutas.
+3. **Tamaño fijo oficial y uso del cuadro:**
+   - Generar cada lámina en formato panorámico horizontal (`3:2` / `16:10`), componiendo la escena de borde a borde para aprovechar todo el espacio del cuadro sin miniaturas centradas.
+   - Tamaño estándar único en la app: **`900 × 600 px` (`3:2` exacto)**, fondo `#FFFFFF`, margen interno uniforme de **`24 px`** (área útil `852 × 552 px`), formato **JPEG calidad `80`** (`<= 90 KB` objetivo), para mostrar en `scale: 1`.
+   - Normalizar siempre nuevas imágenes con:
+     `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/normalize-study-images.ps1 -TargetPath assets/study/<libro>/cap-XX`
 
 4. **Cobertura completa por capítulo:**
    - Cada sección temática (`heading`) relevante del capítulo debe tener su propia escena en `ChapterSceneVisual[]` con `startVerse`, `label` y `ref` (ej. `v.1–12`).
+
+5. **Organización obligatoria de carpetas:**
+   - Portadas: `assets/study/covers/gospel_<libro>.jpg`
+   - Escenas por libro y capítulo: `assets/study/<libro>/cap-XX/<libro>_<cap>_<escena>.jpg` (`cap-01`, `cap-02`, ..., `cap-16`).

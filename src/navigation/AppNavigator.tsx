@@ -73,7 +73,7 @@ export const AppNavigator = () => {
                 <Stack.Screen name="StudyPaths" component={StudyPathsScreen} />
                 <Stack.Screen name="StudyMissions" component={StudyMissionsScreen} />
                 <Stack.Screen name="StudyDevotional" component={StudyDevotionalScreen} />
-                <Stack.Screen name="BibleReader" component={BibleReaderScreen} />
+                <Stack.Screen name="BibleReader" component={BibleReaderScreen} options={{ gestureEnabled: false }} />
                 <Stack.Screen name="SystemGuide" component={SystemGuideScreen} />
 
                 {/* Trivia Flow */}

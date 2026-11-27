@@ -131,7 +131,7 @@ export const TriviaSoloGameScreen = ({ navigation, route }: Props) => {
                 answeredCount: params.answeredCount,
                 abandoned: true,
             });
-            navigation.navigate('TriviaProgress');
+            navigation.popTo('TriviaProgress');
             return;
         }
 
@@ -252,6 +252,8 @@ export const TriviaSoloGameScreen = ({ navigation, route }: Props) => {
                         onPress: async () => {
                             finishedRef.current = true;
                             stopTimer();
+                            statusRef.current = 'FINISHED';
+                            setGameStatus('FINISHED');
                             await recordThemeSessionFinish({
                                 themeId,
                                 difficulty,
@@ -260,7 +262,7 @@ export const TriviaSoloGameScreen = ({ navigation, route }: Props) => {
                                 answeredCount: indexRef.current,
                                 abandoned: true,
                             });
-                            navigation.navigate('TriviaProgress');
+                            navigation.popTo('TriviaProgress');
                         },
                     },
                 ]
